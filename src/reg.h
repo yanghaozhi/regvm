@@ -8,6 +8,6 @@
 struct reg
 {
     uint64_t    reg_vals[16];       //
-    var*        reg_vars[16];
+    struct var* reg_vars[16];
     uint8_t     reg_types[16];
 };

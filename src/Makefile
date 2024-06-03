@@ -1,6 +1,6 @@
-SRCS = $(wildcard ./*.cpp)
-OBJS += $(patsubst %.cpp, %.o, $(SRCS))
-LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
+SRCS = $(wildcard ./*.c)
+OBJS += $(patsubst %.c, %.o, $(SRCS))
+LIBS += $(patsubst ./%.c, lib%.a, $(shell find -iname '*.c' | grep -v main))
 
 OUT=libregvm.so
 DIR=../libs
@@ -30,13 +30,13 @@ clean:
 
 lib:$(LIBS)
 
-$(OBJS) : %.o : %.cpp
-	$(CXX) $(CXXFLAGS) -c -MMD $<
+$(OBJS) : %.o : %.c
+	$(CC) $(CFLAGS) -c -MMD $<
 
 
 $(OUT):$(OBJS)
 	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -shared -o $(DIR)/$(OUT) $(OBJS) $(DEPS)
+	$(CC) $(CFLAGS) -shared -o $(DIR)/$(OUT) $(OBJS) $(DEPS)
 
 
 -include *.d
