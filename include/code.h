@@ -7,7 +7,7 @@ struct code
 {
     struct 
     {
-        uint32_t        name    : 12;
+        uint32_t        id      : 12;
         uint32_t        type    : 4;
         uint32_t        reg     : 8;
         uint32_t        ext     : 8;
@@ -34,7 +34,7 @@ enum CODE_TYPE
     LIST,
 };
 
-enum CODE_NAME
+enum CODE_ID
 {
 //+---------+-------+-------+-------+-------------------+--------------------------------------+
 //| NAME    | TYPE  | REG   | EXT   | VALUE             |  USAGE                               |

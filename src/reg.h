@@ -1,13 +1,31 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "var.h"
+#include <code.h>
 
 
-struct reg
+class regs
 {
-    uint64_t    reg_vals[16];       //
-    struct var* reg_vars[16];
-    uint8_t     reg_types[16];
+private:
+    uvalue      values[16];       //
+    var*        froms[16];
+    uint8_t     types[16];
+
+    friend class debug;
+
+public:
+    inline static bool valid_id(const int id)
+    {
+        return (id <= 0 || (id > 15)) ? false : true;
+    }
+
+    bool set(const int id, const code* inst);
+    bool set(const int id, var* v);
+
+private:
+    void clear(const int id);
 };
+
