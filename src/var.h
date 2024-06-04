@@ -3,7 +3,6 @@
 #include <stdint.h>
 
 
-#pragma pack(1)
 union uvalue
 {
     int64_t             num;
@@ -11,18 +10,23 @@ union uvalue
     const char*         str;
 };
 
-class var
+struct var
 {
 public:
-    const uint8_t       type;
+    uint8_t             type;
     uint8_t             reg;
     int16_t             ref;
     uvalue              value;
 
-    var(uint8_t t);
+    uint64_t            key;
+    char                name[];
+
+    void init(uint8_t type, const char* name);
 
     bool acquire(const int id = 0);
     void release(void);
+
+private:
+    uint64_t hash(const char* name);
 };
-#pragma pack()
 
