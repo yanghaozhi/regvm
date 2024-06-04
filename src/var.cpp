@@ -11,6 +11,16 @@ void var::init(uint8_t t, const char* n)
     key = hash(n);
 }
 
+bool var::cmp(uint64_t k, const char* n, int l)
+{
+    if ((k != key) || (l != name_len))
+    {
+        return false;
+    }
+    return (memcmp(name, n, l)  == 0) ? true : false;
+}
+
+
 uint64_t var::hash(const char* name)
 {
     const int len = strlen(name);
