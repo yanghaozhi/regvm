@@ -10,14 +10,21 @@ union uvalue
     const char*         str;
 };
 
+struct cvs
+{
+    uint8_t             type;
+    uint8_t             unused;
+    uint16_t            name_len;
+    uint32_t            hash;
+};
+
 struct var
 {
 public:
-    uint8_t             type;
+    const cvs           attr;
     uint8_t             reg;
+    uint8_t             unused;
     int16_t             ref;
-    uint16_t            name_len;
-    uint32_t            hash;
     uvalue              value;
 
     char                name[];

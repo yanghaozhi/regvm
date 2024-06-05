@@ -7,17 +7,21 @@
 var* var::create(uint8_t t, const char* n)
 {
     const int l = strlen(n);
+    cvs cv = {t, 0, l, calc_hash(n, l)};
+
     auto v = (var*)malloc(sizeof(var) + l + 1);
-    v->type = t;
-    v->name_len = l;
+    memcpy((void*)&v->attr, &cv, sizeof(cvs));
     strcpy(v->name, n);
-    v->hash = calc_hash(n, l);
+    v->reg = 0;
+    v->unused = 0;
+    v->ref = 1;
+    v->value.num = 0;
     return v;
 }
 
 bool var::cmp(uint32_t k, const char* n, int l)
 {
-    if ((k != hash) || (l != name_len))
+    if ((k != attr.hash) || (l != attr.name_len))
     {
         return false;
     }
