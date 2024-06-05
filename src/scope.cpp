@@ -15,6 +15,7 @@ scope::~scope()
 {
     for (int i = 0; i < size; i++)
     {
+        table[i].v->release();
         clear_list(table[i].next);
     }
 }
@@ -99,11 +100,14 @@ void scope::push_list(items* it, var* v)
 
 void scope::clear_list(items* it)
 {
+    if (it == NULL) return;
+
     if (it->next != NULL)
     {
         clear_list(it->next);
         free(it->next);
     }
+
     for (int i = 0; i < items::size; i++)
     {
         if (it->vars[i] != NULL)

@@ -8,6 +8,8 @@ class scope
 {
 public:
     scope();
+    scope(const scope&)     = delete;
+    scope(const scope&&)    = delete;
     ~scope();
 
     bool add(var* v);
