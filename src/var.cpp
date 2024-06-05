@@ -1,27 +1,38 @@
 #include "var.h"
 
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
 
+var::var(uint8_t t, const char* n, const int l) :
+    ref(1),
+    type(t),
+    reg(0),
+    name_len(l),
+    hash(calc_hash(n, l))
+{
+    strcpy(name, n);
+    value.num = 0;
+}
+
+var::~var()
+{
+}
+
 var* var::create(uint8_t t, const char* n)
 {
     const int l = strlen(n);
-    cvs cv = {t, 0, l, calc_hash(n, l)};
 
-    auto v = (var*)malloc(sizeof(var) + l + 1);
-    memcpy((void*)&v->attr, &cv, sizeof(cvs));
-    strcpy(v->name, n);
-    v->reg = 0;
-    v->unused = 0;
-    v->ref = 1;
-    v->value.num = 0;
+    char* p = (char*)malloc(sizeof(var) + l + 1);
+    var* v = new (p) var(t, n, l);
+
     return v;
 }
 
 bool var::cmp(uint32_t k, const char* n, int l)
 {
-    if ((k != attr.hash) || (l != attr.name_len))
+    if ((k != hash) || (l != name_len))
     {
         return false;
     }
@@ -31,7 +42,7 @@ bool var::cmp(uint32_t k, const char* n, int l)
 
 uint32_t var::calc_hash(const char* name, const int len)
 {
-    const int seed = 131;
+    const int seed = 35153;
     uint32_t hash = 0;
     for (int i = 0; i < len; i++)
     {
@@ -60,22 +71,13 @@ void var::set_reg(const int id)
     }
 }
 
-bool var::acquire(void)
-{
-    ++ref;
-    return true;
-}
-
 void var::release(void)
 {
     if (--ref <= 0)
     {
         //delete this;
+        this->~var();
         free(this);
     }
 }
 
-var* vars::get(const char* name)
-{
-    return NULL;
-}

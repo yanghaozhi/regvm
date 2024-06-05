@@ -21,7 +21,7 @@ scope::~scope()
 
 bool scope::add(var* v)
 {
-    const int i = v->attr.hash & 0x0F;
+    const int i = v->hash & 0x0F;
     if (table[i].v == NULL)
     {
         table[i].v = v;

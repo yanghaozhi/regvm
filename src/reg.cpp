@@ -25,7 +25,7 @@ bool regs::load(const int id, var* v)
 
     v->set_reg(id);
 
-    types[id] = v->attr.type;
+    types[id] = v->type;
     froms[id] = v;
     values[id] = v->value;
 
@@ -41,7 +41,7 @@ bool regs::store(const int id)
     {
         return true;
     }
-    if ((v->attr.type != types[id]) || (v->reg != id))
+    if ((v->type != types[id]) || (v->reg != id))
     {
         //TODO : error handler
         return false;
@@ -61,7 +61,7 @@ bool regs::store(const int id, var* v)
 
     if (v->reg == id) return store(id);
 
-    if (v->attr.type != types[id])
+    if (v->type != types[id])
     {
         //TODO : error handler
         return false;
