@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "reg.h"
+#include "error.h"
 #include "scope.h"
 #include "context.h"
 

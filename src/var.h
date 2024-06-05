@@ -13,6 +13,8 @@ union uvalue
 class var
 {
 private:
+    friend class debug;
+
     int16_t             ref;
 
     var(uint8_t type, const char* name, const int len);

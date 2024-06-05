@@ -23,6 +23,13 @@ bool regs::load(const int id, var* v)
 
     store(id);
 
+    const auto r = v->reg;
+    if (r != 0)
+    {
+        store(r);
+        froms[r] = NULL;
+    }
+
     v->set_reg(id);
 
     types[id] = v->type;
