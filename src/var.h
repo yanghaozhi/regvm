@@ -33,7 +33,7 @@ public:
 
     void set_reg(const int id);
     inline void acquire(void)   {++ref;}
-    void release(void);
+    bool release(void);
 
     bool cmp(uint32_t key, const char* name, int len);
 };

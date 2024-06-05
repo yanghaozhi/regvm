@@ -83,3 +83,8 @@ bool regs::store(const int id, var* v)
     return true;
 }
 
+uint8_t regs::type(const int id)
+{
+    if (valid_id(id) == false) return false;
+    return types[id];
+}

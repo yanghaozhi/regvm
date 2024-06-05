@@ -15,7 +15,7 @@ tt:
 	@echo $(OBJS)
 
 
-OPTS=-O2 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -I../include -DNDEBUG
+OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -I../include -DNDEBUG
 CFLAGS=-std=gnu11 $(OPTS)
 CXXFLAGS=-std=c++17 $(OPTS)
 

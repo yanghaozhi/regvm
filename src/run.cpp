@@ -8,18 +8,6 @@
 extern "C"
 {
 
-struct regvm* regvm_init()
-{
-    auto vm = new regvm();
-    return vm;
-}
-
-bool regvm_exit(struct regvm* vm)
-{
-    delete vm;
-    return false;
-}
-
 bool regvm_exe_one(struct regvm* vm, const struct code* inst)
 {
     switch (inst->id)
@@ -33,7 +21,7 @@ bool regvm_exe_one(struct regvm* vm, const struct code* inst)
         vm->reg.store(inst->reg);
         break;
     case STOREN:
-        vm->reg.store(inst->reg, vm->ctx->add(inst));
+        vm->reg.store(inst->reg, vm->ctx->add(inst, vm->reg.type(inst->reg)));
         break;
     case LOAD:
         vm->reg.load(inst->reg, vm->ctx->get(inst->value.str));
@@ -50,3 +38,4 @@ bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* p
 }
 
 }
+

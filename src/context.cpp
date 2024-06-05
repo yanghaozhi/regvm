@@ -5,9 +5,16 @@
 
 #include "var.h"
 
-context::context()
+context::context(scope& g, context* cur) : globals(g)
 {
     scopes.emplace_back();
+
+    up = cur;
+    down = NULL;
+    if (cur != NULL)
+    {
+        cur->down = this;
+    }
 }
 
 context::~context()
@@ -29,11 +36,11 @@ void context::leave_block()
     scopes.pop_back();
 }
 
-var* context::add(const code* inst)
+var* context::add(const code* inst, uint8_t type)
 {
-    auto v = var::create(inst->type, inst->value.str);
+    auto v = var::create(type, inst->value.str);
     scopes.back().add(v);
-    return v;
+    return (v->release() == true) ? v : NULL;
 }
 
 var* context::get(const char* name)
@@ -48,6 +55,6 @@ var* context::get(const char* name)
             return v;
         }
     }
-    return NULL;
+    return globals.get(h, name, l);
 }
 

@@ -71,13 +71,15 @@ void var::set_reg(const int id)
     }
 }
 
-void var::release(void)
+bool var::release(void)
 {
     if (--ref <= 0)
     {
         //delete this;
         this->~var();
         free(this);
+        return false;
     }
+    return true;
 }
 

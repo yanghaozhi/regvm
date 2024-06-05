@@ -10,13 +10,13 @@ int main(int argc, char** argv)
 {
     struct regvm* vm =  regvm_init();
 
-    struct code c;
-    memset(&c, 0, sizeof(c));
-    c.id = SET;
-    c.type = INTEGER;
-    c.reg = 1;
-    c.ext = 0;
-    c.value.num = 123;
+    struct code c = {.id = SET, .type = INTEGER, .reg = 1, .ext = 0, .value.num = 123};
+    //memset(&c, 0, sizeof(c));
+    //c.id = SET;
+    //c.type = INTEGER;
+    //c.reg = 1;
+    //c.ext = 0;
+    //c.value.num = 123;
 
     bool r = regvm_exe_one(vm, &c);
     printf("%d\n", r);
@@ -26,6 +26,19 @@ int main(int argc, char** argv)
     int type;
     r = regvm_debug_reg_info(vm, 1, &value, &var, &type);
     printf("%ld %d <= %p\n", value, type, var);
+
+
+    c = (struct code){.id = STOREN, .type = 0, .reg = 1, .ext = 0, .value.str = "abc"};
+    r = regvm_exe_one(vm, &c);
+    printf("%d\n", r);
+
+    c = (struct code){.id = LOAD, .type = 0, .reg = 2, .ext = 0, .value.str = "abc"};
+    r = regvm_exe_one(vm, &c);
+    printf("%d\n", r);
+
+    r = regvm_debug_reg_info(vm, 2, &value, &var, &type);
+    printf("%ld %d <= %p\n", value, type, var);
+
 
     regvm_exit(vm);
 

@@ -29,6 +29,7 @@ public:
 
     bool load(const int id, var* v);
 
+    uint8_t type(const int id);
 private:
 };
 

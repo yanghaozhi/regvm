@@ -15,7 +15,10 @@ scope::~scope()
 {
     for (int i = 0; i < size; i++)
     {
-        table[i].v->release();
+        if (table[i].v != NULL)
+        {
+            table[i].v->release();
+        }
         clear_list(table[i].next);
     }
 }
