@@ -4,16 +4,20 @@
 #include <string.h>
 
 
-void var::init(uint8_t t, const char* n)
+var* var::create(uint8_t t, const char* n)
 {
-    type = t;
-    strcpy(name, n);
-    key = hash(n);
+    const int l = strlen(n);
+    auto v = (var*)malloc(sizeof(var) + l + 1);
+    v->type = t;
+    v->name_len = l;
+    strcpy(v->name, n);
+    v->hash = calc_hash(n, l);
+    return v;
 }
 
-bool var::cmp(uint64_t k, const char* n, int l)
+bool var::cmp(uint32_t k, const char* n, int l)
 {
-    if ((k != key) || (l != name_len))
+    if ((k != hash) || (l != name_len))
     {
         return false;
     }
@@ -21,54 +25,40 @@ bool var::cmp(uint64_t k, const char* n, int l)
 }
 
 
-uint64_t var::hash(const char* name)
+uint32_t var::calc_hash(const char* name, const int len)
 {
-    const int len = strlen(name);
-    const int step = sizeof(uint64_t);
-    const char* p = name;
-    uint64_t h = 0;
-    int i = 0;
-    for (i = 0; len - i >= step; i += step)
+    const int seed = 131;
+    uint32_t hash = 0;
+    for (int i = 0; i < len; i++)
     {
-        h += *(uint64_t*)p;
-        p += step;
+        hash = hash * seed + name[i];
     }
-
-    switch (len - i)
-    {
-    case 7:
-        h += *(uint64_t*)p;
-        break;
-    case 6:
-    case 5:
-        h += *(uint32_t*)p;
-        h += (*(uint16_t*)(p + sizeof(uint32_t)) << sizeof(uint32_t));
-        break;
-    case 4:
-    case 3:
-        h += *(uint32_t*)p;
-        break;
-    case 2:
-    case 1:
-        h += *(uint16_t*)p;
-        break;
-    }
-    return h;
+    return hash;
 }
 
-bool var::acquire(const int id)
+void var::set_reg(const int id)
 {
-    if (id != 0)
+    if (id == reg) return;
+
+    if (reg == 0)
     {
-        if (reg != 0)
+        if (id != 0)
         {
-            return false;
+            ++ref;
         }
-        reg = id;
     }
+    else
+    {
+        if (id == 0)
+        {
+            release();
+        }
+    }
+}
 
+bool var::acquire(void)
+{
     ++ref;
-
     return true;
 }
 
@@ -79,4 +69,9 @@ void var::release(void)
         //delete this;
         free(this);
     }
+}
+
+var* vars::get(const char* name)
+{
+    return NULL;
 }

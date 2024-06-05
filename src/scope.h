@@ -11,18 +11,19 @@ public:
     ~scope();
 
     bool add(var* v);
-    var* get(uint64_t key, const char* name, int len);
-    //bool del(uint64_t key, const char* name, int len);
+    var* get(uint32_t key, const char* name, int len);
 
 private:
     struct items
     {
-        struct items*       next;
         static const int    size    = 7;
+
+        struct items*       next;
         struct var*         vars[size];
     };
 
     static const int        size    = 16;
+
     struct 
     {
         struct var*         v;

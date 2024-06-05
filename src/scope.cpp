@@ -21,7 +21,7 @@ scope::~scope()
 
 bool scope::add(var* v)
 {
-    const int i = v->key & 0x0F;
+    const int i = v->hash & 0x0F;
     if (table[i].v == NULL)
     {
         table[i].v = v;
@@ -40,7 +40,7 @@ bool scope::add(var* v)
     return true;
 }
 
-var* scope::get(uint64_t key, const char* name, int len)
+var* scope::get(uint32_t key, const char* name, int len)
 {
     const int i = key & 0x0F;
     if (table[i].v == NULL)
@@ -72,11 +72,6 @@ var* scope::get(uint64_t key, const char* name, int len)
 
     return NULL;
 }
-
-//bool scope::del(uint64_t key, const char* name, int len)
-//{
-//    return false;
-//}
 
 void scope::push_list(items* it, var* v)
 {

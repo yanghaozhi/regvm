@@ -29,12 +29,14 @@ bool regvm_exe_one(struct regvm* vm, const struct code* inst)
     case SET:
         vm->reg.set(inst->reg, inst);
         break;
+    case STORE:
+        vm->reg.store(inst->reg);
+        break;
     case STOREN:
-        {
-            const int len = strlen(inst->value.str);
-            auto v = (var*)malloc(sizeof(var) + len + 1);
-            v->init(inst->type, inst->value.str);
-        }
+        vm->reg.store(inst->reg, vm->ctx->add(inst));
+        break;
+    case LOAD:
+        vm->reg.load(inst->reg, vm->ctx->get(inst->value.str));
         break;
     default:
         return false;

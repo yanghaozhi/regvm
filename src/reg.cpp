@@ -2,11 +2,13 @@
 
 #include "code.h"
 
+#include "var.h"
+
 bool regs::set(const int id, const code* inst)
 {
     if (valid_id(id) == false) return false;
 
-    clear(id);
+    store(id);
 
     types[id] = inst->type;
     froms[id] = NULL;
@@ -15,16 +17,13 @@ bool regs::set(const int id, const code* inst)
     return true;
 }
 
-bool regs::set(const int id, var* v)
+bool regs::load(const int id, var* v)
 {
-    if (valid_id(id) == false) return false;
+    if ((v == NULL) || (valid_id(id) == false)) return false;
 
-    clear(id);
+    store(id);
 
-    if (v->acquire(id) == false)
-    {
-        return false;
-    }
+    v->set_reg(id);
 
     types[id] = v->type;
     froms[id] = v;
@@ -33,20 +32,54 @@ bool regs::set(const int id, var* v)
     return true;
 }
 
-void regs::clear(const int id)
+bool regs::store(const int id)
 {
+    if (valid_id(id) == false) return false;
+
     var* v = froms[id];
     if (v == NULL)
     {
-        return;
+        return true;
     }
     if ((v->type != types[id]) || (v->reg != id))
     {
         //TODO : error handler
-        return;
+        return false;
     }
 
     v->value = values[id];
 
-    v->release();
+    //froms[id] = NULL;
+    //v->release();
+
+    return true;
 }
+
+bool regs::store(const int id, var* v)
+{
+    if ((v == NULL) || (valid_id(id) == false)) return false;
+
+    if (v->reg == id) return store(id);
+
+    if (v->type != types[id])
+    {
+        //TODO : error handler
+        return false;
+    }
+
+    var* old = froms[id];
+    if (old != NULL)
+    {
+        //do NOT writeback
+        old->release();
+    }
+
+    froms[id] = v;
+    v->set_reg(id);
+
+    v->value = values[id];
+    v->reg = id;
+
+    return true;
+}
+

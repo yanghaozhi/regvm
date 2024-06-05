@@ -4,10 +4,12 @@
 #include <string.h>
 
 #include "reg.h"
+#include "context.h"
 
 struct regvm
 {
-    regs  reg;
+    regs        reg;
+    context*    ctx;
 };
 
 

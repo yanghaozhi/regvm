@@ -23,9 +23,12 @@ public:
     }
 
     bool set(const int id, const code* inst);
-    bool set(const int id, var* v);
+
+    bool store(const int id);
+    bool store(const int id, var* v);
+
+    bool load(const int id, var* v);
 
 private:
-    void clear(const int id);
 };
 
