@@ -7,7 +7,7 @@
 
 context::context(scope& g, context* cur) : globals(g)
 {
-    scopes.emplace_back();
+    scopes.emplace_back(scopes.size() + 1);
 
     up = cur;
     down = NULL;
@@ -28,7 +28,7 @@ context::~context()
 
 void context::enter_block()
 {
-    scopes.emplace_back();
+    scopes.emplace_back(scopes.size() + 1);
 }
 
 void context::leave_block()

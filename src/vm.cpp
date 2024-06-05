@@ -17,7 +17,7 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
-regvm::regvm() : reg(), globals(), ctx(new context(globals))
+regvm::regvm() : reg(), globals(0), ctx(new context(globals))
 {
 }
 

@@ -11,7 +11,7 @@ struct var;
 
 class context
 {
-    friend class debug;
+    friend class error;
 
 public:
     context(scope& globals, context* cur = NULL);

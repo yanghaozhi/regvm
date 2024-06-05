@@ -14,7 +14,7 @@ private:
     var*        froms[16];
     uint8_t     types[16];
 
-    friend class debug;
+    friend class error;
 
 public:
     inline static bool valid_id(const int id)

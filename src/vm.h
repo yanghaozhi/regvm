@@ -13,6 +13,7 @@ struct regvm
     regs        reg;
     scope       globals;
     context*    ctx;
+    error       err;
 
     regvm();
     ~regvm();

@@ -6,7 +6,7 @@
 #include <code.h>
 #include <debug.h>
 
-void dump_reg_info(int id, int64_t value, void* var, int type, void* arg)
+void dump_reg_info(void* arg, int id, int64_t value, void* var, int type)
 {
     if (id == 1)
     {
@@ -15,7 +15,7 @@ void dump_reg_info(int id, int64_t value, void* var, int type, void* arg)
     printf(" %d\t%lld\t%d\t%p\n", id, (long long)value, type, var);
 }
 
-void dump_var_info(int scope, const char* name, int64_t value, int type, int reg, int ref, void* arg)
+void dump_var_info(void* arg, int scope, const char* name, int64_t value, int type, int reg, int ref)
 {
     printf("\e[32m%d\e[0m\t%s\t%lld\t%d\t%d\t%d\n", scope, name, (long long)value, type, reg, ref);
 }

@@ -6,7 +6,7 @@
 #include "var.h"
 
 
-scope::scope()
+scope::scope(int i) : id(i)
 {
     memset(table, 0, sizeof(table));
 }

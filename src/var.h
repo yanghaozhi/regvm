@@ -13,7 +13,7 @@ union uvalue
 class var
 {
 private:
-    friend class debug;
+    friend class error;
 
     int16_t             ref;
 

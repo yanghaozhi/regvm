@@ -7,13 +7,15 @@ struct var;
 
 class scope
 {
-    friend class debug;
+    friend class error;
 
 public:
-    scope();
+    scope(int id);
     scope(const scope&)     = delete;
     scope(const scope&&)    = delete;
     ~scope();
+
+    const int               id;
 
     bool add(var* v);
     var* get(uint32_t key, const char* name, int len);
@@ -38,11 +40,11 @@ private:
     void clear_list(items* it);
     void push_list(items* it, var* v);
 
-    template <typename T> void for_each(T cb)
+    template <typename T> void for_each(T cb) const
     {
         for (int i = 0; i < size; i++)
         {
-            cb(table[i].v);
+            cb(id, table[i].v);
 
             auto it = table[i].next;
             while (it != NULL)
@@ -53,7 +55,7 @@ private:
                     {
                         return;
                     }
-                    cb(it->vars[i]);
+                    cb(id, it->vars[i]);
                 }
                 it = it->next;
             }
