@@ -25,7 +25,7 @@ public:
         return (id <= 0 || (id > 15)) ? false : true;
     }
 
-    bool set(const int id, const code* inst);
+    bool set(const code_base_t code, const uint64_t num);
 
     bool store(const int id);
     bool store(const int id, var* v);

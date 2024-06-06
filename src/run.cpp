@@ -8,30 +8,42 @@
 extern "C"
 {
 
-bool regvm_exe_one(struct regvm* vm, const struct code* inst)
+int regvm_exe_one(struct regvm* vm, const code2_t* code)
 {
-    switch (inst->id)
+    int read_bytes = 2;
+    switch (code->base.id)
     {
     case NOP:
         return true;
-    case SET:
-        vm->reg.set(inst->reg, inst);
+    case SET4:
+        vm->reg.set(code->base, ((const code4_t*)code)->num);
+        read_bytes += 2;
+        break;
+    case SET6:
+        vm->reg.set(code->base, ((const code6_t*)code)->num);
+        read_bytes += 4;
+        break;
+    case SET10:
+        vm->reg.set(code->base, ((const code10_t*)code)->num);
+        read_bytes += 8;
         break;
     case STORE:
-        if (inst->value.str == NULL)
+        vm->reg.store(code->base.reg);
+        break;
+    case STORE10:
         {
-            vm->reg.store(inst->reg);
+            code10_t* c = (code10_t*)code;
+            c->base.type = vm->reg.type(code->base.reg);
+            vm->reg.store(code->base.reg, vm->ctx->add(c));
         }
-        else
-        {
-            vm->reg.store(inst->reg, vm->ctx->add(inst, vm->reg.type(inst->reg)));
-        }
+        read_bytes += 8;
         break;
     case LOAD:
-        vm->reg.load(inst->reg, vm->ctx->get(inst->value.str));
+        vm->reg.load(code->base.reg, vm->ctx->get(((code10_t*)code)->str));
+        read_bytes += 8;
         break;
     case BLOCK:
-        switch (inst->type)
+        switch (code->base.type)
         {
         case 1:
             vm->ctx->enter_block();
@@ -44,9 +56,9 @@ bool regvm_exe_one(struct regvm* vm, const struct code* inst)
         }
         break;
     default:
-        return false;
+        return -1;
     };
-    return true;
+    return read_bytes;
 }
 
 bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* pages)

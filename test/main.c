@@ -63,38 +63,146 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     regvm_exe_one(vm, &c);
 
 
+void read_file(FILE* fp, struct regvm* vm)
+{
+    union 
+    {
+        char            data[10];
+        code2_t         code2;
+        code4_t         code4;
+        code6_t         code6;
+        code10_t        code10;
+    }                   inst;
+
+    char id[16];
+    int type;
+    int reg;
+
+    char ex;
+    char buf[1024];
+    char data[1024];
+
+    while (fgets(buf, sizeof(buf), fp) != NULL)
+    {
+        buf[sizeof(buf) - 1] = '\0';
+        data[0] = '\0';
+
+        sscanf(buf, "%16s %d %d %c %1024[^\n]", id, &type, &reg, &ex, data);
+        id[sizeof(id) - 1] = '\0';
+        data[sizeof(data) - 1] = '\0';
+        if (id[0] == '#') continue;
+
+        memset(&inst, 0, sizeof(inst));
+
+        switch (*(uint32_t*)id)
+        {
+#define MAP(k, v)                       \
+        case k:                         \
+            inst.code2.base.id = v;     \
+            break;
+            //MAP(0x00544553, SET);
+            MAP(0x524F5453, STORE);
+            MAP(0x44414F4C, LOAD);
+            MAP(0x434F4C42, BLOCK);
+            MAP(0x00504F4E, NOP)
+#undef MAP
+        default:
+            printf("\e[31m --- 0x%X : %s \e[0m\n", *(uint32_t*)id, id);
+            continue;
+        }
+        inst.code2.base.type = type;
+        inst.code2.base.reg = reg;
+
+        int v = 0;
+        int b = 2;
+        switch (ex)
+        {
+        default:
+        case 'O':
+            break;
+        case '2':
+            sscanf(data, "%d", &v);
+            inst.code4.num = v;
+            b += 2;
+            break;
+        case '4':
+            sscanf(data, "%d", &v);
+            inst.code6.num = v;
+            b += 4;
+            break;
+        case '8':
+            sscanf(data, "%ld", &inst.code10.num);
+            b += 8;
+            break;
+        case 'S':
+            inst.code10.str = data;
+            b += 8;
+            break;
+        }
+        printf("--- ");
+        for (unsigned int i = 0; i < sizeof(inst); i++)
+        {
+            printf(" %02X", (unsigned char)inst.data[i]);
+        }
+        code_base_t* c = &inst.code2.base;
+        printf(" : %02d : %s : %d\n", b, id, c->id);
+
+        int r = regvm_exe_one(vm, &inst.code2);
+        if (r < 0)
+        {
+            return;
+        }
+        //printf("--- %d,%d,%d,%c,%s\n", inst.code.id, inst.code.type, inst.code.reg, ex, data);
+    };
+}
+
+
 int main(int argc, char** argv)
 {
     struct regvm* vm =  regvm_init();
-    struct code c = {0};
-    //bool r = false;
 
-    RUN(.id = SET, .type = INTEGER, .reg = 1, .ext = 0, .value.num = 123);
+    FILE* fp = stdin;
+    if (argc > 1)
+    {
+        fp = fopen(argv[1], "r");
+    }
 
-    regvm_debug_reg_callback(vm, dump_reg_info, NULL);
+    read_file(fp, vm);
 
-    RUN(.id = STORE, .type = 0, .reg = 1, .ext = 0, .value.str = "abc");
+    if (argc > 1)
+    {
+        fclose(fp);
+    }
+
+    //struct code c = {0};
+    ////bool r = false;
+
+    //RUN(.id = SET, .type = INTEGER, .reg = 1, .ext = 0, .value.num = 123);
 
     //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
 
-    RUN(.id = LOAD, .type = 0, .reg = 2, .ext = 0, .value.str = "abc");
+    //RUN(.id = STORE, .type = 0, .reg = 1, .ext = 0, .value.str = "abc");
 
-    regvm_debug_reg_callback(vm, dump_reg_info, NULL);
+    ////regvm_debug_reg_callback(vm, dump_reg_info, NULL);
 
-    regvm_debug_var_callback(vm, dump_var_info, NULL);
+    //RUN(.id = LOAD, .type = 0, .reg = 2, .ext = 0, .value.str = "abc");
 
-    RUN(.id = BLOCK, .type = 1, .reg = 0, .ext = 0, .value.str = NULL);
+    //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
 
-    RUN(.id = SET, .type = STRING, .reg = 3, .ext = 0, .value.str = "def");
+    //regvm_debug_var_callback(vm, dump_var_info, NULL);
 
-    RUN(.id = STORE, .type = 0, .reg = 3, .ext = 0, .value.str = "abc");
+    //RUN(.id = BLOCK, .type = 1, .reg = 0, .ext = 0, .value.str = NULL);
 
-    regvm_debug_reg_callback(vm, dump_reg_info, NULL);
-    regvm_debug_var_callback(vm, dump_var_info, NULL);
+    //RUN(.id = SET, .type = STRING, .reg = 3, .ext = 0, .value.str = "def");
 
-    RUN(.id = BLOCK, .type = 2, .reg = 0, .ext = 0, .value.str = NULL);
+    //RUN(.id = STORE, .type = 0, .reg = 3, .ext = 0, .value.str = "abc");
 
-    regvm_debug_var_callback(vm, dump_var_info, NULL);
+    //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
+    //regvm_debug_var_callback(vm, dump_var_info, NULL);
+
+    //RUN(.id = BLOCK, .type = 2, .reg = 0, .ext = 0, .value.str = NULL);
+
+    //regvm_debug_var_callback(vm, dump_var_info, NULL);
 
     regvm_exit(vm);
 

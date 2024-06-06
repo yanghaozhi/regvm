@@ -1,0 +1,9 @@
+SET     1   1   2   123
+SET     1   4   4   123
+SET     1   5   8   321
+STORE   0   1   S   abc
+LOAD    0   2   S   abc
+STORE   0   2   0
+BLOCK   0   0   0
+SET     3   3   S   def
+BLOCK   1   0   O

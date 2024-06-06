@@ -39,9 +39,9 @@ void context::leave_block()
     scopes.pop_front();
 }
 
-var* context::add(const code* inst, uint8_t type)
+var* context::add(const code10_t* code)
 {
-    auto v = var::create(type, inst->value.str);
+    auto v = var::create(code->base.type, code->str);
     scopes.front().add(v);
     return (v->release() == true) ? v : NULL;
 }

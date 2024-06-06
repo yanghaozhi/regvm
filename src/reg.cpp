@@ -24,15 +24,15 @@ regs::~regs()
     }
 }
 
-bool regs::set(const int id, const code* inst)
+bool regs::set(const code_base_t code, const uint64_t num)
 {
-    if (valid_id(id) == false) return false;
+    if (valid_id(code.id) == false) return false;
 
-    store(id);
+    store(code.id);
 
-    types[id] = inst->type;
-    froms[id] = NULL;
-    values[id].num = inst->value.num;
+    types[code.id] = code.type;
+    froms[code.id] = NULL;
+    values[code.id].num = num;
 
     return true;
 }

@@ -26,7 +26,7 @@ public:
     void enter_block();
     void leave_block();
 
-    var* add(const code* inst, uint8_t type);
+    var* add(const code10_t* code);
 
     var* get(const char* name) const;
 
