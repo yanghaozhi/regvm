@@ -53,11 +53,11 @@ enum CODE_ID
 //| LOAD    | N/A   | to    | N/A   | var name          |
     LOAD,       //load var as $name to $reg
 //+---------+-------+-------+-------+-------------------+
-//| STORE   | N/A   | from  | N/A   | N/A               |
-    STORE,       //store $reg to it's source var
+//| STORE   | N/A   | from  | N/A   | var name          |
+    STORE,       //store $reg to var if var name is NULL, writeback to source
 //+---------+-------+-------+-------+-------------------+
-//| STOREN  | N/A   | from  | N/A   | var name          |
-    STOREN,      //store $reg to var as $name
+//| STOREN  | N/A   | from  | N/A   | N/A               |
+    BLOCK,      //TYPE 1 means enter block, 2 means exit block
 };
 
 
