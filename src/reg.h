@@ -17,6 +17,9 @@ private:
     friend class error;
 
 public:
+    regs();
+    ~regs();
+
     inline static bool valid_id(const int id)
     {
         return (id <= 0 || (id > 15)) ? false : true;

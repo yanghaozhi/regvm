@@ -15,6 +15,7 @@ bool regvm_debug_reg_callback(struct regvm* vm, reg_cb cb, void* arg)
             {
                 cb(arg, info);
             }, &info);
+    cb(arg, (regvm_reg_info*)(intptr_t)-1);
     return true;
 }
 
@@ -27,6 +28,7 @@ bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
             {
                 cb(arg, info);
             }, &info);
+    cb(arg, (regvm_var_info*)(intptr_t)-1);
     return true;
 }
 

@@ -12,16 +12,19 @@ extern "C"
 {
 #endif
 
+
+union regvm_uvalue
+{
+    int64_t             num;
+    double              dbl;
+    const char*         str;
+};
+
 struct regvm_reg_info
 {
     int                 id;
     int                 type;
-    union
-    {
-        int64_t         num;
-        double          dbl;
-        const char*     str;
-    }                   value;
+    union regvm_uvalue  value;
     void*               from;
 };
 typedef void (*reg_cb)(void* arg, const struct regvm_reg_info* info);
@@ -34,12 +37,7 @@ struct regvm_var_info
     int                 type;
     int                 reg;
     int                 scope;
-    union
-    {
-        int64_t         num;
-        double          dbl;
-        const char*     str;
-    }                   value;
+    union regvm_uvalue  value;
     const char*         func;
     const char*         name;
 };

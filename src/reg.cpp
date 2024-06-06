@@ -1,8 +1,28 @@
 #include "reg.h"
 
+#include <string.h>
+
 #include "code.h"
 
 #include "var.h"
+
+regs::regs()
+{
+    memset(values, 0, sizeof(values));
+    memset(froms, 0, sizeof(froms));
+    memset(types, 0, sizeof(types));
+}
+
+regs::~regs()
+{
+    for (unsigned int i = 1; i < sizeof(types); i++)
+    {
+        if (froms[i] != NULL)
+        {
+            froms[i]->release();
+        }
+    }
+}
 
 bool regs::set(const int id, const code* inst)
 {
