@@ -17,6 +17,9 @@ public:
     context(scope& globals, context* cur = NULL);
     ~context();
 
+    src_location*       cur;
+    src_location        func;
+
     context*            up;
     context*            down;
 
@@ -25,7 +28,7 @@ public:
 
     var* add(const code* inst, uint8_t type);
 
-    var* get(const char* name);
+    var* get(const char* name) const;
 
 private:
     scope&              globals;

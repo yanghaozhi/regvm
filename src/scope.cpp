@@ -44,7 +44,7 @@ bool scope::add(var* v)
     return true;
 }
 
-var* scope::get(uint32_t key, const char* name, int len)
+var* scope::get(uint32_t key, const char* name, int len) const
 {
     const int i = key & 0x0F;
     if (table[i].v == NULL)

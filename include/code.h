@@ -23,6 +23,13 @@ struct code
 
 typedef struct code     code_page[1024];
 
+struct src_location
+{
+    int                 line;
+    const char*         file;
+    const char*         func;
+};
+
 enum CODE_TYPE
 {
     NONE        = 0,

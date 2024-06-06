@@ -6,18 +6,18 @@
 #include <code.h>
 #include <debug.h>
 
-void dump_reg_info(void* arg, int id, int64_t value, void* var, int type)
+void dump_reg_info(void* arg, const struct regvm_reg_info* info)
 {
-    if (id == 1)
+    if (info->id == 1)
     {
         printf("\e[33m id\tvalue\ttype\tvar \e[0m\n");
     }
-    printf(" %d\t%lld\t%d\t%p\n", id, (long long)value, type, var);
+    printf(" %d\t%lld\t%d\t%p\n", info->id, (long long)info->value.num, info->type, info->from);
 }
 
-void dump_var_info(void* arg, int scope, const char* name, int64_t value, int type, int reg, int ref)
+void dump_var_info(void* arg, const struct regvm_var_info* info)
 {
-    printf("\e[32m%d\e[0m\t%s\t%lld\t%d\t%d\t%d\n", scope, name, (long long)value, type, reg, ref);
+    printf("%lld\t%d\t%d\t%d\t\e[32m%s @ %s @ %d\e[0m\n", (long long)info->value.num, info->type, info->reg, info->ref, info->name, info->func, info->scope);
 }
 
 int main(int argc, char** argv)

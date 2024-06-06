@@ -8,19 +8,23 @@ extern "C"
 
 bool regvm_debug_reg_callback(struct regvm* vm, reg_cb cb, void* arg)
 {
-    vm->err.reg_info(vm->reg, [cb, arg](int id, int64_t value, void* from, int type)
+    regvm_reg_info info;
+    memset(&info, 0, sizeof(info));
+    error::reg_info(vm->reg, [cb, arg](const regvm_reg_info* info)
             {
-                cb(arg, id, value, from, type);
-            });
+                cb(arg, info);
+            }, &info);
     return true;
 }
 
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
 {
-    vm->err.ctx_vars(*vm->ctx, [cb, arg](int id, var* v, int ref)
+    regvm_var_info info;
+    memset(&info, 0, sizeof(info));
+    error::ctx_vars(*vm->ctx, [cb, arg](const regvm_var_info* info)
             {
-                cb(arg, id, v->name, v->value.num, v->type, v->reg, ref);
-            });
+                cb(arg, info);
+            }, &info);
     return true;
 }
 

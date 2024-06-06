@@ -5,9 +5,12 @@
 
 #include "var.h"
 
-context::context(scope& g, context* cur) : globals(g)
+context::context(scope& g, context* cur) :
+    cur(NULL),
+    func(),
+    globals(g)
 {
-    scopes.emplace_back(scopes.size() + 1);
+    scopes.emplace_front(scopes.size() + 1);
 
     up = cur;
     down = NULL;
@@ -28,28 +31,28 @@ context::~context()
 
 void context::enter_block()
 {
-    scopes.emplace_back(scopes.size() + 1);
+    scopes.emplace_front(scopes.size() + 1);
 }
 
 void context::leave_block()
 {
-    scopes.pop_back();
+    scopes.pop_front();
 }
 
 var* context::add(const code* inst, uint8_t type)
 {
     auto v = var::create(type, inst->value.str);
-    scopes.back().add(v);
+    scopes.front().add(v);
     return (v->release() == true) ? v : NULL;
 }
 
-var* context::get(const char* name)
+var* context::get(const char* name) const
 {
     const int l = strlen(name);
     uint32_t h = var::calc_hash(name, l);
-    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it)
+    for (const auto& it : scopes)
     {
-        auto v = it->get(h, name, l);
+        auto v = it.get(h, name, l);
         if (v != NULL)
         {
             return v;

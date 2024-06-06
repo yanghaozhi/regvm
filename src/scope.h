@@ -18,7 +18,7 @@ public:
     const int               id;
 
     bool add(var* v);
-    var* get(uint32_t key, const char* name, int len);
+    var* get(uint32_t key, const char* name, int len) const;
 
 private:
     struct items
@@ -40,25 +40,4 @@ private:
     void clear_list(items* it);
     void push_list(items* it, var* v);
 
-    template <typename T> void for_each(T cb) const
-    {
-        for (int i = 0; i < size; i++)
-        {
-            cb(id, table[i].v);
-
-            auto it = table[i].next;
-            while (it != NULL)
-            {
-                for (int i = 0; i < items::size; i++)
-                {
-                    if (it->vars[i] == NULL)
-                    {
-                        return;
-                    }
-                    cb(id, it->vars[i]);
-                }
-                it = it->next;
-            }
-        }
-    }
 };
