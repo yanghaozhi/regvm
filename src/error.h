@@ -74,7 +74,7 @@ public:
     {
         //cb(vm->reg.values[i].num, vm->reg.froms[i], vm->reg.types[i]);
         const int size = sizeof(reg.types);
-        for (int i = 1; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
             info->id = i;
             info->type = reg.types[i];
@@ -96,6 +96,7 @@ public:
             info->value.num = v->value.num;
             info->name = v->name;
             info->func = f;
+            info->var = v;
             cb(info);
         };
         scope_vars(ctx.globals, func);

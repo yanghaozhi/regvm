@@ -15,7 +15,7 @@ regs::regs()
 
 regs::~regs()
 {
-    for (unsigned int i = 1; i < sizeof(types); i++)
+    for (unsigned int i = 0; i < sizeof(types); i++)
     {
         if (froms[i] != NULL)
         {
@@ -100,6 +100,8 @@ bool regs::store(const int id, var* v)
         //do NOT writeback
         old->release();
     }
+
+    v->acquire();
 
     froms[id] = v;
     v->set_reg(id);

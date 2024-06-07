@@ -9,7 +9,7 @@
 var::var(uint8_t t, const char* n, const int l) :
     ref(1),
     type(t),
-    reg(0),
+    reg(-1),
     name_len(l),
     hash(calc_hash(n, l))
 {

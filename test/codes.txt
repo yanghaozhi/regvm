@@ -6,8 +6,11 @@ TRAP    8   0   $0
 STORE   S   1   $1   abc
 TRAP    8   1   $1
 LOAD    S   0   $2   abc
+TRAP    8   1   $1
 STORE   0   0   $2   
-TRAP    8   1   $0
 BLOCK   0
 SET     S   3   $3   def
+TRAP    8   1   $0
 BLOCK   0
+TRAP    8   1   $0
+TRAP    8   0   $0

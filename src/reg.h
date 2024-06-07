@@ -22,7 +22,7 @@ public:
 
     inline static bool valid_id(const int id)
     {
-        return (id <= 0 || (id > 15)) ? false : true;
+        return (id < 0 || (id > 15)) ? false : true;
     }
 
     bool set(const code_base_t code, const uint64_t num);

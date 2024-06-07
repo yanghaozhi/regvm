@@ -47,12 +47,12 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     switch ((intptr_t)info)
     {
     case 0:
-        printf("\e[32m type\treg\tref\tname @ func @ scope\tvalue\e[0m\n");
+        printf("\e[32m type\treg\tref\tname @ func @ scope\tptr\tvalue\e[0m\n");
         break;
     case -1:
         break;
     default:
-        printf(" %d\t%d\t%d\t%s @ %s @ %d\t", info->type, info->reg, info->ref, info->name, info->func, info->scope);
+        printf(" %d\t%d\t%d\t%s @ %s @ %d\t%p\t", info->type, info->reg, info->ref, info->name, info->func, info->scope, info->var);
         print_uvalue(info->type, info->value);
         break;
     }
@@ -101,7 +101,7 @@ int read_file(FILE* fp, struct regvm* vm)
     int read_bytes = 0;
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
-        if (id[0] == '#') continue;
+        if (buf[0] == '#') continue;
 
         buf[sizeof(buf) - 1] = '\0';
         data[0] = '\0';

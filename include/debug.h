@@ -40,6 +40,7 @@ struct regvm_var_info
     union regvm_uvalue  value;
     const char*         func;
     const char*         name;
+    const void*         var;
 };
 typedef void (*var_cb)(void* arg, const struct regvm_var_info* info);
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
