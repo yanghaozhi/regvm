@@ -23,8 +23,8 @@ int regvm_exe_one(struct regvm* vm, const code0_t* code)
     int read_bytes = 2;
     switch (code->base.id)
     {
-    case NOP:
-        return true;
+    case EXIT:
+        return -1;
     case TRAP:
         debug_info(vm, ((const code8_t*)code));
         read_bytes += 8;

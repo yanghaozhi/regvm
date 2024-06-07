@@ -174,7 +174,6 @@ int read_file(FILE* fp, struct regvm* vm)
             //EXT_STR(0x524F5453, STORE)
             EXT_STR(0x44414F4C, LOAD);
             FIX_LEN(0x434F4C42, BLOCK);
-            FIX_LEN(0x00504F4E, NOP);
 #undef FIX_LEN
 #undef EXT_STR
         default:

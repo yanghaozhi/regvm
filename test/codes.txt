@@ -14,3 +14,4 @@ TRAP    8   1   $0
 BLOCK   0
 TRAP    8   1   $0
 TRAP    8   0   $0
+EXIT

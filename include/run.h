@@ -15,6 +15,9 @@ struct regvm* regvm_init();
 
 bool regvm_exit(struct regvm* vm);
 
+struct regvm;
+typedef int (*trap_callback)(struct regvm* vm, int type, int reg);
+
 //return the bytes has read
 int regvm_exe_one(struct regvm* vm, const code0_t* code);
 
