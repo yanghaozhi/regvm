@@ -58,6 +58,22 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     }
 }
 
+int dump_trap_callback(struct regvm* vm, int type, int reg)
+{
+    switch (type)
+    {
+    case 0:
+        regvm_debug_reg_callback(vm, dump_reg_info, NULL);
+        break;
+    case 1:
+        regvm_debug_var_callback(vm, dump_var_info, NULL);
+        break;
+    default:
+        return -1;
+    }
+    return 0;
+}
+
 #define RUN(...)                        \
     c = (struct code){__VA_ARGS__};     \
     regvm_exe_one(vm, &c);
@@ -90,7 +106,7 @@ int read_file(FILE* fp, struct regvm* vm)
         buf[sizeof(buf) - 1] = '\0';
         data[0] = '\0';
 
-        sscanf(buf, "%16s %c %d %d %1024[^\n]", id, &ex, &type, &reg, data);
+        sscanf(buf, "%16s %c %d $%d %1024[^\n]", id, &ex, &type, &reg, data);
         id[sizeof(id) - 1] = '\0';
         data[sizeof(data) - 1] = '\0';
 
@@ -140,7 +156,22 @@ int read_file(FILE* fp, struct regvm* vm)
                 return -1;
             }
             break;
-            EXT_STR(0x524F5453, STORE)
+        case 0x50415254:
+            inst.code8.base.id = TRAP;
+            inst.code8.other = dump_trap_callback;
+            break;
+        case 0x524F5453:
+            if (ex == 'S')
+            {
+                inst.code0.base.id = STORE8;
+                inst.code8.str = data;
+            }
+            else
+            {
+                inst.code0.base.id = STORE;
+            }
+            break;
+            //EXT_STR(0x524F5453, STORE)
             EXT_STR(0x44414F4C, LOAD);
             FIX_LEN(0x434F4C42, BLOCK);
             FIX_LEN(0x00504F4E, NOP);
@@ -150,8 +181,8 @@ int read_file(FILE* fp, struct regvm* vm)
             printf("\e[31m --- 0x%X : %s \e[0m\n", *(uint32_t*)id, id);
             continue;
         }
-        inst.code2.base.type = type;
-        inst.code2.base.reg = reg;
+        inst.code0.base.type = type;
+        inst.code0.base.reg = reg;
 
         printf("--- ");
         for (unsigned int i = 0; i < sizeof(inst); i++)
@@ -159,7 +190,7 @@ int read_file(FILE* fp, struct regvm* vm)
             printf(" %02X", (unsigned char)inst.data[i]);
         }
         code_base_t* c = &inst.code0.base;
-        printf(" : %02d : %s : %d\n", b, id, c->id);
+        printf(" : %02d : %02d : %s : %d\n", inst.code0.base.id,  b, id, c->id);
 
         int r = regvm_exe_one(vm, &inst.code0);
         if (r < 0)

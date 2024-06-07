@@ -54,6 +54,7 @@ typedef struct
         int64_t         num;
         double          dbl;
         const char*     str;
+        const void*     other;
     };
 } code8_t;
 #pragma pack()
@@ -77,6 +78,9 @@ enum CODE_TYPE
     LIST,
 };
 
+struct regvm;
+typedef int (*trap_callback)(struct regvm* vm, int type, int reg);
+
 //code name with L suffix means it need codex_t
 
 enum CODE_ID
@@ -84,6 +88,9 @@ enum CODE_ID
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| NAME    | TYPE  | REG   | v16   | v1    | v2    | VALUE             |
     NOP     = 0,
+//+---------+-------+-------+-------+-------+-------+-------------------+
+//| SET     | type  | reg   | value | N/A   | N/A  | callbak function   |
+    TRAP,   //extra for debugger, func type is trap_callback
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| SET     | type  | reg   | value | N/A   | N/A  | NONE               |
     SET2,   //set short int value $type:$value to $reg

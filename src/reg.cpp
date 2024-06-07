@@ -26,13 +26,13 @@ regs::~regs()
 
 bool regs::set(const code_base_t code, const uint64_t num)
 {
-    if (valid_id(code.id) == false) return false;
+    if (valid_id(code.reg) == false) return false;
 
-    store(code.id);
+    store(code.reg);
 
-    types[code.id] = code.type;
-    froms[code.id] = NULL;
-    values[code.id].num = num;
+    types[code.reg] = code.type;
+    froms[code.reg] = NULL;
+    values[code.reg].num = num;
 
     return true;
 }

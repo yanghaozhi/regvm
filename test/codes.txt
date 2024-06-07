@@ -1,9 +1,13 @@
-SET     2   1   1   123
-SET     4   1   4   123
-SET     8   1   5   321
-STORE   S   0   1   abc
-LOAD    S   0   2   abc
-STORE   0   0   2   
+SET     2   1   $1   123
+TRAP    8   0   $0
+SET     4   1   $4   456
+SET     8   1   $5   321
+TRAP    8   0   $0
+STORE   S   1   $1   abc
+TRAP    8   1   $1
+LOAD    S   0   $2   abc
+STORE   0   0   $2   
+TRAP    8   1   $0
 BLOCK   0
-SET     S   3   3   def
+SET     S   3   $3   def
 BLOCK   0

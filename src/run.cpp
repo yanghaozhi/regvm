@@ -1,9 +1,19 @@
 #include <run.h>
+#include <debug.h>
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "vm.h"
+
+
+static int debug_info(struct regvm* vm, const code8_t* code)
+{
+    trap_callback cb = (trap_callback)code->other;
+    cb(vm, code->base.type, code->base.reg);
+    return true;
+}
+
 
 extern "C"
 {
@@ -15,6 +25,10 @@ int regvm_exe_one(struct regvm* vm, const code0_t* code)
     {
     case NOP:
         return true;
+    case TRAP:
+        debug_info(vm, ((const code8_t*)code));
+        read_bytes += 8;
+        break;
     case SET2:
         vm->reg.set(code->base, ((const code2_t*)code)->num);
         read_bytes += 2;
@@ -32,9 +46,9 @@ int regvm_exe_one(struct regvm* vm, const code0_t* code)
         break;
     case STORE8:
         {
-            code8_t* c = (code8_t*)code;
-            c->base.type = vm->reg.type(code->base.reg);
-            vm->reg.store(code->base.reg, vm->ctx->add(c));
+            code8_t c = *(code8_t*)code;
+            c.base.type = vm->reg.type(code->base.reg);
+            vm->reg.store(code->base.reg, vm->ctx->add(&c));
         }
         read_bytes += 8;
         break;
