@@ -110,10 +110,10 @@ enum CODE_ID
     STORE,  //把reg的值回写
 //+---------+-------+-------+---------------+---------------+---------------+
 //| STORE8  | N/A   | from  | N/A           | N/A           | var name      |
-    STORE8  //把reg的值写入指定的var name
+    STORE8, //把reg的值写入指定的var name
 //+---------+-------+-------+---------------+---------------+---------------+
 //| BLOCK   | N/A   | N/A   | N/A           | N/A           | N/A           |
-    BLOCK,  //v1 0 means enter block, 1 means exit block\
+    BLOCK,  //v1 0 means enter block, 1 means exit block
 
 //+---------+-------+-------+---------------+---------------+---------------+
 //| INC     | value | reg   | N/A           | N/A           | N/A           |
