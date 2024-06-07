@@ -8,38 +8,38 @@
 extern "C"
 {
 
-int regvm_exe_one(struct regvm* vm, const code2_t* code)
+int regvm_exe_one(struct regvm* vm, const code0_t* code)
 {
     int read_bytes = 2;
     switch (code->base.id)
     {
     case NOP:
         return true;
-    case SET4:
-        vm->reg.set(code->base, ((const code4_t*)code)->num);
+    case SET2:
+        vm->reg.set(code->base, ((const code2_t*)code)->num);
         read_bytes += 2;
         break;
-    case SET6:
-        vm->reg.set(code->base, ((const code6_t*)code)->num);
+    case SET4:
+        vm->reg.set(code->base, ((const code4_t*)code)->num);
         read_bytes += 4;
         break;
-    case SET10:
-        vm->reg.set(code->base, ((const code10_t*)code)->num);
+    case SET8:
+        vm->reg.set(code->base, ((const code8_t*)code)->num);
         read_bytes += 8;
         break;
     case STORE:
         vm->reg.store(code->base.reg);
         break;
-    case STORE10:
+    case STORE8:
         {
-            code10_t* c = (code10_t*)code;
+            code8_t* c = (code8_t*)code;
             c->base.type = vm->reg.type(code->base.reg);
             vm->reg.store(code->base.reg, vm->ctx->add(c));
         }
         read_bytes += 8;
         break;
     case LOAD:
-        vm->reg.load(code->base.reg, vm->ctx->get(((code10_t*)code)->str));
+        vm->reg.load(code->base.reg, vm->ctx->get(((code8_t*)code)->str));
         read_bytes += 8;
         break;
     case BLOCK:

@@ -13,7 +13,7 @@ typedef struct
 typedef struct
 {
     code_base_t         base;
-} code2_t;
+} code0_t;
 
 typedef struct
 {
@@ -34,7 +34,7 @@ typedef struct
             uint16_t    r4     : 4;
         };
     };
-} code4_t;
+} code2_t;
 
 typedef struct
 {
@@ -44,7 +44,7 @@ typedef struct
         int32_t         num;
         float           f32;
     };
-} code6_t;
+} code4_t;
 
 typedef struct
 {
@@ -55,7 +55,7 @@ typedef struct
         double          dbl;
         const char*     str;
     };
-} code10_t;
+} code8_t;
 #pragma pack()
 
 typedef code2_t         code_page[1024];
@@ -69,11 +69,10 @@ struct src_location
 
 enum CODE_TYPE
 {
-    NONE        = 0,
+    OTHER        = 0,
     INTEGER,
     DOUBLE,
     STRING,
-    BOOL,
     MAP,
     LIST,
 };
@@ -87,9 +86,9 @@ enum CODE_ID
     NOP     = 0,
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| SET     | type  | reg   | value | N/A   | N/A  | NONE               |
-    SET4,    //set short int value $type:$value to $reg
-    SET6,    //set short int value $type:$value to $reg
-    SET10,   //set short int value $type:$value to $reg
+    SET2,   //set short int value $type:$value to $reg
+    SET4,   //set short int value $type:$value to $reg
+    SET8,   //set short int value $type:$value to $reg
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| LOAD    | N/A   | dest  | N/A   | N/A   | N/A  | var name           |
     LOAD,   //load var as $name to reg $dest
@@ -98,7 +97,7 @@ enum CODE_ID
     STORE,  //writeback reg $from to var which it comes from
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| STOREL  | N/A   | from  | N/A   | N/A   | N/A  | var name           |
-    STORE10,//store $reg to var as $name
+    STORE8, //store $reg to var as $name
 //+---------+-------+-------+-------+-------+-------+-------------------+
 //| BLOCK   | N/A   | N/A   | N/A   | op    | N/A  | var name           |
     BLOCK,  //v1 0 means enter block, 1 means exit block

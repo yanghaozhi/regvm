@@ -63,15 +63,15 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     regvm_exe_one(vm, &c);
 
 
-void read_file(FILE* fp, struct regvm* vm)
+int read_file(FILE* fp, struct regvm* vm)
 {
     union 
     {
         char            data[10];
+        code0_t         code0;
         code2_t         code2;
         code4_t         code4;
-        code6_t         code6;
-        code10_t        code10;
+        code8_t         code8;
     }                   inst;
 
     char id[16];
@@ -82,30 +82,70 @@ void read_file(FILE* fp, struct regvm* vm)
     char buf[1024];
     char data[1024];
 
+    int read_bytes = 0;
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
+        if (id[0] == '#') continue;
+
         buf[sizeof(buf) - 1] = '\0';
         data[0] = '\0';
 
-        sscanf(buf, "%16s %d %d %c %1024[^\n]", id, &type, &reg, &ex, data);
+        sscanf(buf, "%16s %c %d %d %1024[^\n]", id, &ex, &type, &reg, data);
         id[sizeof(id) - 1] = '\0';
         data[sizeof(data) - 1] = '\0';
-        if (id[0] == '#') continue;
 
         memset(&inst, 0, sizeof(inst));
 
+        int b = 2;
+        int v = 0;
         switch (*(uint32_t*)id)
         {
-#define MAP(k, v)                       \
-        case k:                         \
-            inst.code2.base.id = v;     \
+#define FIX_LEN(k, v)                       \
+        case k:                             \
+            inst.code0.base.id = v;         \
             break;
-            //MAP(0x00544553, SET);
-            MAP(0x524F5453, STORE);
-            MAP(0x44414F4C, LOAD);
-            MAP(0x434F4C42, BLOCK);
-            MAP(0x00504F4E, NOP)
-#undef MAP
+#define EXT_STR(k, v)                       \
+        case k:                             \
+            inst.code8.base.id = v;         \
+            b += 8;                         \
+            inst.code8.str = data;          \
+            break;
+        case 0x00544553:
+            switch (ex)
+            {
+            case '2':
+                b += 2;
+                inst.code2.base.id = SET2;
+                sscanf(data, "%d", &v);
+                inst.code2.num = v;
+                break;
+            case '4':
+                b += 4;
+                inst.code4.base.id = SET4;
+                sscanf(data, "%d", &v);
+                inst.code4.num = v;
+                break;
+            case '8':
+                b += 8;
+                inst.code8.base.id = SET8;
+                sscanf(data, "%ld", &inst.code8.num);
+                break;
+            case 'S':
+                b += 8;
+                inst.code8.base.id = SET8;
+                inst.code8.str = data;
+                break;
+            default:
+                printf("\e[31m --- 0x%X : %s %c \e[0m\n", *(uint32_t*)id, id, ex);
+                return -1;
+            }
+            break;
+            EXT_STR(0x524F5453, STORE)
+            EXT_STR(0x44414F4C, LOAD);
+            FIX_LEN(0x434F4C42, BLOCK);
+            FIX_LEN(0x00504F4E, NOP);
+#undef FIX_LEN
+#undef EXT_STR
         default:
             printf("\e[31m --- 0x%X : %s \e[0m\n", *(uint32_t*)id, id);
             continue;
@@ -113,47 +153,22 @@ void read_file(FILE* fp, struct regvm* vm)
         inst.code2.base.type = type;
         inst.code2.base.reg = reg;
 
-        int v = 0;
-        int b = 2;
-        switch (ex)
-        {
-        default:
-        case 'O':
-            break;
-        case '2':
-            sscanf(data, "%d", &v);
-            inst.code4.num = v;
-            b += 2;
-            break;
-        case '4':
-            sscanf(data, "%d", &v);
-            inst.code6.num = v;
-            b += 4;
-            break;
-        case '8':
-            sscanf(data, "%ld", &inst.code10.num);
-            b += 8;
-            break;
-        case 'S':
-            inst.code10.str = data;
-            b += 8;
-            break;
-        }
         printf("--- ");
         for (unsigned int i = 0; i < sizeof(inst); i++)
         {
             printf(" %02X", (unsigned char)inst.data[i]);
         }
-        code_base_t* c = &inst.code2.base;
+        code_base_t* c = &inst.code0.base;
         printf(" : %02d : %s : %d\n", b, id, c->id);
 
-        int r = regvm_exe_one(vm, &inst.code2);
+        int r = regvm_exe_one(vm, &inst.code0);
         if (r < 0)
         {
-            return;
+            return -1;
         }
-        //printf("--- %d,%d,%d,%c,%s\n", inst.code.id, inst.code.type, inst.code.reg, ex, data);
+        read_bytes += b;
     };
+    return read_bytes;
 }
 
 
@@ -167,42 +182,13 @@ int main(int argc, char** argv)
         fp = fopen(argv[1], "r");
     }
 
-    read_file(fp, vm);
+    int r = read_file(fp, vm);
+    printf("\n\n%d bytes total\n", r);
 
     if (argc > 1)
     {
         fclose(fp);
     }
-
-    //struct code c = {0};
-    ////bool r = false;
-
-    //RUN(.id = SET, .type = INTEGER, .reg = 1, .ext = 0, .value.num = 123);
-
-    //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
-
-    //RUN(.id = STORE, .type = 0, .reg = 1, .ext = 0, .value.str = "abc");
-
-    ////regvm_debug_reg_callback(vm, dump_reg_info, NULL);
-
-    //RUN(.id = LOAD, .type = 0, .reg = 2, .ext = 0, .value.str = "abc");
-
-    //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
-
-    //regvm_debug_var_callback(vm, dump_var_info, NULL);
-
-    //RUN(.id = BLOCK, .type = 1, .reg = 0, .ext = 0, .value.str = NULL);
-
-    //RUN(.id = SET, .type = STRING, .reg = 3, .ext = 0, .value.str = "def");
-
-    //RUN(.id = STORE, .type = 0, .reg = 3, .ext = 0, .value.str = "abc");
-
-    //regvm_debug_reg_callback(vm, dump_reg_info, NULL);
-    //regvm_debug_var_callback(vm, dump_var_info, NULL);
-
-    //RUN(.id = BLOCK, .type = 2, .reg = 0, .ext = 0, .value.str = NULL);
-
-    //regvm_debug_var_callback(vm, dump_var_info, NULL);
 
     regvm_exit(vm);
 

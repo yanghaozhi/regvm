@@ -39,7 +39,7 @@ void context::leave_block()
     scopes.pop_front();
 }
 
-var* context::add(const code10_t* code)
+var* context::add(const code8_t* code)
 {
     auto v = var::create(code->base.type, code->str);
     scopes.front().add(v);
