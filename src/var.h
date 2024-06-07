@@ -21,8 +21,8 @@ private:
     ~var();
 
 public:
-    const uint8_t       type;
-    uint8_t             reg;
+    const uint16_t      type;
+    int16_t             reg;
     const uint16_t      name_len;
     const uint32_t      hash;
 
