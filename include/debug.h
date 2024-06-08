@@ -15,7 +15,8 @@ extern "C"
 
 union regvm_uvalue
 {
-    int64_t             num;
+    int64_t             sint;
+    uint64_t            uint;
     double              dbl;
     const char*         str;
 };
@@ -23,6 +24,7 @@ union regvm_uvalue
 struct regvm_reg_info
 {
     int                 id;
+    int                 ref;
     int                 type;
     union regvm_uvalue  value;
     void*               from;

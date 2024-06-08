@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <run.h>
+#include <irq.h>
 #include <code.h>
+#include <regvm.h>
 #include <debug.h>
 
 
@@ -11,13 +12,16 @@ void print_uvalue(int type, union regvm_uvalue uv)
 {
     switch (type)
     {
-    case INTEGER:
-        printf("%lld\n", (long long)uv.num);
+    case TYPE_SIGNED:
+        printf("%lld\n", (long long)uv.sint);
         break;
-    case STRING:
+    case TYPE_UNSIGNED:
+        printf("%llu\n", (unsigned long long)uv.uint);
+        break;
+    case TYPE_STRING:
         printf("%s\n", uv.str);
         break;
-    case DOUBLE:
+    case TYPE_DOUBLE:
         printf("%f\n", uv.dbl);
         break;
     default:
@@ -26,18 +30,28 @@ void print_uvalue(int type, union regvm_uvalue uv)
     }
 }
 
+struct dump_arg
+{
+    int     reg;
+};
+
 void dump_reg_info(void* arg, const struct regvm_reg_info* info)
 {
+    struct dump_arg* p = arg;
+
     switch ((intptr_t)info)
     {
     case 0:
-        printf("\e[33m id\ttype\tvar\tvalue \e[0m\n");
+        printf("\e[33m id\ttype\tref\tvar\tvalue \e[0m\n");
         break;
     case -1:
         break;
     default:
-        printf(" %d\t%d\t%p\t", info->id, info->type, info->from);
-        print_uvalue(info->type, info->value);
+        if ((p->reg < 0) || (p->reg == info->id))
+        {
+            printf(" %d\t%d\t%d\t%p\t", info->id, info->type, info->ref, info->from);
+            print_uvalue(info->type, info->value);
+        }
         break;
     }
 }
@@ -58,15 +72,21 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     }
 }
 
-int dump_trap_callback(struct regvm* vm, int type, int reg)
+int dump_trap_callback(struct regvm* vm, int irq, int reg, int ex)
 {
-    switch (type)
+    struct dump_arg arg = {0};
+    switch (ex)
     {
-    case 0:
-        regvm_debug_reg_callback(vm, dump_reg_info, NULL);
+    case 0: //all regs
+        arg.reg = -1;
+        regvm_debug_reg_callback(vm, dump_reg_info, &arg);
         break;
-    case 1:
-        regvm_debug_var_callback(vm, dump_var_info, NULL);
+    case 1: //1 arg
+        arg.reg = reg;
+        regvm_debug_reg_callback(vm, dump_reg_info, &arg);
+        break;
+    case 2:
+        regvm_debug_var_callback(vm, dump_var_info, &arg);
         break;
     default:
         return -1;
@@ -74,124 +94,96 @@ int dump_trap_callback(struct regvm* vm, int type, int reg)
     return 0;
 }
 
-#define RUN(...)                        \
-    c = (struct code){__VA_ARGS__};     \
-    regvm_exe_one(vm, &c);
+int dump_error_callback(struct regvm* vm, int irq, int code, const char* reason)
+{
+    printf("\e[31m %d - %s \e[0m\n", code, reason);
+    return 0;
+}
 
 
 int read_file(FILE* fp, struct regvm* vm)
 {
     union 
     {
-        char            data[10];
-        code0_t         code0;
-        code2_t         code2;
-        code4_t         code4;
-        code8_t         code8;
-    }                   inst;
+        char        data[10];
+        code_t      code;
+    }               inst;
 
-    char id[16];
-    int type;
-    int reg;
+    union
+    {
+        char        s[8];
+        uint64_t    v;
+    }               id;
+    int             ex;
+    int             reg;
 
-    char ex;
     char buf[1024];
     char data[1024];
 
     int read_bytes = 0;
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
+        id.v = 0;
         if (buf[0] == '#') continue;
 
         buf[sizeof(buf) - 1] = '\0';
-        data[0] = '\0';
+        //data[0] = '\0';
 
-        sscanf(buf, "%16s %c %d $%d %1024[^\n]", id, &ex, &type, &reg, data);
-        id[sizeof(id) - 1] = '\0';
+        sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
         data[sizeof(data) - 1] = '\0';
 
         memset(&inst, 0, sizeof(inst));
 
         int b = 2;
-        int v = 0;
-        switch (*(uint32_t*)id)
+        switch (id.v)
         {
-#define FIX_LEN(k, v)                       \
+#define SINGLE(k, v)                        \
         case k:                             \
-            inst.code0.base.id = v;         \
+            inst.code.id = CODE_##v;        \
             break;
-#define EXT_STR(k, v)                       \
-        case k:                             \
-            inst.code8.base.id = v;         \
-            b += 8;                         \
-            inst.code8.str = data;          \
-            break;
-        case 0x00544553:
-            switch (ex)
+        SINGLE(0x50415254, TRAP);
+        SINGLE(0x45524F5453, STORE);
+        SINGLE(0x44414F4C, LOAD);
+        SINGLE(0x4B434F4C42, BLOCK);
+#undef SINGLE
+        case 0x53544553:
+            inst.code.id = CODE_SETS;
             {
-            case '2':
+                int v = 0;
+                sscanf(data, "%d", &v);
+                *(int16_t*)(&inst.code + 1) = v;
                 b += 2;
-                inst.code2.base.id = SET2;
-                sscanf(data, "%d", &v);
-                inst.code2.num = v;
-                break;
-            case '4':
-                b += 4;
-                inst.code4.base.id = SET4;
-                sscanf(data, "%d", &v);
-                inst.code4.num = v;
-                break;
-            case '8':
-                b += 8;
-                inst.code8.base.id = SET8;
-                sscanf(data, "%ld", &inst.code8.num);
-                break;
-            case 'S':
-                b += 8;
-                inst.code8.base.id = SET8;
-                inst.code8.str = data;
-                break;
-            default:
-                printf("\e[31m --- 0x%X : %s %c \e[0m\n", *(uint32_t*)id, id, ex);
-                return -1;
             }
             break;
-        case 0x50415254:
-            inst.code8.base.id = TRAP;
-            inst.code8.other = dump_trap_callback;
+        case 0x49544553:
+            inst.code.id = CODE_SETI;
+            sscanf(data, "%d", (int32_t*)(&inst.code + 1));
+            b += 4;
             break;
-        case 0x524F5453:
-            if (ex == 'S')
-            {
-                inst.code0.base.id = STORE8;
-                inst.code8.str = data;
-            }
-            else
-            {
-                inst.code0.base.id = STORE;
-            }
+        case 0x4C544553:
+            inst.code.id = CODE_SETL;
+            sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
+            b += 8;
             break;
-            //EXT_STR(0x524F5453, STORE)
-            EXT_STR(0x44414F4C, LOAD);
-            FIX_LEN(0x434F4C42, BLOCK);
-#undef FIX_LEN
-#undef EXT_STR
+        case 0x43544553:
+            inst.code.id = CODE_SETL;
+            *(intptr_t*)(&inst.code + 1) = (intptr_t)data;
+            break;
         default:
-            printf("\e[31m --- 0x%X : %s \e[0m\n", *(uint32_t*)id, id);
+            printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
             continue;
         }
-        inst.code0.base.type = type;
-        inst.code0.base.reg = reg;
+        inst.code.ex = ex;
+        inst.code.reg = reg;
 
         printf("--- ");
         for (unsigned int i = 0; i < sizeof(inst); i++)
         {
             printf(" %02X", (unsigned char)inst.data[i]);
         }
-        code_base_t* c = &inst.code0.base;
-        printf(" : %02d : %02d : %s : %d\n", inst.code0.base.id,  b, id, c->id);
+        printf(" : %02d : %02d : %s\n", inst.code.id, b, id.s);
 
-        int r = regvm_exe_one(vm, &inst.code0);
+        int r = regvm_exe_one(vm, &inst.code, sizeof(inst) / sizeof(code_t));
         if (r < 0)
         {
             return -1;
@@ -204,7 +196,15 @@ int read_file(FILE* fp, struct regvm* vm)
 
 int main(int argc, char** argv)
 {
+    if (argc == 1)
+    {
+        printf("Need input code file\n");
+        return 0;
+    }
+
     struct regvm* vm =  regvm_init();
+
+    regvm_irq_set(vm, IRQ_TRAP, dump_trap_callback);
 
     FILE* fp = stdin;
     if (argc > 1)

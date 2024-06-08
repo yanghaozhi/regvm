@@ -5,7 +5,8 @@
 
 union uvalue
 {
-    int64_t             num;
+    int64_t             sint;
+    uint64_t            uint;
     double              dbl;
     const char*         str;
 };

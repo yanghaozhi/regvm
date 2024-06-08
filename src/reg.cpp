@@ -5,6 +5,7 @@
 #include "code.h"
 
 #include "var.h"
+#include "error.h"
 
 regs::regs()
 {
@@ -24,15 +25,15 @@ regs::~regs()
     }
 }
 
-bool regs::set(const code_base_t code, const uint64_t num)
+bool regs::set(const code_t code, const uint64_t num)
 {
     if (valid_id(code.reg) == false) return false;
 
     store(code.reg);
 
-    types[code.reg] = code.type;
+    types[code.reg] = code.ex;
     froms[code.reg] = NULL;
-    values[code.reg].num = num;
+    values[code.reg].uint = num;
 
     return true;
 }
@@ -47,13 +48,14 @@ bool regs::load(const int id, var* v)
     if (r != 0)
     {
         store(r);
+        froms[r]->set_reg(-1);
         froms[r] = NULL;
     }
 
-    v->set_reg(id);
 
     types[id] = v->type;
     froms[id] = v;
+    v->set_reg(id);
     values[id] = v->value;
 
     return true;
@@ -70,7 +72,7 @@ bool regs::store(const int id)
     }
     if ((v->type != types[id]) || (v->reg != id))
     {
-        //TODO : error handler
+        //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[id]);
         return false;
     }
 
@@ -101,7 +103,7 @@ bool regs::store(const int id, var* v)
         old->release();
     }
 
-    v->acquire();
+    //v->acquire();
 
     froms[id] = v;
     v->set_reg(id);

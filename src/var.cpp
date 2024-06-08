@@ -14,7 +14,7 @@ var::var(uint8_t t, const char* n, const int l) :
     hash(calc_hash(n, l))
 {
     strcpy(name, n);
-    value.num = 0;
+    value.uint = 0;
 }
 
 var::~var()
@@ -56,16 +56,16 @@ void var::set_reg(const int id)
 {
     if (id == reg) return;
 
-    if (reg == 0)
+    if (reg == -1)
     {
-        if (id != 0)
+        if (id != -1)
         {
             ++ref;
         }
     }
     else
     {
-        if (id == 0)
+        if (id == -1)
         {
             release();
         }

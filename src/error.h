@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdio.h>
+
+#include <irq.h>
 #include <debug.h>
 
 #include "reg.h"
@@ -8,23 +11,24 @@
 #ifdef DEBUG
 #define ERROR(errcode, fmt, ...)                                                \
     SET_ERROR(errcode, fmt, ##__VA_ARGS__);                                     \
-    vm->code.self.line = __LINE__;                                              \
-    vm->code.self.file = __FILE__;                                              \
-    vm->code.self.func = __func__;
+    vm->err.self.line = __LINE__;                                               \
+    vm->err.self.file = __FILE__;                                               \
+    vm->err.self.func = __func__;
 #else
 #define ERROR(errcode, fmt, ...)    SET_ERROR(errcode, fmt, ##__VA_ARGS__)
 #endif
 
 
 #define SET_ERROR(errcode, fmt, ...)                                            \
-    vm->code.code = errcode;                                                    \
-    snprintf(vm->code.reason, sizeof(vm->code.reason), fmt, ##__VA_ARGS__);     \
-    vm->code.reason[sizeof(vm->code.reason) - 1] = '\0';                        \
-    vm->code.func = *vm->ctx->func;                                             \
-    if (vm->ctx->src != NULL)                                                   \
+    vm->err.code = errcode;                                                     \
+    snprintf(vm->err.reason, sizeof(vm->err.reason), fmt, ##__VA_ARGS__);       \
+    vm->err.reason[sizeof(vm->err.reason) - 1] = '\0';                          \
+    vm->err.func = vm->ctx->func;                                               \
+    if (vm->ctx->cur != NULL)                                                   \
     {                                                                           \
-        vm->code.src = *vm->ctx->src;                                           \
-    }
+        vm->err.src = *vm->ctx->cur;                                            \
+    }                                                                           \
+    vm->idt.call<regvm_irq_error>(vm, IRQ_ERROR, errcode, vm->err.reason);
 
 
 
@@ -77,8 +81,9 @@ public:
         for (int i = 0; i < size; i++)
         {
             info->id = i;
+            info->ref = (reg.froms[i] != NULL) ? reg.froms[i]->ref : -1;
             info->type = reg.types[i];
-            info->value.num = reg.values[i].num;
+            info->value.sint = reg.values[i].sint;
             info->from = reg.froms[i];
             cb(info);
         }
@@ -93,7 +98,7 @@ public:
             info->type = v->type;
             info->reg = v->reg;
             info->scope = id;
-            info->value.num = v->value.num;
+            info->value.sint = v->value.sint;
             info->name = v->name;
             info->func = f;
             info->var = v;

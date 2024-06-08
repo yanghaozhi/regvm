@@ -1,6 +1,7 @@
 #pragma once
 
 #include <code.h>
+#include <irq.h>
 
 #include <stdlib.h>
 
@@ -26,7 +27,7 @@ public:
     void enter_block();
     void leave_block();
 
-    var* add(const code8_t* code);
+    var* add(const int type, const char* name);
 
     var* get(const char* name) const;
 

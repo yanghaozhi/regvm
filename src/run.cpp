@@ -1,4 +1,4 @@
-#include <run.h>
+#include <regvm.h>
 #include <debug.h>
 
 #include <stdlib.h>
@@ -6,11 +6,31 @@
 
 #include "vm.h"
 
-
-static int debug_info(struct regvm* vm, const code8_t* code)
+static bool vm_store(struct regvm* vm, const code_t code)
 {
-    trap_callback cb = (trap_callback)code->other;
-    cb(vm, code->base.type, code->base.reg);
+    if (code.ex == 0)
+    {
+        vm->reg.store(code.reg);
+    }
+    else
+    {
+        if (vm->reg.types[code.ex] != TYPE_STRING)
+        {
+            //TODO
+            ERROR(ERR_TYPE_MISMATCH, "store name : %d", vm->reg.types[code.ex]);
+        }
+        else
+        {
+            int type = vm->reg.types[code.reg];
+            const char* name = vm->reg.values[code.ex].str;
+            var* v = vm->ctx->add(type, name);
+            vm->reg.store(code.reg, v);
+            if (v != NULL)
+            {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -18,54 +38,48 @@ static int debug_info(struct regvm* vm, const code8_t* code)
 extern "C"
 {
 
-int regvm_exe_one(struct regvm* vm, const code0_t* code)
+int regvm_exe_one(struct regvm* vm, const code_t* code, int max)
 {
     int read_bytes = 2;
-    switch (code->base.id)
+    switch (code->id)
     {
-    case EXIT:
-        return -1;
-    case TRAP:
-        debug_info(vm, ((const code8_t*)code));
-        read_bytes += 8;
+    case CODE_NOP:
+        read_bytes += (code->ex) << 1;
         break;
-    case SET2:
-        vm->reg.set(code->base, ((const code2_t*)code)->num);
+    case CODE_TRAP:
+        //debug_info(vm, code);
+        vm->idt.call<regvm_irq_trap>(vm, IRQ_TRAP, code->reg, code->ex);
+        break;
+    case CODE_SETS:
+        vm->reg.set(*code, *(uint16_t*)&code[1]);
         read_bytes += 2;
         break;
-    case SET4:
-        vm->reg.set(code->base, ((const code4_t*)code)->num);
+    case CODE_SETI:
+        vm->reg.set(*code, *(uint32_t*)&code[1]);
         read_bytes += 4;
         break;
-    case SET8:
-        vm->reg.set(code->base, ((const code8_t*)code)->num);
+    case CODE_SETL:
+        vm->reg.set(*code, *(uint64_t*)&code[1]);
         read_bytes += 8;
         break;
-    case STORE:
-        vm->reg.store(code->base.reg);
+    case CODE_STORE:
+        vm_store(vm, *code);
         break;
-    case STORE8:
+    case CODE_LOAD:
+        vm->reg.load(code->reg, vm->ctx->get(vm->reg.values[code->reg].str));
+        break;
+    case CODE_BLOCK:
+        switch (code->ex)
         {
-            code8_t c = *(code8_t*)code;
-            c.base.type = vm->reg.type(code->base.reg);
-            vm->reg.store(code->base.reg, vm->ctx->add(&c));
-        }
-        read_bytes += 8;
-        break;
-    case LOAD:
-        vm->reg.load(code->base.reg, vm->ctx->get(((code8_t*)code)->str));
-        read_bytes += 8;
-        break;
-    case BLOCK:
-        switch (code->base.type)
-        {
-        case 1:
+        case 0:
             vm->ctx->enter_block();
             break;
-        case 2:
+        case 1:
             vm->ctx->leave_block();
             break;
         default:
+            //TODO
+            //ERROR
             break;
         }
         break;
@@ -75,10 +89,10 @@ int regvm_exe_one(struct regvm* vm, const code0_t* code)
     return read_bytes;
 }
 
-bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* pages)
-{
-    return false;
-}
+//bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* pages)
+//{
+//    return false;
+//}
 
 }
 

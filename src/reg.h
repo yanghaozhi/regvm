@@ -9,14 +9,13 @@
 
 class regs
 {
-private:
+public:
     uvalue      values[16];       //
     var*        froms[16];
     uint8_t     types[16];
 
     friend class error;
 
-public:
     regs();
     ~regs();
 
@@ -25,7 +24,7 @@ public:
         return (id < 0 || (id > 15)) ? false : true;
     }
 
-    bool set(const code_base_t code, const uint64_t num);
+    bool set(const code_t code, const uint64_t num);
 
     bool store(const int id);
     bool store(const int id, var* v);
