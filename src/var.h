@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <code.h>
 
 
 union uvalue
@@ -9,6 +10,10 @@ union uvalue
     uint64_t            uint;
     double              dbl;
     const char*         str;
+
+    double conv(int type, double v) const;
+    int64_t conv(int type, int64_t v) const;
+    uint64_t conv(int type, uint64_t v) const;
 };
 
 class var

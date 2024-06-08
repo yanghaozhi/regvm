@@ -23,6 +23,7 @@ enum ERR_CODE
 {
     ERR_OK = 0,
     ERR_TYPE_MISMATCH,
+    ERR_INST_TRUNC,
 };
 
 typedef int (*regvm_irq_error)(struct regvm* vm, int irq, int code, const char* reason);

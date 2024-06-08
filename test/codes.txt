@@ -20,3 +20,12 @@ TRAP    0   2
 BLOCK   0   1
 TRAP    0   0
 TRAP    0   2
+INC     0   10
+TRAP    0   1
+DEC     0   5
+TRAP    0   1
+TRAP    1   1
+ADD     1   0
+TRAP    1   1
+SUB     1   2
+TRAP    1   1

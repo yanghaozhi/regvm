@@ -145,6 +145,10 @@ int read_file(FILE* fp, struct regvm* vm)
         SINGLE(0x45524F5453, STORE);
         SINGLE(0x44414F4C, LOAD);
         SINGLE(0x4B434F4C42, BLOCK);
+        SINGLE(0x434E49, INC);
+        SINGLE(0x434544, DEC);
+        SINGLE(0x444441, ADD);
+        SINGLE(0x425553, SUB);
 #undef SINGLE
         case 0x53544553:
             inst.code.id = CODE_SETS;
@@ -183,7 +187,7 @@ int read_file(FILE* fp, struct regvm* vm)
         }
         printf(" : %02d : %02d : %s\n", inst.code.id, b, id.s);
 
-        int r = regvm_exe_one(vm, &inst.code, sizeof(inst) / sizeof(code_t));
+        int r = regvm_exe_one(vm, &inst.code, sizeof(inst));
         if (r < 0)
         {
             return -1;
