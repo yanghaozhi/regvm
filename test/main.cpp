@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include <irq.h>
 #include <code.h>
@@ -112,114 +115,229 @@ int dump_error_callback(struct regvm* vm, int irq, int code, const char* reason)
     return 0;
 }
 
-typedef int (*exe_func)(struct regvm* vm, const code_t* code, int max_bytes, const char* orig);
-
-int exe_now(struct regvm* vm, const code_t* code, int max_bytes, const char* orig)
+class run
 {
-    SHOW("--- ");
-    for (int i = 0; i < max_bytes; i++)
+public:
+    run() : vm(regvm_init())    {}
+    virtual ~run()              {regvm_exit(vm);}
+
+    struct regvm* vm            = NULL;
+
+    virtual bool go(void)       = 0;
+    virtual bool prepare(const char* file)
     {
-        SHOW(" %02X", ((unsigned char*)code)[i]);
+        regvm_irq_set(vm, IRQ_TRAP, (void*)dump_trap_callback);
+        return true;
     }
-    SHOW(" : %02d : %s", code->id, orig);
+};
 
-    return regvm_exe_one(vm, code, max_bytes);
-}
-
-
-int read_file(FILE* fp, struct regvm* vm, exe_func run)
+class txt : public run
 {
-    union 
+public:
+    FILE* fp = NULL;
+    virtual ~txt()  {fclose(fp);}
+    virtual int line(const code_t* code, int max_bytes, const char* orig)   = 0;
+    virtual bool prepare(const char* file)
     {
-        char        data[10];
-        code_t      code;
-    }               inst;
+        run::prepare(NULL);
+        fp = fopen(file, "r");
+        return fp != NULL;
+    }
 
-    union
+    virtual bool go(void)
     {
-        char        s[8];
-        uint64_t    v;
-    }               id;
-    int             ex;
-    int             reg;
-
-    char buf[1024];
-    char data[1024];
-
-    int read_bytes = 0;
-    while (fgets(buf, sizeof(buf), fp) != NULL)
-    {
-        id.v = 0;
-        if (buf[0] == '#')
+        union 
         {
-            printf("\e[35m %s\e[0m", buf);
-            continue;
-        }
+            char        data[10];
+            code_t      code;
+        }               inst;
 
-        buf[sizeof(buf) - 1] = '\0';
-        //data[0] = '\0';
-
-        sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
-        data[sizeof(data) - 1] = '\0';
-
-        memset(&inst, 0, sizeof(inst));
-
-        int b = 2;
-        switch (id.v)
+        union
         {
+            char        s[8];
+            uint64_t    v;
+        }               id;
+        int             ex;
+        int             reg;
+
+        char buf[1024];
+        char data[1024];
+
+        while (fgets(buf, sizeof(buf), fp) != NULL)
+        {
+            id.v = 0;
+            if (buf[0] == '#')
+            {
+                printf("\e[35m %s\e[0m", buf);
+                continue;
+            }
+
+            buf[sizeof(buf) - 1] = '\0';
+            //data[0] = '\0';
+
+            sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
+            data[sizeof(data) - 1] = '\0';
+
+            memset(&inst, 0, sizeof(inst));
+
+            int b = 2;
+            switch (id.v)
+            {
 #define SINGLE(k, v)                        \
-        case k:                             \
-            inst.code.id = CODE_##v;        \
-            break;
-        SINGLE(0x50415254, TRAP);
-        SINGLE(0x45524F5453, STORE);
-        SINGLE(0x44414F4C, LOAD);
-        SINGLE(0x4B434F4C42, BLOCK);
-        SINGLE(0x434E49, INC);
-        SINGLE(0x434544, DEC);
-        SINGLE(0x444441, ADD);
-        SINGLE(0x425553, SUB);
-        SINGLE(0x474843, CHG);
+            case k:                             \
+                inst.code.id = CODE_##v;        \
+                break;
+            SINGLE(0x50415254, TRAP);
+            SINGLE(0x45524F5453, STORE);
+            SINGLE(0x44414F4C, LOAD);
+            SINGLE(0x4B434F4C42, BLOCK);
+            SINGLE(0x434E49, INC);
+            SINGLE(0x434544, DEC);
+            SINGLE(0x444441, ADD);
+            SINGLE(0x425553, SUB);
+            SINGLE(0x474843, CHG);
 
 #undef SINGLE
-        case 0x53544553:
-            inst.code.id = CODE_SETS;
-            {
-                int v = 0;
-                sscanf(data, "%d", &v);
-                *(int16_t*)(&inst.code + 1) = v;
-                b += 2;
-            }
-            break;
-        case 0x49544553:
-            inst.code.id = CODE_SETI;
-            sscanf(data, "%d", (int32_t*)(&inst.code + 1));
-            b += 4;
-            break;
-        case 0x4C544553:
-            inst.code.id = CODE_SETL;
-            sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
-            b += 8;
-            break;
-        case 0x43544553:
-            {
+            case 0x53544553:
+                inst.code.id = CODE_SETS;
+                {
+                    int v = 0;
+                    sscanf(data, "%d", &v);
+                    *(int16_t*)(&inst.code + 1) = v;
+                    b += 2;
+                }
+                break;
+            case 0x49544553:
+                inst.code.id = CODE_SETI;
+                sscanf(data, "%d", (int32_t*)(&inst.code + 1));
+                b += 4;
+                break;
+            case 0x4C544553:
                 inst.code.id = CODE_SETL;
-                auto r = s_string_table.emplace(data);
-                *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
+                sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
+                b += 8;
+                break;
+            case 0x43544553:
+                {
+                    inst.code.id = CODE_SETL;
+                    auto r = s_string_table.emplace(data);
+                    *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
+                }
+                break;
+            default:
+                printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
+                continue;
             }
+            inst.code.ex = ex;
+            inst.code.reg = reg;
+
+            if (line(&inst.code, sizeof(inst), buf) <= 0)
+            {
+                printf("\e[31m --- run ERROR : %s\e[0m\n", buf);
+                return false;
+            }
+        };
+
+        return true;
+    }
+};
+
+class step : public txt
+{
+    virtual int line(const code_t* code, int max_bytes, const char* orig)
+    {
+        SHOW("--- ");
+        for (int i = 0; i < max_bytes; i++)
+        {
+            SHOW(" %02X", ((unsigned char*)code)[i]);
+        }
+        SHOW(" : %02d : %s", code->id, orig);
+
+        return regvm_exe_one(vm, code, max_bytes);
+    }
+};
+
+class compile : public txt
+{
+public:
+    compile(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
+    virtual ~compile()      {close(fd);}
+
+    virtual int line(const code_t* code, int max_bytes, const char* orig)
+    {
+        int bytes = 2;
+        switch (code->id)
+        {
+        case CODE_SETS:
+            bytes += 2;
+            break;
+        case CODE_SETI:
+            bytes += 4;
+            break;
+        case CODE_SETL:
+            bytes += 8;
+            break;
+        case CODE_NOP:
+            bytes += (code->ex << 1);
             break;
         default:
-            printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
-            continue;
+            break;
         }
-        inst.code.ex = ex;
-        inst.code.reg = reg;
+        return write(fd, code, bytes);
+    }
 
-        read_bytes += run(vm, &inst.code, sizeof(inst), buf);
-    };
-    return read_bytes;
-}
+    int fd;
+};
 
+class bin : public run
+{
+public:
+    int fd              = -1;
+    int size            = -1;
+    const char* data    = NULL;
+    virtual ~bin()
+    {
+        if (data != NULL) munmap((void*)data, size);
+        if (fd >= 0) close(fd);
+    }
+
+    virtual bool prepare(const char* file)
+    {
+        fd = open(file, O_RDONLY);
+        struct stat st;
+        fstat(fd, &st);
+        size = st.st_size;
+        data = (const char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        return fd >= 0;
+    }
+    virtual bool go(void)
+    {
+        code_t* cur = (code_t*)data;
+        int rest = size / sizeof(code_t) - 1;
+        while (rest > 0)
+        {
+            int r = regvm_exe_one(vm, cur, rest);
+            if (r == 0)
+            {
+                printf("\e[31m run ERROR at %d\e[0m\n", size - rest);
+                return false;
+            }
+            cur += r;
+            rest -= r;
+        }
+        return true;
+    }
+};
+
+const char* HELP = R"(tester for regvm
+USAGE tester [-f file] [-r] [-v] [-c out]
+options:
+    -f {file}       input file
+    -r              run code file line by line
+    -b              run binrary code file
+    -c {out}        compile to binary code
+    -v              verbose mode
+)";
 
 int main(int argc, char** argv)
 {
@@ -229,17 +347,23 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    exe_func func = exe_now;
+    run* o = NULL;
     const char* file = NULL;
 
-    const char* opts = "f:rhv";
+    const char* opts = "f:c:rbhv";
     int opt = 0;
     while ((opt = getopt(argc, argv, opts)) != -1)
     {
         switch (opt)
         {
         case 'r':
-            func = exe_now;
+            o = new step();
+            break;
+        case 'c':
+            o = new compile(optarg);
+            break;
+        case 'b':
+            o = new bin();
             break;
         case 'f':
             file = optarg;
@@ -248,30 +372,19 @@ int main(int argc, char** argv)
             verbose += 1;
             break;
         case 'h':
-            printf("USAGE : ");
+            printf("%s\n", HELP);
             return 0;
         }
     }
 
-    struct regvm* vm =  regvm_init();
+    if (o == NULL) return 0;
 
-    regvm_irq_set(vm, IRQ_TRAP, (void*)dump_trap_callback);
+    o->prepare(file);
 
-    FILE* fp = stdin;
-    if (file != NULL)
-    {
-        fp = fopen(file, "r");
-    }
+    o->go();
 
-    int r = read_file(fp, vm, func);
-    printf("\n\n%d bytes total\n", r);
-
-    if (file != NULL)
-    {
-        fclose(fp);
-    }
-
-    regvm_exit(vm);
+    delete o;
+    //printf("\n\n%d bytes total\n", r);
 
     return 0;
 }

@@ -161,32 +161,26 @@ static bool vm_chg(struct regvm* vm, const code_t code)
 extern "C"
 {
 
-int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes)
+int regvm_exe_one(struct regvm* vm, const code_t* code, int max)
 {
-    if (max_bytes < 2)
-    {
-        ERROR(ERR_INST_TRUNC, "need at lease 2 bytes for each inst");
-        return 0;
-    }
-
-    int read_bytes = 2;
+    int read_codes = 1;
     switch (code->id)
     {
-#define EXTRA_RUN(id, need, func, ...)                                  \
-    case CODE_##id:                                                     \
-        if (max_bytes - 2 < (need))                                     \
-        {                                                               \
-            ERROR(ERR_INST_TRUNC, "need at lease %d bytes", (need));    \
-            return 0;                                                   \
-        }                                                               \
-        func(__VA_ARGS__);                                              \
-        read_bytes += (need);                                           \
+#define EXTRA_RUN(id, need, func, ...)                                      \
+    case CODE_##id:                                                         \
+        if (max < (need))                                                   \
+        {                                                                   \
+            ERROR(ERR_INST_TRUNC, "need at lease %d bytes", (need) << 1);   \
+            return 0;                                                       \
+        }                                                                   \
+        func(__VA_ARGS__);                                                  \
+        read_codes += (need);                                               \
         break;
 
-        EXTRA_RUN(NOP, (code->ex) << 1, NULL_CALL);
-        EXTRA_RUN(SETS, 2, vm_set, vm, *code, *(uint16_t*)&code[1]);
-        EXTRA_RUN(SETI, 4, vm_set, vm, *code, *(uint32_t*)&code[1]);
-        EXTRA_RUN(SETL, 8, vm_set, vm, *code, *(uint64_t*)&code[1]);
+        EXTRA_RUN(NOP, code->ex, NULL_CALL);
+        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(uint16_t*)&code[1]);
+        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(uint32_t*)&code[1]);
+        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(uint64_t*)&code[1]);
 
 #undef EXTRA_RUN
 
@@ -245,7 +239,7 @@ int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes)
         return 0;
     };
 
-    return read_bytes;
+    return read_codes;
 }
 
 //bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* pages)
