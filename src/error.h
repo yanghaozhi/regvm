@@ -103,14 +103,14 @@ public:
             info->var = v;
             cb(info);
         };
-        scope_vars(ctx.globals, func);
 
-        int id = 1;
         for (const auto& it : ctx.scopes)
         {
             f = ctx.func.func;
             scope_vars(it, func);
-            ++id;
         }
+
+        f = "global";
+        scope_vars(ctx.globals, func);
     }
 };

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <irq.h>
 #include <code.h>
@@ -11,6 +12,13 @@
 #include <unordered_set>
 
 static std::unordered_set<std::string>   s_string_table;
+
+static int verbose = 0;
+#define SHOW(fmt, ...)              \
+    if (verbose > 0)                \
+    {                               \
+        printf(fmt, ##__VA_ARGS__); \
+    }
 
 void print_uvalue(int type, union regvm_uvalue uv)
 {
@@ -104,8 +112,22 @@ int dump_error_callback(struct regvm* vm, int irq, int code, const char* reason)
     return 0;
 }
 
+typedef int (*exe_func)(struct regvm* vm, const code_t* code, int max_bytes, const char* orig);
 
-int read_file(FILE* fp, struct regvm* vm)
+int exe_now(struct regvm* vm, const code_t* code, int max_bytes, const char* orig)
+{
+    SHOW("--- ");
+    for (int i = 0; i < max_bytes; i++)
+    {
+        SHOW(" %02X", ((unsigned char*)code)[i]);
+    }
+    SHOW(" : %02d : %s", code->id, orig);
+
+    return regvm_exe_one(vm, code, max_bytes);
+}
+
+
+int read_file(FILE* fp, struct regvm* vm, exe_func run)
 {
     union 
     {
@@ -128,7 +150,11 @@ int read_file(FILE* fp, struct regvm* vm)
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
         id.v = 0;
-        if (buf[0] == '#') continue;
+        if (buf[0] == '#')
+        {
+            printf("\e[35m %s\e[0m", buf);
+            continue;
+        }
 
         buf[sizeof(buf) - 1] = '\0';
         //data[0] = '\0';
@@ -189,19 +215,7 @@ int read_file(FILE* fp, struct regvm* vm)
         inst.code.ex = ex;
         inst.code.reg = reg;
 
-        printf("--- ");
-        for (unsigned int i = 0; i < sizeof(inst); i++)
-        {
-            printf(" %02X", (unsigned char)inst.data[i]);
-        }
-        printf(" : %02d : %02d : %s\n", inst.code.id, b, id.s);
-
-        int r = regvm_exe_one(vm, &inst.code, sizeof(inst));
-        if (r < 0)
-        {
-            return -1;
-        }
-        read_bytes += b;
+        read_bytes += run(vm, &inst.code, sizeof(inst), buf);
     };
     return read_bytes;
 }
@@ -215,20 +229,44 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    exe_func func = exe_now;
+    const char* file = NULL;
+
+    const char* opts = "f:rhv";
+    int opt = 0;
+    while ((opt = getopt(argc, argv, opts)) != -1)
+    {
+        switch (opt)
+        {
+        case 'r':
+            func = exe_now;
+            break;
+        case 'f':
+            file = optarg;
+            break;
+        case 'v':
+            verbose += 1;
+            break;
+        case 'h':
+            printf("USAGE : ");
+            return 0;
+        }
+    }
+
     struct regvm* vm =  regvm_init();
 
     regvm_irq_set(vm, IRQ_TRAP, (void*)dump_trap_callback);
 
     FILE* fp = stdin;
-    if (argc > 1)
+    if (file != NULL)
     {
-        fp = fopen(argv[1], "r");
+        fp = fopen(file, "r");
     }
 
-    int r = read_file(fp, vm);
+    int r = read_file(fp, vm, func);
     printf("\n\n%d bytes total\n", r);
 
-    if (argc > 1)
+    if (file != NULL)
     {
         fclose(fp);
     }
