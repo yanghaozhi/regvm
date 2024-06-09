@@ -11,6 +11,7 @@
 #include <regvm.h>
 #include <debug.h>
 
+#include <map>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -174,33 +175,75 @@ public:
             }
 
             buf[sizeof(buf) - 1] = '\0';
-            //data[0] = '\0';
+            data[0] = '\0';
 
             sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
             data[sizeof(data) - 1] = '\0';
 
             memset(&inst, 0, sizeof(inst));
 
-            int b = 2;
-            switch (id.v)
-            {
-#define SINGLE(k, v)                        \
-            case k:                             \
-                inst.code.id = CODE_##v;        \
-                break;
-            SINGLE(0x50415254, TRAP);
-            SINGLE(0x45524F5453, STORE);
-            SINGLE(0x44414F4C, LOAD);
-            SINGLE(0x4B434F4C42, BLOCK);
-            SINGLE(0x434E49, INC);
-            SINGLE(0x434544, DEC);
-            SINGLE(0x444441, ADD);
-            SINGLE(0x425553, SUB);
-            SINGLE(0x474843, CHG);
+            std::map<std::string, int>  ids;
 
-#undef SINGLE
-            case 0x53544553:
-                inst.code.id = CODE_SETS;
+#define SET_KEY(k) ids.emplace(#k, CODE_##k);
+            SET_KEY(NOP);
+            SET_KEY(TRAP);
+            SET_KEY(SETS);
+            SET_KEY(SETI);
+            SET_KEY(SETL);
+            SET_KEY(MOVE);
+            SET_KEY(CLEAR);
+            SET_KEY(LOAD);
+            SET_KEY(STORE);
+            SET_KEY(BLOCK);
+            SET_KEY(CALL);
+            SET_KEY(RET);
+            SET_KEY(CMD);
+            SET_KEY(INC);
+            SET_KEY(DEC);
+            SET_KEY(ADD);
+            SET_KEY(SUB);
+            SET_KEY(MUL);
+            SET_KEY(DIV);
+            SET_KEY(AND);
+            SET_KEY(OR);
+            SET_KEY(XOR);
+            SET_KEY(CONV);
+            SET_KEY(CHG);
+            SET_KEY(JUMP);
+            SET_KEY(JZ);
+            SET_KEY(JNZ);
+            SET_KEY(JG);
+            SET_KEY(JL);
+            SET_KEY(JNG);
+            SET_KEY(JNL);
+            SET_KEY(EXIT);
+#undef SET_KEY
+            auto it = ids.find(id.s);
+            if (it != ids.end())
+            {
+                inst.code.id = ids[id.s];
+            }
+            else
+            {
+                if (id.v == 0x43544553)
+                {
+                    inst.code.id = CODE_SETL;
+                    auto r = s_string_table.emplace(data);
+                    *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
+                }
+                else
+                {
+                    printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
+                    continue;
+                }
+            }
+            inst.code.ex = ex;
+            inst.code.reg = reg;
+
+            int b = 2;
+            switch (inst.code.id)
+            {
+            case CODE_SETS:
                 {
                     int v = 0;
                     sscanf(data, "%d", &v);
@@ -208,29 +251,18 @@ public:
                     b += 2;
                 }
                 break;
-            case 0x49544553:
-                inst.code.id = CODE_SETI;
+            case CODE_SETI:
                 sscanf(data, "%d", (int32_t*)(&inst.code + 1));
                 b += 4;
                 break;
-            case 0x4C544553:
+            case CODE_SETL:
                 inst.code.id = CODE_SETL;
                 sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
                 b += 8;
                 break;
-            case 0x43544553:
-                {
-                    inst.code.id = CODE_SETL;
-                    auto r = s_string_table.emplace(data);
-                    *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
-                }
-                break;
             default:
-                printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
-                continue;
+                break;
             }
-            inst.code.ex = ex;
-            inst.code.reg = reg;
 
             if (line(&inst.code, sizeof(inst), buf) <= 0)
             {

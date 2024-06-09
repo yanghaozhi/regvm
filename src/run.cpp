@@ -6,7 +6,7 @@
 
 #include "vm.h"
 
-static bool vm_set(struct regvm* vm, const code_t code, const uint64_t value)
+static bool vm_set(struct regvm* vm, const code_t code, const int64_t value)
 {
     auto& r = vm->reg.id(code.reg);
     r.set(value, code.ex);
@@ -42,6 +42,27 @@ static bool vm_load(struct regvm* vm, const code_t code)
     auto& e = vm->reg.id(code.ex);
     auto& r = vm->reg.id(code.reg);
     return r.load(vm->ctx->get(e.value.str));
+}
+
+static bool vm_move(struct regvm* vm, const code_t code)
+{
+    auto& e = vm->reg.id(code.ex);
+    auto& r = vm->reg.id(code.reg);
+    r.store();
+    r.set_from(NULL);
+    r.value.uint = e.value.uint;
+    r.type = e.type;
+    return true;
+}
+
+static bool vm_clear(struct regvm* vm, const code_t code)
+{
+    auto& r = vm->reg.id(code.reg);
+    r.store();
+    r.set_from(NULL);
+    r.value.uint = 0;
+    r.type = code.ex;
+    return true;
 }
 
 static bool vm_conv_impl(struct regvm* vm, regs::reg_v& r, int to)
@@ -127,6 +148,21 @@ static bool vm_chg(struct regvm* vm, const code_t code)
     }
 }
 
+static int vm_jump(struct regvm* vm, const code_t* code, const code_t* start)
+{
+    auto& e = vm->reg.id(code->ex);
+    switch (e.type)
+    {
+    case TYPE_SIGNED:
+        return (int64_t)e;
+    case TYPE_UNSIGNED:
+        return (uint64_t)e - (code - start);
+    default:
+        return 0;
+    }
+}
+
+
 #define RUN_BLOCK(t)                \
     switch (code->ex)               \
     {                               \
@@ -167,8 +203,10 @@ bool regvm_exec(struct regvm* vm, const code_t* code, int count, int64_t* exit)
     const code_t* cur = code;
     while (rest > 0)
     {
-        if (cur->id == CODE_EXIT)
+        int r = 0;
+        switch (cur->id)
         {
+        case CODE_EXIT:
             if (cur->ex == 0)
             {
                 *exit = 0;
@@ -178,15 +216,32 @@ bool regvm_exec(struct regvm* vm, const code_t* code, int count, int64_t* exit)
                 *exit = (int64_t)vm->reg.id(code->reg);
             }
             return true;
+        case CODE_JUMP:
+            r = vm_jump(vm, cur, code);
+            break;
+#define JUMP(i, cmp)                                                                    \
+        case CODE_##i:                                                                  \
+            r = ((int64_t)vm->reg.id(code->reg) cmp 0) ? vm_jump(vm, cur, code) : 1;    \
+            break;
+            JUMP(JZ, ==);
+            JUMP(JNZ, !=);
+            JUMP(JG, >);
+            JUMP(JL, <);
+            JUMP(JNG, <=);
+            JUMP(JNL, >=);
+#undef JUMP
+        default:
+            r = regvm_exec_step(vm, cur, rest);
+            break;
         }
 
-        int r = regvm_exec_step(vm, cur, rest);
         if (r == 0)
         {
             //TODO : ERROR
             printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
             return false;
         }
+
         cur += r;
         rest -= r;
     }
@@ -211,9 +266,9 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
         break;
 
         EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(uint16_t*)&code[1]);
-        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(uint32_t*)&code[1]);
-        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(uint64_t*)&code[1]);
+        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(int16_t*)&code[1]);
+        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(int32_t*)&code[1]);
+        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(int64_t*)&code[1]);
 
 #undef EXTRA_RUN
 
@@ -226,6 +281,8 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
         CODE_RUN(STORE, vm_store, vm, *code);
         CODE_RUN(LOAD, vm_load, vm, *code);
         CODE_RUN(BLOCK, RUN_BLOCK, 0);
+        CODE_RUN(MOVE, vm_move, vm, *code);
+        CODE_RUN(CLEAR, vm_clear, vm, *code);
 
         CODE_RUN(AND, BITWISE, &=);
         CODE_RUN(OR, BITWISE, |=);

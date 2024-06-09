@@ -1,0 +1,22 @@
+# $1 = 12
+SETS    1   1   12
+TRAP    1   1
+# $0 = 0
+CLEAR   0   1
+TRAP    0   1
+# $0 += $1
+ADD     0   1
+TRAP    0   1
+# $1 -= 1
+DEC     1   1
+TRAP    1   1
+# $2 = -6
+#SETS    2   1   -7
+SETS    2   2   5
+TRAP    2   1
+# if ($1 > 0) jump $2
+JG      1   2
+TRAP    0   1
+# $0 += 10
+INC     0   10
+TRAP    0   1
