@@ -7,6 +7,10 @@
 #include <regvm.h>
 #include <debug.h>
 
+#include <string>
+#include <unordered_set>
+
+static std::unordered_set<std::string>   s_string_table;
 
 void print_uvalue(int type, union regvm_uvalue uv)
 {
@@ -37,7 +41,7 @@ struct dump_arg
 
 void dump_reg_info(void* arg, const struct regvm_reg_info* info)
 {
-    struct dump_arg* p = arg;
+    auto p = (struct dump_arg*)arg;
 
     switch ((intptr_t)info)
     {
@@ -172,8 +176,11 @@ int read_file(FILE* fp, struct regvm* vm)
             b += 8;
             break;
         case 0x43544553:
-            inst.code.id = CODE_SETL;
-            *(intptr_t*)(&inst.code + 1) = (intptr_t)data;
+            {
+                inst.code.id = CODE_SETL;
+                auto r = s_string_table.emplace(data);
+                *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
+            }
             break;
         default:
             printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
@@ -210,7 +217,7 @@ int main(int argc, char** argv)
 
     struct regvm* vm =  regvm_init();
 
-    regvm_irq_set(vm, IRQ_TRAP, dump_trap_callback);
+    regvm_irq_set(vm, IRQ_TRAP, (void*)dump_trap_callback);
 
     FILE* fp = stdin;
     if (argc > 1)
