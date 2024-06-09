@@ -149,6 +149,8 @@ int read_file(FILE* fp, struct regvm* vm)
         SINGLE(0x434544, DEC);
         SINGLE(0x444441, ADD);
         SINGLE(0x425553, SUB);
+        SINGLE(0x474843, CHG);
+
 #undef SINGLE
         case 0x53544553:
             inst.code.id = CODE_SETS;

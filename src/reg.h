@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "var.h"
 #include <code.h>
@@ -10,32 +11,52 @@
 class regs
 {
 public:
-    uvalue      values[16];       //
-    var*        froms[16];
-    uint8_t     types[16];
+    struct reg_v
+    {
+        uvalue          value;
+        var*            from;
+        uint8_t         type;
+        int8_t          idx;
+
+        operator double () const;
+        operator int64_t () const;
+        operator uint64_t () const;
+
+        bool set(uint64_t num, int ex);
+
+        bool store() const;
+        bool store(var* v);
+
+        bool load(var* v);
+        
+        reg_v& neighbor(int id);
+
+        bool set_from(var* v);
+    };
+
 
     friend class error;
 
     regs();
     ~regs();
 
-    inline static bool valid_id(const int id)
+    inline reg_v& id(int i)
     {
-        return (id < 0 || (id > 15)) ? false : true;
+#ifdef DEBUG
+        if (i < 0 || (i >= size))
+        {
+            //TODO
+            assert(0);
+        }
+#endif
+        return values[i];
     }
 
-    bool set(const code_t code, const uint64_t num);
+    //uint8_t type(const int id);
 
-    bool store(const int id);
-    bool store(const int id, var* v);
-
-    bool load(const int id, var* v);
-
-    uint8_t type(const int id);
-
-    double conv_dbl(const int id) const;
-    int64_t conv_sint(const int id) const;
-    uint64_t conv_uint(const int id) const;
 private:
+    static const int    size = 16;
+    reg_v               values[size];
+
 };
 

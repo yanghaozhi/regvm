@@ -6,74 +6,116 @@
 
 #include "vm.h"
 
+static bool vm_set(struct regvm* vm, const code_t code, const uint64_t value)
+{
+    auto& r = vm->reg.id(code.reg);
+    r.set(value, code.ex);
+    return true;
+}
+
 static bool vm_store(struct regvm* vm, const code_t code)
 {
+    auto& r = vm->reg.id(code.reg);
     if (code.ex == 0)
     {
-        vm->reg.store(code.reg);
+        r.store();
     }
     else
     {
-        if (vm->reg.types[code.ex] != TYPE_STRING)
+        auto& e = vm->reg.id(code.ex);
+        if ((e.type & 0x07) != TYPE_STRING)
         {
             //TODO
-            ERROR(ERR_TYPE_MISMATCH, "store name : %d", vm->reg.types[code.ex]);
+            ERROR(ERR_TYPE_MISMATCH, "store name : %d", e.type);
         }
         else
         {
-            int type = vm->reg.types[code.reg];
-            const char* name = vm->reg.values[code.ex].str;
-            var* v = vm->ctx->add(type, name);
-            vm->reg.store(code.reg, v);
+            var* v = vm->ctx->add(r.type, e.value.str);
+            r.store(v);
         }
     }
+    return true;
+}
+
+static bool vm_load(struct regvm* vm, const code_t code)
+{
+    auto& e = vm->reg.id(code.ex);
+    auto& r = vm->reg.id(code.reg);
+    return r.load(vm->ctx->get(e.value.str));
+}
+
+static bool vm_conv_impl(struct regvm* vm, regs::reg_v& r, int to)
+{
+    if (r.type == to) return true;
+
+    switch (to)
+    {
+    case TYPE_UNSIGNED:
+        r.value.uint = (uint64_t)r;
+        break;
+    case TYPE_SIGNED:
+        r.value.sint = (int64_t)r;
+        break;
+    case TYPE_DOUBLE:
+        r.value.dbl = (double)r;
+        break;
+    default:
+        //TODO : ERROR
+        return false;
+    }
+
+    r.set_from(NULL);
+    r.type = to;
+
     return true;
 }
 
 static bool vm_conv(struct regvm* vm, const code_t code)
 {
-    return true;
+    auto& r = vm->reg.id(code.reg);
+    return vm_conv_impl(vm, r, code.ex);
 }
 
 static bool vm_chg(struct regvm* vm, const code_t code)
 {
+    auto& r = vm->reg.id(code.reg);
     switch (code.ex)
     {
     case 0:
-        vm->reg.values[code.reg].uint = 0;
+        r.value.uint = 0;
         return true;
     case 1:
-        switch (vm->reg.types[code.reg])
+        switch (r.type)
         {
         case TYPE_UNSIGNED:
         case TYPE_SIGNED:
-            vm->reg.values[code.reg].sint = 0 - vm->reg.values[code.reg].sint;
+            r.value.sint = 0 - r.value.sint;
             break;
         case TYPE_DOUBLE:
-            vm->reg.values[code.reg].dbl = 0 - vm->reg.values[code.reg].dbl;
+            r.value.dbl = 0 - r.value.dbl;
             break;
         default:
             return false;
         }
         return true;
     case 2:
-        switch (vm->reg.types[code.reg])
+        switch (r.type)
         {
         case TYPE_UNSIGNED:
         case TYPE_SIGNED:
-            vm->reg.values[code.reg].dbl = 0 / vm->reg.values[code.reg].conv(vm->reg.types[code.ex], vm->reg.values[code.reg].dbl);
-            return true;
+            if (vm_conv_impl(vm, r, TYPE_DOUBLE) == false) return false;
+            [[fallthrough]];
         case TYPE_DOUBLE:
-            vm->reg.values[code.reg].dbl = 0 / vm->reg.values[code.reg].dbl;
+            r.value.dbl = 1 / r.value.dbl;
             break;
         default:
             return false;
         }
         return true;
     case 3:
-        if (vm->reg.types[code.reg] == TYPE_UNSIGNED)
+        if (r.type == TYPE_UNSIGNED)
         {
-            vm->reg.values[code.reg].uint = ~vm->reg.values[code.reg].uint;
+            r.value.uint = ~r.value.uint;
             return true;
         }
         else
@@ -100,18 +142,19 @@ static bool vm_chg(struct regvm* vm, const code_t code)
     }
 
 #define BITWISE(op)                                     \
-    if (vm->reg.types[code->reg] == TYPE_UNSIGNED)      \
     {                                                   \
-    vm->reg.values[code->reg].uint op vm->reg.values[code->ex].conv(vm->reg.types[code->ex], vm->reg.values[code->ex].sint);    \
-    }                                                   \
-    else                                                \
-    {                                                   \
-        /* TODO : ERROR */                              \
+        auto& e = vm->reg.id(code->ex);                 \
+        auto& r = vm->reg.id(code->reg);                \
+        if (r.type == TYPE_UNSIGNED)                    \
+        {                                               \
+            r.value.uint op (uint64_t)e;                \
+        }                                               \
+        else                                            \
+        {                                               \
+            /* TODO : ERROR */                          \
+        }                                               \
     }
 
-#define FROM_REG(t) vm->reg.values[code->ex].conv(vm->reg.types[code->ex], vm->reg.values[code->ex].t)
-
-#define DIRECT(t) code->ex
 
 #define NULL_CALL()
 
@@ -141,9 +184,9 @@ int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes)
         break;
 
         EXTRA_RUN(NOP, (code->ex) << 1, NULL_CALL);
-        EXTRA_RUN(SETS, 2, vm->reg.set, *code, *(uint16_t*)&code[1]);
-        EXTRA_RUN(SETI, 4, vm->reg.set, *code, *(uint32_t*)&code[1]);
-        EXTRA_RUN(SETL, 8, vm->reg.set, *code, *(uint64_t*)&code[1]);
+        EXTRA_RUN(SETS, 2, vm_set, vm, *code, *(uint16_t*)&code[1]);
+        EXTRA_RUN(SETI, 4, vm_set, vm, *code, *(uint32_t*)&code[1]);
+        EXTRA_RUN(SETL, 8, vm_set, vm, *code, *(uint64_t*)&code[1]);
 
 #undef EXTRA_RUN
 
@@ -154,7 +197,7 @@ int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes)
 
         CODE_RUN(TRAP, vm->idt.call<regvm_irq_trap>, vm, IRQ_TRAP, code->reg, code->ex);
         CODE_RUN(STORE, vm_store, vm, *code);
-        CODE_RUN(LOAD, vm->reg.load, code->reg, vm->ctx->get(vm->reg.values[code->reg].str));
+        CODE_RUN(LOAD, vm_load, vm, *code);
         CODE_RUN(BLOCK, RUN_BLOCK, 0);
 
         CODE_RUN(AND, BITWISE, &=);
@@ -165,22 +208,27 @@ int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes)
 
 #undef CODE_RUN
 
-#define CALC(id, op, val)                                   \
-    case CODE_##id:                                         \
-        switch (vm->reg.types[code->reg])                   \
-        {                                                   \
-        case TYPE_SIGNED:                                   \
-            vm->reg.values[code->reg].sint op val(sint);    \
-            break;                                          \
-        case TYPE_UNSIGNED:                                 \
-            vm->reg.values[code->reg].uint op val(sint);    \
-            break;                                          \
-        case TYPE_DOUBLE:                                   \
-            vm->reg.values[code->reg].dbl op val(sint);     \
-            break;                                          \
-        default:                                            \
-            break;                                          \
-        }                                                   \
+#define FROM_REG vm->reg.id(code->ex)
+#define DIRECT code->ex
+#define CALC(i, op, val)                                \
+    case CODE_##i:                                      \
+        {                                               \
+            auto& r = vm->reg.id(code->reg);            \
+            switch (r.type)                             \
+            {                                           \
+            case TYPE_SIGNED:                           \
+                r.value.sint op (int64_t)val;           \
+                break;                                  \
+            case TYPE_UNSIGNED:                         \
+                r.value.uint op (uint64_t)val;          \
+                break;                                  \
+            case TYPE_DOUBLE:                           \
+                r.value.dbl op (double)val;             \
+                break;                                  \
+            default:                                    \
+                break;                                  \
+            }                                           \
+        }                                               \
         break;
 
         CALC(INC, +=, DIRECT);

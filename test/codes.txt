@@ -29,3 +29,5 @@ ADD     1   0
 TRAP    1   1
 SUB     1   2
 TRAP    1   1
+CHG     1   2
+TRAP    1   1

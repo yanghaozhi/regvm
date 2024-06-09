@@ -76,15 +76,14 @@ public:
     }
     template <typename T> static void reg_info(const regs& reg, T cb, regvm_reg_info* info)
     {
-        //cb(vm->reg.values[i].num, vm->reg.froms[i], vm->reg.types[i]);
-        const int size = sizeof(reg.types);
-        for (int i = 0; i < size; i++)
+        //cb(vm->reg.values[i].value.num, vm->reg.values[i].from, vm->reg.values[i].type);
+        for (int i = 0; i < regs::size; i++)
         {
             info->id = i;
-            info->ref = (reg.froms[i] != NULL) ? reg.froms[i]->ref : -1;
-            info->type = reg.types[i];
-            info->value.sint = reg.values[i].sint;
-            info->from = reg.froms[i];
+            info->ref = (reg.values[i].from != NULL) ? reg.values[i].from->ref : -1;
+            info->type = reg.values[i].type;
+            info->value.sint = reg.values[i].value.sint;
+            info->from = reg.values[i].from;
             cb(info);
         }
     }
