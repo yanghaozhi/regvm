@@ -124,6 +124,10 @@ enum CODE_ID
 //| JNL         | reg                       | dest                      |
     CODE_JNL,           //if ($reg >= 0) jump
 
+
+//+-------------+---------------------------+---------------------------+
+//| EXIT         | reg                      | ex                        |
+    CODE_EXIT   = 255,  //退出执行, exitcode = (ex == 0) ? 0 : $reg
 };
 
 

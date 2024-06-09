@@ -45,3 +45,4 @@ TRAP    1   1
 # $1 = 1 / $1
 CHG     1   2
 TRAP    1   1
+TRAP    0   1

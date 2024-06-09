@@ -161,7 +161,40 @@ static bool vm_chg(struct regvm* vm, const code_t code)
 extern "C"
 {
 
-int regvm_exe_one(struct regvm* vm, const code_t* code, int max)
+bool regvm_exec(struct regvm* vm, const code_t* code, int count, int64_t* exit)
+{
+    int rest = count;
+    const code_t* cur = code;
+    while (rest > 0)
+    {
+        if (cur->id == CODE_EXIT)
+        {
+            if (cur->ex == 0)
+            {
+                *exit = 0;
+            }
+            else
+            {
+                *exit = (int64_t)vm->reg.id(code->reg);
+            }
+            return true;
+        }
+
+        int r = regvm_exec_step(vm, cur, rest);
+        if (r == 0)
+        {
+            //TODO : ERROR
+            printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
+            return false;
+        }
+        cur += r;
+        rest -= r;
+    }
+    *exit = (int64_t)vm->reg.id(0);
+    return true;
+}
+
+int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 {
     int read_codes = 1;
     switch (code->id)

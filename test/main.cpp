@@ -11,6 +11,7 @@
 #include <regvm.h>
 #include <debug.h>
 
+#include <vector>
 #include <string>
 #include <unordered_set>
 
@@ -253,16 +254,13 @@ class step : public txt
         }
         SHOW(" : %02d : %s", code->id, orig);
 
-        return regvm_exe_one(vm, code, max_bytes);
+        return regvm_exec_step(vm, code, max_bytes);
     }
 };
 
 class compile : public txt
 {
 public:
-    compile(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
-    virtual ~compile()      {close(fd);}
-
     virtual int line(const code_t* code, int max_bytes, const char* orig)
     {
         int bytes = 2;
@@ -283,10 +281,51 @@ public:
         default:
             break;
         }
-        return write(fd, code, bytes);
+        return write_code(code, bytes);
     }
 
+    virtual int write_code(const code_t* code, int bytes)     = 0;
+};
+
+class compile_2_file : public compile
+{
+public:
+    compile_2_file(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
+    virtual ~compile_2_file()      {close(fd);}
+
     int fd;
+
+    virtual int write_code(const code_t* code, int bytes)
+    {
+        return write(fd, code, bytes);
+    }
+};
+
+class compile_2_run : public compile
+{
+public:
+    std::vector<code_t>     codes;
+
+    virtual ~compile_2_run()
+    {
+        if (codes.size() > 0)
+        {
+            int64_t exit = 0;
+            bool r = regvm_exec(vm, &codes.front(), codes.size(), &exit);
+            int color = (r == true) ? 32 : 31;
+            printf("\n\n\e[%dm run result %d : %lld\e[0m\n\n", color, r, (long long)exit);
+        }
+    }
+
+    virtual int write_code(const code_t* code, int bytes)
+    {
+        const int count = bytes >> 1;
+        for (int i = 0; i < count; i++)
+        {
+            codes.emplace_back(code[i]);
+        }
+        return bytes;
+    }
 };
 
 class bin : public run
@@ -316,7 +355,7 @@ public:
         int rest = size / sizeof(code_t) - 1;
         while (rest > 0)
         {
-            int r = regvm_exe_one(vm, cur, rest);
+            int r = regvm_exec_step(vm, cur, rest);
             if (r == 0)
             {
                 printf("\e[31m run ERROR at %d\e[0m\n", size - rest);
@@ -333,7 +372,8 @@ const char* HELP = R"(tester for regvm
 USAGE tester [-f file] [-r] [-v] [-c out]
 options:
     -f {file}       input file
-    -r              run code file line by line
+    -r              run code file
+    -s              run code file line by line
     -b              run binrary code file
     -c {out}        compile to binary code
     -v              verbose mode
@@ -350,17 +390,20 @@ int main(int argc, char** argv)
     run* o = NULL;
     const char* file = NULL;
 
-    const char* opts = "f:c:rbhv";
+    const char* opts = "f:c:rsbhv";
     int opt = 0;
     while ((opt = getopt(argc, argv, opts)) != -1)
     {
         switch (opt)
         {
         case 'r':
+            o = new compile_2_run();
+            break;
+        case 's':
             o = new step();
             break;
         case 'c':
-            o = new compile(optarg);
+            o = new compile_2_file(optarg);
             break;
         case 'b':
             o = new bin();
