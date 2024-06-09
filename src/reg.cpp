@@ -119,3 +119,49 @@ uint8_t regs::type(const int id)
     if (valid_id(id) == false) return false;
     return types[id];
 }
+
+double regs::conv_dbl(const int id) const
+{
+    switch (types[id])
+    {
+    case TYPE_SIGNED:
+        return (double)values[id].sint;
+    case TYPE_UNSIGNED:
+        return (double)values[id].uint;
+    case TYPE_DOUBLE:
+        return values[id].dbl;
+    default:
+        //TODO
+        return -1;
+    }
+}
+
+int64_t regs::conv_sint(const int id) const
+{
+    switch (types[id])
+    {
+    case TYPE_SIGNED:
+    case TYPE_UNSIGNED:
+        return values[id].sint;
+    case TYPE_DOUBLE:
+        return (int64_t)values[id].dbl;
+    default:
+        //TODO
+        return -1;
+    }
+}
+
+uint64_t regs::conv_uint(const int id) const
+{
+    switch (types[id])
+    {
+    case TYPE_SIGNED:
+    case TYPE_UNSIGNED:
+        return values[id].uint;
+    case TYPE_DOUBLE:
+        return (uint64_t)values[id].dbl;
+    default:
+        //TODO
+        return -1;
+    }
+}

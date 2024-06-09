@@ -16,7 +16,7 @@ struct regvm* regvm_init();
 bool regvm_exit(struct regvm* vm);
 
 //max表示当前指令后续还至少有多少字节（某些指令需要附加指令）
-//返回实际读取了指令字节数
+//返回下一条指令的起始相对地址
 int regvm_exe_one(struct regvm* vm, const code_t* code, int max_bytes);
 
 //

@@ -32,6 +32,10 @@ public:
     bool load(const int id, var* v);
 
     uint8_t type(const int id);
+
+    double conv_dbl(const int id) const;
+    int64_t conv_sint(const int id) const;
+    uint64_t conv_uint(const int id) const;
 private:
 };
 

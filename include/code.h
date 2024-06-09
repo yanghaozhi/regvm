@@ -18,11 +18,12 @@ typedef struct
 enum DATA_TYPE
 {
     TYPE_OTHER      = 0,
-    TYPE_SIGNED,
-    TYPE_UNSIGNED,
-    TYPE_DOUBLE,
-    TYPE_STRING,
+    TYPE_SIGNED     = 1,
+    TYPE_UNSIGNED   = 2,
+    TYPE_DOUBLE     = 3,
+    TYPE_STRING     = 4,
 };
+//8 <= DATA_TYPE <= 15 means user defined
 
 enum CODE_ID
 {
@@ -43,7 +44,9 @@ enum CODE_ID
     CODE_LOAD,          //把变量的值加载到$reg中，变量名存于$ex里
 //+-------------+---------------------------+---------------------------+
 //| STORE       | reg                       | reg stores var name       |
-    CODE_STORE,         //把reg的值存入$ex中，如果ex为0，则reg原路回写
+    CODE_STORE,         //如果ex为0，则把reg的值回写到原始加载的变量中
+                        //如果ex不为0，则新变量名存于ex内
+                        //type==4是局部变量，type==0x0C是全局变量
 //+-------------+---------------------------+---------------------------+
 //| BLOCK       | N/A                       | type                      |
     CODE_BLOCK,         //ex 0 means enter block, 1 means exit block
@@ -100,8 +103,8 @@ enum CODE_ID
 //+-------------+---------------------------+---------------------------+
 //| JUMP        | N/A                       | dest                      |
     CODE_JUMP,          //无条件跳转，跳转目的地址存于$dest中
-                        //相对偏移，跳转地址为偶数（正负表示跳转方向）
-                        //绝对偏移，则跳转地址为真实地址+1
+                        //相对偏移，跳转地址的类型为0x08（正负表示跳转方向）
+                        //绝对偏移，跳转地址的类型为0x09
 //+-------------+---------------------------+---------------------------+
 //| JZ          | reg                       | dest                      |
     CODE_JZ,            //if ($reg == 0) jump
