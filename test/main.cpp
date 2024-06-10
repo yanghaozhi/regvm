@@ -138,12 +138,48 @@ public:
     int         size = 0;
     uint32_t    str_id  = 0;
     std::unordered_map<std::string, uint32_t>   string_table;
+    std::unordered_map<std::string, int>        ids;
+
 
     virtual ~txt()  {fclose(fp);}
     virtual int line(const code_t* code, int max_bytes, const char* orig)   = 0;
     virtual bool prepare(const char* file)
     {
         run::prepare(NULL);
+#define SET_KEY(k) ids.emplace(#k, CODE_##k);
+        SET_KEY(NOP);
+        SET_KEY(TRAP);
+        SET_KEY(SETS);
+        SET_KEY(SETI);
+        SET_KEY(SETL);
+        SET_KEY(MOVE);
+        SET_KEY(CLEAR);
+        SET_KEY(LOAD);
+        SET_KEY(STORE);
+        SET_KEY(BLOCK);
+        SET_KEY(CALL);
+        SET_KEY(RET);
+        SET_KEY(CMD);
+        SET_KEY(INC);
+        SET_KEY(DEC);
+        SET_KEY(ADD);
+        SET_KEY(SUB);
+        SET_KEY(MUL);
+        SET_KEY(DIV);
+        SET_KEY(AND);
+        SET_KEY(OR);
+        SET_KEY(XOR);
+        SET_KEY(CONV);
+        SET_KEY(CHG);
+        SET_KEY(JUMP);
+        SET_KEY(JZ);
+        SET_KEY(JNZ);
+        SET_KEY(JG);
+        SET_KEY(JL);
+        SET_KEY(JNG);
+        SET_KEY(JNL);
+        SET_KEY(EXIT);
+#undef SET_KEY
         fp = fopen(file, "r");
         return fp != NULL;
     }
@@ -177,6 +213,7 @@ public:
         int             ex;
         int             reg;
 
+
         char buf[1024];
         char data[1024];
 
@@ -197,46 +234,32 @@ public:
 
             memset(&inst, 0, sizeof(inst));
 
-            std::unordered_map<std::string, int>  ids;
-
-#define SET_KEY(k) ids.emplace(#k, CODE_##k);
-            SET_KEY(NOP);
-            SET_KEY(TRAP);
-            SET_KEY(SETS);
-            SET_KEY(SETI);
-            SET_KEY(SETL);
-            SET_KEY(MOVE);
-            SET_KEY(CLEAR);
-            SET_KEY(LOAD);
-            SET_KEY(STORE);
-            SET_KEY(BLOCK);
-            SET_KEY(CALL);
-            SET_KEY(RET);
-            SET_KEY(CMD);
-            SET_KEY(INC);
-            SET_KEY(DEC);
-            SET_KEY(ADD);
-            SET_KEY(SUB);
-            SET_KEY(MUL);
-            SET_KEY(DIV);
-            SET_KEY(AND);
-            SET_KEY(OR);
-            SET_KEY(XOR);
-            SET_KEY(CONV);
-            SET_KEY(CHG);
-            SET_KEY(JUMP);
-            SET_KEY(JZ);
-            SET_KEY(JNZ);
-            SET_KEY(JG);
-            SET_KEY(JL);
-            SET_KEY(JNG);
-            SET_KEY(JNL);
-            SET_KEY(EXIT);
-#undef SET_KEY
+            inst.code.ex = ex;
+            inst.code.reg = reg;
             auto it = ids.find(id.s);
             if (it != ids.end())
             {
-                inst.code.id = ids[id.s];
+                inst.code.id = it->second;
+
+                switch (inst.code.id)
+                {
+                case CODE_SETS:
+                    {
+                        int v = 0;
+                        sscanf(data, "%d", &v);
+                        *(int16_t*)(&inst.code + 1) = v;
+                    }
+                    break;
+                case CODE_SETI:
+                    sscanf(data, "%d", (int32_t*)(&inst.code + 1));
+                    break;
+                case CODE_SETL:
+                    inst.code.id = CODE_SETL;
+                    sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
+                    break;
+                default:
+                    break;
+                }
             }
             else
             {
@@ -249,28 +272,6 @@ public:
                     printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
                     continue;
                 }
-            }
-            inst.code.ex = ex;
-            inst.code.reg = reg;
-
-            switch (inst.code.id)
-            {
-            case CODE_SETS:
-                {
-                    int v = 0;
-                    sscanf(data, "%d", &v);
-                    *(int16_t*)(&inst.code + 1) = v;
-                }
-                break;
-            case CODE_SETI:
-                sscanf(data, "%d", (int32_t*)(&inst.code + 1));
-                break;
-            case CODE_SETL:
-                inst.code.id = CODE_SETL;
-                sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
-                break;
-            default:
-                break;
             }
 
             int b = line(&inst.code, sizeof(inst), buf);
@@ -307,19 +308,54 @@ class step : public txt
 class compile : public txt
 {
 public:
-    std::unordered_map<std::string, int>     labels;
+    std::unordered_map<std::string, int>        labels;
+    std::unordered_multimap<std::string, code_t*>    pending_labels;
     bool find_label(const char* str, char* buf)
     {
         return (sscanf(str, "#LABEL: %255[^\n]", buf) == 1) ? true : false;
     }
+    virtual uint32_t setc(code_t& code, intptr_t* next, const char* str)
+    {
+        char buf[256];
+        buf[0] = '\0';
+        if (find_label(str, buf) == true)
+        {
+            auto it = labels.find(buf);
+            if (it != labels.end())
+            {
+                code.id = CODE_SETL;
+                code.ex = 0x09;
+                *next = it->second;
+                printf("change %p => %d\n", &code, it->second);
+            }
+            else
+            {
+                pending_labels.emplace(buf, &code);
+            }
+            printf("set label %s - %d - %s\n", str, it->second, buf);
+            return 0;
+        }
+        else
+        {
+            return txt::setc(code, next, str);
+        }
+    }
     virtual void comment(const char* line, int bytes)
     {
         char label[256];
+        label[0] = '\0';
         if (find_label(line, label) == true)
         {
             labels.emplace(label, bytes >> 1);
+
+            auto r = pending_labels.equal_range(label);
+            for (auto& it = r.first; it != r.second; ++it)
+            {
+                it->second->id = CODE_SETL;
+                it->second->ex = 0x09;
+                *(intptr_t*)(it->second + 1) = bytes >> 1;
+            }
         }
-        //printf("\e[35m %d - %s\e[0m", bytes >> 1, line);
     }
     virtual int line(const code_t* code, int max_bytes, const char* orig)
     {
@@ -363,8 +399,11 @@ public:
     virtual uint32_t setc(code_t& code, intptr_t* next, const char* str)
     {
         auto i = compile::setc(code, next, str);
-        string_ids.emplace(i, str);
-        *next = (i << 1) + 1;
+        if (i > 0)
+        {
+            string_ids.emplace(i, str);
+            *next = (i << 1) + 1;
+        }
         return i;
     }
 
