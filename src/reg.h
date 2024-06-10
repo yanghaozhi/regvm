@@ -18,9 +18,9 @@ public:
         uint8_t         type;
         int8_t          idx;
 
-        operator double () const;
-        operator int64_t () const;
-        operator uint64_t () const;
+        inline operator double () const    {return conv_d(type);};
+        inline operator int64_t () const   {return conv_i(type);};
+        inline operator uint64_t () const  {return conv_u(type);};
 
         bool set(uint64_t num, int ex);
 
@@ -32,6 +32,10 @@ public:
         reg_v& neighbor(int id);
 
         bool set_from(var* v);
+
+        double conv_d(int type) const;
+        int64_t conv_i(int type) const;
+        uint64_t conv_u(int type) const;
     };
 
 

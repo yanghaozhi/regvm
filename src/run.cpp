@@ -184,10 +184,10 @@ static int vm_jump(struct regvm* vm, const code_t code, int offset)
     auto& e = vm->reg.id(code.ex);
     switch (e.type)
     {
-    case TYPE_SIGNED:
-        return (int64_t)e;
-    case TYPE_UNSIGNED:
-        return (uint64_t)e - offset;
+    case 0x08:
+        return e.conv_i(TYPE_SIGNED);
+    case 0x09:
+        return e.conv_i(TYPE_UNSIGNED) - offset;
     default:
         return 0;
     }

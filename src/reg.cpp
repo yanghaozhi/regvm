@@ -115,7 +115,7 @@ bool regs::reg_v::store(var* v)
     return true;
 }
 
-regs::reg_v::operator double () const
+double regs::reg_v::conv_d(int type) const
 {
     switch (type)
     {
@@ -131,7 +131,7 @@ regs::reg_v::operator double () const
     }
 }
 
-regs::reg_v::operator int64_t () const
+int64_t regs::reg_v::conv_i(int type) const
 {
     switch (type)
     {
@@ -146,7 +146,7 @@ regs::reg_v::operator int64_t () const
     }
 }
 
-regs::reg_v::operator uint64_t () const
+uint64_t regs::reg_v::conv_u(int type) const
 {
     switch (type)
     {
