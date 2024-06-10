@@ -9,8 +9,8 @@
 #include "context.h"
 
 #ifdef DEBUG
-#define ERROR(errcode, fmt, ...)                                                \
-    SET_ERROR(errcode, fmt, ##__VA_ARGS__);                                     \
+#define ERROR(e, c, o, fmt, ...)                                                \
+    SET_ERROR(e, c, o, fmt, ##__VA_ARGS__);                                     \
     vm->err.self.line = __LINE__;                                               \
     vm->err.self.file = __FILE__;                                               \
     vm->err.self.func = __func__;
@@ -18,32 +18,38 @@
 #define ERROR(errcode, fmt, ...)    SET_ERROR(errcode, fmt, ##__VA_ARGS__)
 #endif
 
-
-#define SET_ERROR(errcode, fmt, ...)                                            \
-    vm->err.code = errcode;                                                     \
+#define SET_ERROR(e, c, o, fmt, ...)                                            \
+    vm->err.code = e;                                                           \
     snprintf(vm->err.reason, sizeof(vm->err.reason), fmt, ##__VA_ARGS__);       \
     vm->err.reason[sizeof(vm->err.reason) - 1] = '\0';                          \
     vm->err.func = vm->ctx->func;                                               \
-    if (vm->ctx->cur != NULL)                                                   \
     {                                                                           \
-        vm->err.src = *vm->ctx->cur;                                            \
-    }                                                                           \
-    vm->idt.call<regvm_irq_error>(vm, IRQ_ERROR, errcode, vm->err.reason);
-
+        regvm_error err;                                                        \
+        if (vm->ctx->cur != NULL)                                               \
+        {                                                                       \
+            vm->err.src = *vm->ctx->cur;                                        \
+            err.src = &vm->err.src;                                             \
+        }                                                                       \
+        err.code = e;                                                           \
+        err.reason = vm->err.reason;                                            \
+        vm->idt.call(vm, IRQ_ERROR, c, o, &err);                                \
+    }
 
 
 class error
 {
 public:
-    int             code;
+    bool                fatal   = false;
+    int64_t             exit    = 0;
+    int                 code;
 
-    src_location    src;
-    src_location    func;
+    regvm_src_location  src;
+    regvm_src_location  func;
 #ifdef DEBUG
-    src_location    self;
+    regvm_src_location  self;
 #endif
 
-    char            reason[1024];
+    char                reason[1024];
 
     //void print_stack();
 

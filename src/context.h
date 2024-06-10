@@ -18,11 +18,14 @@ public:
     context(scope& globals, context* cur = NULL);
     ~context();
 
-    src_location*       cur;
-    src_location        func;
+    context*            up      = NULL;
+    context*            down    = NULL;
 
-    context*            up;
-    context*            down;
+    regvm_src_location  func;
+    regvm_src_location* cur     = NULL;
+
+    const code_t*       start   = NULL;     //first code pos
+    const code_t*       entry   = NULL;     //entry of current context
 
     void enter_block();
     void leave_block();

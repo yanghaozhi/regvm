@@ -5,18 +5,17 @@
 
 #include "var.h"
 
-context::context(scope& g, context* cur) :
-    cur(NULL),
+context::context(scope& g, context* c) :
     func(),
     globals(g)
 {
     scopes.emplace_front(scopes.size() + 1);
 
-    up = cur;
+    up = c;
     down = NULL;
-    if (cur != NULL)
+    if (c != NULL)
     {
-        cur->down = this;
+        c->down = this;
     }
 }
 

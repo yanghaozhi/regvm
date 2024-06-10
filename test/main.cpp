@@ -89,32 +89,32 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     }
 }
 
-int dump_trap_callback(struct regvm* vm, int irq, int reg, int ex)
+int dump_trap_callback(struct regvm* vm, int irq, code_t code, int offset, void* extra)
 {
     struct dump_arg arg = {0};
-    switch (ex)
+    switch (code.ex)
     {
     case 0: //all regs
         arg.reg = -1;
         regvm_debug_reg_callback(vm, dump_reg_info, &arg);
         break;
     case 1: //1 arg
-        arg.reg = reg;
+        arg.reg = code.reg;
         regvm_debug_reg_callback(vm, dump_reg_info, &arg);
         break;
     case 2:
         regvm_debug_var_callback(vm, dump_var_info, &arg);
         break;
     default:
-        return -1;
+        break;
     }
-    return 0;
+    return true;
 }
 
-int dump_error_callback(struct regvm* vm, int irq, int code, const char* reason)
+int dump_error_callback(struct regvm* vm, int irq, code_t code, int offset, void* extra)
 {
-    printf("\e[31m %d - %s \e[0m\n", code, reason);
-    return 0;
+    //printf("\e[31m %d - %s \e[0m\n", code, reason);
+    return true;
 }
 
 class run
@@ -128,7 +128,7 @@ public:
     virtual bool go(void)       = 0;
     virtual bool prepare(const char* file)
     {
-        regvm_irq_set(vm, IRQ_TRAP, (void*)dump_trap_callback);
+        regvm_irq_set(vm, IRQ_TRAP, dump_trap_callback);
         return true;
     }
 };
