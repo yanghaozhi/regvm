@@ -34,6 +34,7 @@ enum ERR_CODE
     ERR_INVALID_REG,
     ERR_TYPE_MISMATCH,
     ERR_INST_TRUNC,
+    ERR_STRING_RELOCATE,
 };
 
 //typedef int (*regvm_irq_error)(struct regvm* vm, int irq, int code, const char* reason);
@@ -47,12 +48,13 @@ enum IRQ
     IRQ_TRAP,               //extra always NULL
     IRQ_ERROR,              //extra is pointer of regvm_error
     IRQ_LOCATION,           //extra is pointer of regvm_src_location
+    IRQ_RELOCATE,           //extra is string id
 };
 
 //return 0 means FATAL ERROR, it will stop running !!!
-typedef int (*regvm_irq_handler)(struct regvm* vm, int irq, code_t code, int offset, void* extra);
+typedef int64_t (*regvm_irq_handler)(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra);
 
-bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler func);
+bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler func, void* arg);
 
 
 #ifdef __cplusplus

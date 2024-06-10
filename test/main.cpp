@@ -11,12 +11,10 @@
 #include <regvm.h>
 #include <debug.h>
 
-#include <map>
 #include <vector>
 #include <string>
 #include <unordered_set>
-
-static std::unordered_set<std::string>   s_string_table;
+#include <unordered_map>
 
 static int verbose = 0;
 #define SHOW(fmt, ...)              \
@@ -89,7 +87,7 @@ void dump_var_info(void* arg, const struct regvm_var_info* info)
     }
 }
 
-int dump_trap_callback(struct regvm* vm, int irq, code_t code, int offset, void* extra)
+int64_t dump_trap_callback(struct regvm* vm, void*, int irq, code_t code, int offset, void* extra)
 {
     struct dump_arg arg = {0};
     switch (code.ex)
@@ -111,7 +109,7 @@ int dump_trap_callback(struct regvm* vm, int irq, code_t code, int offset, void*
     return true;
 }
 
-int dump_error_callback(struct regvm* vm, int irq, code_t code, int offset, void* extra)
+int dump_error_callback(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra)
 {
     //printf("\e[31m %d - %s \e[0m\n", code, reason);
     return true;
@@ -128,7 +126,7 @@ public:
     virtual bool go(void)       = 0;
     virtual bool prepare(const char* file)
     {
-        regvm_irq_set(vm, IRQ_TRAP, dump_trap_callback);
+        regvm_irq_set(vm, IRQ_TRAP, dump_trap_callback, NULL);
         return true;
     }
 };
@@ -136,7 +134,11 @@ public:
 class txt : public run
 {
 public:
-    FILE* fp = NULL;
+    FILE*       fp = NULL;
+    int         size = 0;
+    uint32_t    str_id  = 0;
+    std::unordered_map<std::string, uint32_t>   string_table;
+
     virtual ~txt()  {fclose(fp);}
     virtual int line(const code_t* code, int max_bytes, const char* orig)   = 0;
     virtual bool prepare(const char* file)
@@ -144,6 +146,19 @@ public:
         run::prepare(NULL);
         fp = fopen(file, "r");
         return fp != NULL;
+    }
+
+    virtual void comment(const char* line, int bytes)
+    {
+        printf("\e[35m %s\e[0m", line);
+    }
+
+    virtual uint32_t setc(code_t& code, intptr_t* next, const char* str)
+    {
+        code.id = CODE_SETL;
+        auto it = string_table.try_emplace(str, ++str_id).first;
+        *next = (intptr_t)it->first.c_str();
+        return it->second;
     }
 
     virtual bool go(void)
@@ -170,7 +185,7 @@ public:
             id.v = 0;
             if (buf[0] == '#')
             {
-                printf("\e[35m %s\e[0m", buf);
+                comment(buf, size);
                 continue;
             }
 
@@ -182,7 +197,7 @@ public:
 
             memset(&inst, 0, sizeof(inst));
 
-            std::map<std::string, int>  ids;
+            std::unordered_map<std::string, int>  ids;
 
 #define SET_KEY(k) ids.emplace(#k, CODE_##k);
             SET_KEY(NOP);
@@ -225,11 +240,9 @@ public:
             }
             else
             {
-                if (id.v == 0x43544553)
+                if (id.v == 0x43544553) //SETC
                 {
-                    inst.code.id = CODE_SETL;
-                    auto r = s_string_table.emplace(data);
-                    *(intptr_t*)(&inst.code + 1) = (intptr_t)r.first->c_str();
+                    setc(inst.code, (intptr_t*)(&inst.code + 1), data);
                 }
                 else
                 {
@@ -240,7 +253,6 @@ public:
             inst.code.ex = ex;
             inst.code.reg = reg;
 
-            int b = 2;
             switch (inst.code.id)
             {
             case CODE_SETS:
@@ -248,26 +260,28 @@ public:
                     int v = 0;
                     sscanf(data, "%d", &v);
                     *(int16_t*)(&inst.code + 1) = v;
-                    b += 2;
                 }
                 break;
             case CODE_SETI:
                 sscanf(data, "%d", (int32_t*)(&inst.code + 1));
-                b += 4;
                 break;
             case CODE_SETL:
                 inst.code.id = CODE_SETL;
                 sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
-                b += 8;
                 break;
             default:
                 break;
             }
 
-            if (line(&inst.code, sizeof(inst), buf) <= 0)
+            int b = line(&inst.code, sizeof(inst), buf);
+            if (b == 0)
             {
                 printf("\e[31m --- run ERROR : %s\e[0m\n", buf);
                 return false;
+            }
+            else
+            {
+                size += b;
             }
         };
 
@@ -286,13 +300,27 @@ class step : public txt
         }
         SHOW(" : %02d : %s", code->id, orig);
 
-        return regvm_exec_step(vm, code, max_bytes);
+        return regvm_exec_step(vm, code, max_bytes) << 1;
     }
 };
 
 class compile : public txt
 {
 public:
+    std::unordered_map<std::string, int>     labels;
+    bool find_label(const char* str, char* buf)
+    {
+        return (sscanf(str, "#LABEL: %255[^\n]", buf) == 1) ? true : false;
+    }
+    virtual void comment(const char* line, int bytes)
+    {
+        char label[256];
+        if (find_label(line, label) == true)
+        {
+            labels.emplace(label, bytes >> 1);
+        }
+        //printf("\e[35m %d - %s\e[0m", bytes >> 1, line);
+    }
     virtual int line(const code_t* code, int max_bytes, const char* orig)
     {
         int bytes = 2;
@@ -322,14 +350,51 @@ public:
 class compile_2_file : public compile
 {
 public:
-    compile_2_file(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
-    virtual ~compile_2_file()      {close(fd);}
+    //compile_2_file(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
+    compile_2_file(const char* file) :
+        fd(open("/tmp", O_TMPFILE | O_RDWR, 0666)),
+        out(file)
+    {}
 
-    int fd;
+    int             fd;
+    std::string     out;
+    std::unordered_map<uint32_t, std::string>   string_ids;
+
+    virtual uint32_t setc(code_t& code, intptr_t* next, const char* str)
+    {
+        auto i = compile::setc(code, next, str);
+        string_ids.emplace(i, str);
+        *next = (i << 1) + 1;
+        return i;
+    }
 
     virtual int write_code(const code_t* code, int bytes)
     {
         return write(fd, code, bytes);
+    }
+
+    virtual ~compile_2_file()
+    {
+        int real = open(out.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (real >= 0)
+        {
+            for (auto& it : string_ids)
+            {
+                uint32_t id = (it.first << 1) + 1;
+                write(real, &id, sizeof(uint32_t));
+                write(real, it.second.c_str(), it.second.length() + 1);
+                printf("remap %u - %u - %s\n", it.first, id, it.second.c_str());
+            }
+            uint64_t end = 0;
+            write(real, &end, sizeof(uint64_t));
+            
+            lseek(fd, 0, SEEK_SET);
+            copy_file_range(fd, NULL, real, NULL, size, 0);
+            //sendfile(real, fd, NULL, size);
+
+            close(real);
+        }
+        close(fd);
     }
 };
 
@@ -365,7 +430,10 @@ class bin : public run
 public:
     int fd              = -1;
     int size            = -1;
-    const char* data    = NULL;
+    char* data          = NULL;
+    code_t* start       = NULL;
+    std::unordered_map<uint32_t, std::string>   strtab;
+
     virtual ~bin()
     {
         if (data != NULL) munmap((void*)data, size);
@@ -377,26 +445,35 @@ public:
         fd = open(file, O_RDONLY);
         struct stat st;
         fstat(fd, &st);
-        size = st.st_size;
-        data = (const char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        data = (char*)mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+        uint32_t* id = (uint32_t*)data;
+        while (*id != 0)
+        {
+            const char* s = (const char*)(&id[1]);
+            printf("reload %u - %s\n", *id, s);
+            strtab.emplace(*id, s);
+            id = (uint32_t*)(s + strlen(s) + 1);
+        }
+        start = (code_t*)&id[2];
+        size = st.st_size - (((char*)start) - data);
+        regvm_irq_set(vm, IRQ_RELOCATE, reloate_str, this);
+
         return fd >= 0;
     }
     virtual bool go(void)
     {
-        code_t* cur = (code_t*)data;
-        int rest = size / sizeof(code_t) - 1;
-        while (rest > 0)
-        {
-            int r = regvm_exec_step(vm, cur, rest);
-            if (r == 0)
-            {
-                printf("\e[31m run ERROR at %d\e[0m\n", size - rest);
-                return false;
-            }
-            cur += r;
-            rest -= r;
-        }
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, start, size / sizeof(code_t), &exit);
+        int color = (r == true) ? 32 : 31;
+        printf("\n\n\e[%dm run result %d : %lld\e[0m\n\n", color, r, (long long)exit);
         return true;
+    }
+    static int64_t reloate_str(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra)
+    {
+        intptr_t id = (intptr_t)extra;
+        bin* self = (bin*)arg;
+        auto it = self->strtab.find(id);
+        return (it != self->strtab.end()) ? (intptr_t)it->second.c_str() : 0;
     }
 };
 

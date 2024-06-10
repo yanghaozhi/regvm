@@ -8,9 +8,24 @@
 
 #define UNSUPPORT_TYPE(op, t, c, o) ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
-static bool vm_set(struct regvm* vm, const code_t code, const int64_t value)
+static bool vm_set(struct regvm* vm, const code_t code, int64_t value, int offset)
 {
     auto& r = vm->reg.id(code.reg);
+    if ((code.ex == TYPE_STRING) && (value & 0x01))
+    {
+        auto& it = vm->idt.isrs[IRQ_RELOCATE];
+        if (it.func == NULL)
+        {
+            ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+            return false;
+        }
+        value = it.call(vm, IRQ_RELOCATE, code, offset, (void*)value);
+        if (value == 0)
+        {
+            ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
+            return false;
+        }
+    }
     return r.set(value, code.ex);
 }
 
@@ -223,9 +238,9 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
         *next += (need);                                                        \
         break;
         EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(int16_t*)&code[1]);
-        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(int32_t*)&code[1]);
-        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(int64_t*)&code[1]);
+        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(int16_t*)&code[1], offset);
+        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(int32_t*)&code[1], offset);
+        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(int64_t*)&code[1], offset);
 #undef EXTRA_RUN
 
 #define CODE_RUN(id, func, ...)             \
@@ -293,7 +308,7 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
 #undef BITWISE
 
     case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, NULL);
+        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, NULL, *next);
         break;
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);

@@ -5,6 +5,7 @@ TRAP    1   1
 CLEAR   0   1
 TRAP    0   1
 # $0 += $1
+#LABEL: aaa
 ADD     0   1
 TRAP    0   1
 # $1 -= 1

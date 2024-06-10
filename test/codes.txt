@@ -23,6 +23,9 @@ SETC    4   4   def
 STORE   2   4   
 # $4 = "qwer"
 SETC    5   4   qwer
+# $6 = "abc"
+SETC    6   4   abc
+TRAP    0   0
 # abc = $1
 STORE   1   3   
 TRAP    0   2
