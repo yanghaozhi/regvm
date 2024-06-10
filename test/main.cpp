@@ -135,7 +135,7 @@ class txt : public run
 {
 public:
     FILE*       fp = NULL;
-    int         size = 0;
+    uint64_t    size = 0;
     uint32_t    str_id  = 0;
     std::unordered_map<std::string, uint32_t>   string_table;
     std::unordered_map<std::string, int>        ids;
@@ -184,7 +184,7 @@ public:
         return fp != NULL;
     }
 
-    virtual void comment(const char* line, int bytes)
+    virtual void comment(const char* line, uint64_t bytes)
     {
         printf("\e[35m %s\e[0m", line);
     }
@@ -308,8 +308,30 @@ class step : public txt
 class compile : public txt
 {
 public:
-    std::unordered_map<std::string, int>        labels;
+    std::unordered_map<std::string, uint64_t>        labels;
     std::unordered_multimap<std::string, code_t*>    pending_labels;
+
+    void set_label(code_t* code, intptr_t* data, uint64_t pos)
+    {
+        code->ex = 0x09;
+
+        if (pos <= 0xFFFF)
+        {
+            code->id = CODE_SETS;
+            *(uint16_t*)data = pos;
+        }
+        else if (pos <= 0xFFFFFFFF)
+        {
+            code->id = CODE_SETI;
+            *(uint32_t*)data = pos;
+        }
+        else
+        {
+            code->id = CODE_SETL;
+            *(uint64_t*)data = pos;
+        }
+    }
+
     bool find_label(const char* str, char* buf)
     {
         return (sscanf(str, "#LABEL: %255[^\n]", buf) == 1) ? true : false;
@@ -323,16 +345,14 @@ public:
             auto it = labels.find(buf);
             if (it != labels.end())
             {
-                code.id = CODE_SETL;
-                code.ex = 0x09;
-                *next = it->second;
-                printf("change %p => %d\n", &code, it->second);
+                set_label(&code, next, it->second);
+                printf("change %p => %lu\n", &code, it->second);
             }
             else
             {
                 pending_labels.emplace(buf, &code);
             }
-            printf("set label %s - %d - %s\n", str, it->second, buf);
+            printf("set label %s - %lu - %s\n", str, it->second, buf);
             return 0;
         }
         else
@@ -340,7 +360,7 @@ public:
             return txt::setc(code, next, str);
         }
     }
-    virtual void comment(const char* line, int bytes)
+    virtual void comment(const char* line, uint64_t bytes)
     {
         char label[256];
         label[0] = '\0';
@@ -351,9 +371,7 @@ public:
             auto r = pending_labels.equal_range(label);
             for (auto& it = r.first; it != r.second; ++it)
             {
-                it->second->id = CODE_SETL;
-                it->second->ex = 0x09;
-                *(intptr_t*)(it->second + 1) = bytes >> 1;
+                set_label(it->second, (intptr_t*)(it->second + 1), bytes >> 1);
             }
         }
     }
