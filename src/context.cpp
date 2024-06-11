@@ -5,7 +5,7 @@
 
 #include "var.h"
 
-context::context(scope& g, context* c) :
+context::context(scope& g, context* c, void* arg) :
     func(),
     globals(g)
 {

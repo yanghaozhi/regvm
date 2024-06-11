@@ -15,7 +15,7 @@ class context
     friend class error;
 
 public:
-    context(scope& globals, context* cur = NULL);
+    context(scope& globals, context* cur, void* arg);
     ~context();
 
     context*            up      = NULL;

@@ -15,14 +15,14 @@ struct regvm
 {
     regs        reg;
     scope       globals;
-    context*    ctx;
+    context*    ctx     = NULL;
     error       err;
     ivt         idt;
 
     regvm();
     ~regvm();
 
-    bool call(void);
+    bool call(void* arg);
     bool ret(void);
 };
 

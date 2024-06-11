@@ -13,13 +13,13 @@ static bool vm_set(struct regvm* vm, const code_t code, int64_t value, int offse
     auto& r = vm->reg.id(code.reg);
     if ((code.ex == TYPE_STRING) && (value & 0x01))
     {
-        auto& it = vm->idt.isrs[IRQ_RELOCATE];
+        auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
         if (it.func == NULL)
         {
             ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
             return false;
         }
-        value = it.call(vm, IRQ_RELOCATE, code, offset, (void*)value);
+        value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
         if (value == 0)
         {
             ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);

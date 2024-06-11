@@ -15,6 +15,7 @@ struct ivt
     {
         regvm_irq_handler   func;
         void*               arg;
+        regvm_irq_handler   def_func;
         int64_t call(struct regvm* vm, int id, code_t code, int offset, void* extra);
     };
 

@@ -17,18 +17,23 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
-regvm::regvm() : reg(), globals(0), ctx(new context(globals))
+regvm::regvm() : reg(), globals(0)
 {
 }
 
 regvm::~regvm()
 {
-    delete ctx;
+    while (ctx != NULL)
+    {
+        auto p = ctx;
+        ctx = ctx->down;
+        delete p;
+    }
 }
 
-bool regvm::call(void)
+bool regvm::call(void* arg)
 {
-    auto next = new context(globals, ctx);
+    auto next = new context(globals, ctx, arg);
     ctx = next;
     return true;
 }
