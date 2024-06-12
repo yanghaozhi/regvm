@@ -4,13 +4,23 @@
 
 #include <map>
 
+#include <irq.h>
+
 class func
 {
 public:
-    const code_t*   codes;
-    int             count;
+    struct obj
+    {
+        regvm_function  info;
+
+        obj(struct regvm* vm, uint64_t id, code_t code, int offset);
+        bool run(struct regvm* vm);
+    };
+
+    bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
 
 private:
-    std::map<uint64_t, func*>   func_tab;
+    std::map<uint64_t, obj>   funcs;
+
 };
 

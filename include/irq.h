@@ -19,6 +19,15 @@ struct regvm_src_location
     const char*         func;
 };
 
+struct regvm_function
+{
+    uint64_t            id;
+
+    regvm_src_location  entry;
+    code_t*             codes;
+    int                 count;
+};
+
 struct regvm_error
 {
     int                 code;
@@ -35,6 +44,7 @@ enum ERR_CODE
     ERR_TYPE_MISMATCH,
     ERR_INST_TRUNC,
     ERR_STRING_RELOCATE,
+    ERR_FUNCTION_INFO,
 };
 
 //typedef int (*regvm_irq_error)(struct regvm* vm, int irq, int code, const char* reason);

@@ -334,29 +334,47 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
         return false;
     };
 
-#undef SET_ERROR
 #undef CALL
 
     return !vm->err.fatal;
 }
 
 
-extern "C"
+bool func::run(struct regvm* vm, uint64_t id, code_t code, int offset)
 {
+    auto r = funcs.try_emplace(id, vm, id, code, offset);
+    if ((r.second == false) || (r.first->second.info.codes == NULL) || (r.first->second.info.count == 0))
+    {
+        ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
+        return false;
+    }
+    return r.first->second.run(vm);
+}
 
-bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
+func::obj::obj(struct regvm* vm, uint64_t id, code_t code, int offset)
 {
-    int rest = count;
+    info.id = id;
+    info.codes = NULL;
+    info.count = 0;
+    if (vm->idt.isrs[IRQ_STR_RELOCATE].call(vm, IRQ_FUNCTION_CALL, code, offset, (void*)&info) == false)
+    {
+        info.codes = NULL;
+        info.count = 0;
+    }
+}
+
+bool func::obj::run(struct regvm* vm)
+{
+    int rest = info.count;
+    const code_t* cur = info.codes;
     int offset = 0;
-    const code_t* cur = start;
-    vm->ctx->start = start;
     while (rest > 0)
     {
         int next = 0;
         if (exec_step(vm, cur, offset, rest, &next) == false)
         {
             //TODO : ERROR
-            printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
+            printf("\e[31m run ERROR at %d\e[0m\n", info.count - rest);
             return false;
         }
         if (next == 0)
@@ -368,19 +386,6 @@ bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
         rest -= next;
         offset += next;
     }
-    *exit = (int64_t)vm->reg.id(0);
     return true;
 }
-
-int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
-{
-    vm->ctx->start = code;
-    int next = 0;
-    return (exec_step(vm, code, 0, max, &next) == false) ? 0 : next;
-}
-
-}   //extern C
-
-#undef UNSUPPORT_TYPE
-
 

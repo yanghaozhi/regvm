@@ -24,8 +24,8 @@ public:
     regvm_src_location  func;
     regvm_src_location* cur     = NULL;
 
-    const code_t*       start   = NULL;     //first code pos
-    const code_t*       entry   = NULL;     //entry of current context
+    //const code_t*       start   = NULL;     //first code pos
+    //const code_t*       entry   = NULL;     //entry of current context
 
     void enter_block();
     void leave_block();
