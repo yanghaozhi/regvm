@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "var.h"
 
@@ -22,6 +23,7 @@ context::~context()
 {
     if (scopes.size() != 1)
     {
+        assert(0);
         //WARNING !!!
     }
     scopes.clear();

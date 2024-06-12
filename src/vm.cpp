@@ -53,8 +53,12 @@ bool regvm::call(uint64_t id, code_t code, int offset)
         ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
         return false;
     }
-    ctx = new context(globals, ctx, &r.first->second);
-    return r.first->second.run(this);
+    context c(globals, ctx, &r.first->second);
+    auto o = ctx;
+    ctx = &c;
+    bool rr = r.first->second.run(this);
+    ctx = o;
+    return rr;
 }
 
 bool regvm::ret(void)

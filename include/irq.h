@@ -58,7 +58,7 @@ enum IRQ
 
     //遇到TRAP（调试）指令时发起
     //返回值为继续n条指令后再次自动发起，0表示不再发起
-    IRQ_TRAP,               //extra always NULL
+    IRQ_TRAP,               //extra is pointer of regvm_src_location
 
     //发生内部错误时发起
     IRQ_ERROR,              //extra is pointer of regvm_error

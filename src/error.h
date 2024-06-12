@@ -39,8 +39,6 @@
 class error
 {
 public:
-    bool                fatal   = false;
-    int64_t             exit    = 0;
     int                 code;
 
     regvm_src_location  src;

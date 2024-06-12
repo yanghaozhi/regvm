@@ -106,7 +106,7 @@ int64_t ivt::call(struct regvm* vm, int id, code_t code, int offset, void* args,
     int64_t r = it.call(vm, id, code, offset, args);
     if ((id == IRQ_ERROR) || (r == 0))
     {
-        vm->err.fatal = true;
+        vm->fatal = true;
     }
     return r;
 }

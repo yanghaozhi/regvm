@@ -42,7 +42,7 @@ static bool vm_store(struct regvm* vm, const code_t code, int offset)
         if ((e.type & 0x07) != TYPE_STRING)
         {
             ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-            vm->err.fatal = true;
+            vm->fatal = true;
             return false;
         }
         else
@@ -308,7 +308,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 #undef BITWISE
 
     case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, NULL, *next);
+        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->ctx->running->info.entry, *next);
         break;
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);
@@ -325,14 +325,22 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         JUMP(JNL, >=);
 #undef JUMP
     case CODE_EXIT:
-        vm->err.exit = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
+        vm->exit_code = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
+        vm->exit = true;
         [[fallthrough]];
     case CODE_RET:
         return true;
     case CODE_CALL:
         {
             auto& r = vm->reg.id(code->reg);
-            vm->call((uint64_t)r, *code, offset);
+            if ((vm->call((uint64_t)r, *code, offset) == false) || (vm->fatal == true))
+            {
+                return false;
+            }
+            if (vm->exit == true)
+            {
+                return true;
+            }
         }
         *next += 8;
         break;
@@ -343,7 +351,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 
 #undef CALL
 
-    return !vm->err.fatal;
+    return !vm->fatal;
 }
 
 func::func(struct regvm* vm, uint64_t id, code_t code, int offset)

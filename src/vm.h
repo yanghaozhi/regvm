@@ -15,9 +15,12 @@
 
 struct regvm
 {
+    bool        exit        = false;
+    bool        fatal       = false;
+    int64_t     exit_code   = 0;
+    context*    ctx         = NULL;
     regs        reg;
     scope       globals;
-    context*    ctx     = NULL;
     error       err;
     ivt         idt;
 
