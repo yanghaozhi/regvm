@@ -9,18 +9,16 @@
 class func
 {
 public:
-    struct obj
-    {
-        regvm_function  info;
+    regvm_function  info;
 
-        obj(struct regvm* vm, uint64_t id, code_t code, int offset);
-        bool run(struct regvm* vm);
-    };
+    func(struct regvm* vm, uint64_t id, code_t code, int offset);
+    func(const code_t* start, int count);
 
-    bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
+    bool run(struct regvm* vm);
 
-private:
-    std::map<uint64_t, obj>   funcs;
+    static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
+    //bool run(struct regvm* vm, const code_t* start, int count);
+    //bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
 
 };
 

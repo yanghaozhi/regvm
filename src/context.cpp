@@ -5,8 +5,7 @@
 
 #include "var.h"
 
-context::context(scope& g, context* c, void* arg) :
-    func(),
+context::context(scope& g, context* c, func* f) :
     globals(g)
 {
     scopes.emplace_front(scopes.size() + 1);

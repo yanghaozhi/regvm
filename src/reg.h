@@ -49,7 +49,6 @@ public:
 #ifdef DEBUG
         if (i < 0 || (i >= size))
         {
-            //TODO
             assert(0);
         }
 #endif

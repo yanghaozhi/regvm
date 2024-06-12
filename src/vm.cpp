@@ -31,11 +31,30 @@ regvm::~regvm()
     }
 }
 
-bool regvm::call(void* arg)
+bool regvm::run(const code_t* start, int count)
 {
-    auto next = new context(globals, ctx, arg);
-    ctx = next;
-    return true;
+    auto r = funcs.try_emplace(0, start, count);
+    if (r.second == false)
+    {
+        auto vm = this;
+        ERROR(ERR_FUNCTION_INFO, *start, 0, "Can not get entry function");
+        return false;
+    }
+    ctx = new context(globals, ctx, &r.first->second);
+    return r.first->second.run(this);
+}
+
+bool regvm::call(uint64_t id, code_t code, int offset)
+{
+    auto r = funcs.try_emplace(id, this, id, code, offset);
+    if ((r.second == false) || (r.first->second.info.codes == NULL) || (r.first->second.info.count == 0))
+    {
+        auto vm = this;
+        ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
+        return false;
+    }
+    ctx = new context(globals, ctx, &r.first->second);
+    return r.first->second.run(this);
 }
 
 bool regvm::ret(void)

@@ -447,7 +447,6 @@ public:
             
             lseek(fd, 0, SEEK_SET);
             copy_file_range(fd, NULL, real, NULL, size, 0);
-            //sendfile(real, fd, NULL, size);
 
             close(real);
         }
@@ -513,7 +512,7 @@ public:
         }
         start = (code_t*)&id[2];
         size = st.st_size - (((char*)start) - data);
-        regvm_irq_set(vm, IRQ_RELOCATE, reloate_str, this);
+        regvm_irq_set(vm, IRQ_STR_RELOCATE, reloate_str, this);
 
         return fd >= 0;
     }

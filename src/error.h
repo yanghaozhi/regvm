@@ -22,7 +22,7 @@
     vm->err.code = e;                                                           \
     snprintf(vm->err.reason, sizeof(vm->err.reason), fmt, ##__VA_ARGS__);       \
     vm->err.reason[sizeof(vm->err.reason) - 1] = '\0';                          \
-    vm->err.func = vm->ctx->func;                                               \
+    vm->err.func = vm->ctx->running->info.entry;                                \
     {                                                                           \
         regvm_error err;                                                        \
         if (vm->ctx->cur != NULL)                                               \
@@ -112,7 +112,7 @@ public:
 
         for (const auto& it : ctx.scopes)
         {
-            f = ctx.func.func;
+            f = ctx.running->info.entry.func;
             scope_vars(it, func);
         }
 

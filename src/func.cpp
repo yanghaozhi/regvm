@@ -213,7 +213,7 @@ static int vm_jump(struct regvm* vm, const code_t code, int offset)
 #define NULL_CALL() true
 
 
-static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max, int* next)
+bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* next)
 {
     *next = 1;
 
@@ -329,6 +329,13 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
         [[fallthrough]];
     case CODE_RET:
         return true;
+    case CODE_CALL:
+        {
+            auto& r = vm->reg.id(code->reg);
+            vm->call((uint64_t)r, *code, offset);
+        }
+        *next += 8;
+        break;
     default:
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
         return false;
@@ -339,23 +346,9 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
     return !vm->err.fatal;
 }
 
-
-bool func::run(struct regvm* vm, uint64_t id, code_t code, int offset)
-{
-    auto r = funcs.try_emplace(id, vm, id, code, offset);
-    if ((r.second == false) || (r.first->second.info.codes == NULL) || (r.first->second.info.count == 0))
-    {
-        ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
-        return false;
-    }
-    return r.first->second.run(vm);
-}
-
-func::obj::obj(struct regvm* vm, uint64_t id, code_t code, int offset)
+func::func(struct regvm* vm, uint64_t id, code_t code, int offset)
 {
     info.id = id;
-    info.codes = NULL;
-    info.count = 0;
     if (vm->idt.isrs[IRQ_STR_RELOCATE].call(vm, IRQ_FUNCTION_CALL, code, offset, (void*)&info) == false)
     {
         info.codes = NULL;
@@ -363,7 +356,17 @@ func::obj::obj(struct regvm* vm, uint64_t id, code_t code, int offset)
     }
 }
 
-bool func::obj::run(struct regvm* vm)
+func::func(const code_t* start, int count)
+{
+    info.id = 0;
+    info.codes = start;
+    info.count = count;
+    info.entry.line = 0;
+    info.entry.file = NULL;
+    info.entry.func = NULL;
+}
+
+bool func::run(struct regvm* vm)
 {
     int rest = info.count;
     const code_t* cur = info.codes;
@@ -371,7 +374,7 @@ bool func::obj::run(struct regvm* vm)
     while (rest > 0)
     {
         int next = 0;
-        if (exec_step(vm, cur, offset, rest, &next) == false)
+        if (step(vm, cur, offset, rest, &next) == false)
         {
             //TODO : ERROR
             printf("\e[31m run ERROR at %d\e[0m\n", info.count - rest);
@@ -388,4 +391,6 @@ bool func::obj::run(struct regvm* vm)
     }
     return true;
 }
+
+#undef UNSUPPORT_TYPE
 

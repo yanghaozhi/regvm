@@ -95,6 +95,7 @@ bool regs::reg_v::store(var* v)
     if (v->type != type)
     {
         //TODO : error handler
+        assert(0);
         return false;
     }
 
@@ -126,7 +127,7 @@ double regs::reg_v::conv_d(int type) const
     case TYPE_DOUBLE:
         return value.dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }
@@ -141,7 +142,7 @@ int64_t regs::reg_v::conv_i(int type) const
     case TYPE_DOUBLE:
         return (int64_t)value.dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }
@@ -156,7 +157,7 @@ uint64_t regs::reg_v::conv_u(int type) const
     case TYPE_DOUBLE:
         return (uint64_t)value.dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }

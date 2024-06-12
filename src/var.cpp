@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 var::var(uint8_t t, const char* n, const int l) :
@@ -95,7 +96,7 @@ double uvalue::conv(int type, double v) const
     case TYPE_DOUBLE:
         return dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }
@@ -110,7 +111,7 @@ int64_t uvalue::conv(int type, int64_t t) const
     case TYPE_DOUBLE:
         return (int64_t)dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }
@@ -125,7 +126,7 @@ uint64_t uvalue::conv(int type, uint64_t u) const
     case TYPE_DOUBLE:
         return (uint64_t)dbl;
     default:
-        //TODO
+        assert(0);
         return -1;
     }
 }

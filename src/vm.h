@@ -10,6 +10,7 @@
 #include "scope.h"
 #include "context.h"
 
+#include <map>
 
 
 struct regvm
@@ -19,12 +20,14 @@ struct regvm
     context*    ctx     = NULL;
     error       err;
     ivt         idt;
-    func        funcs;
+
+    std::map<uint64_t, func>   funcs;
 
     regvm();
     ~regvm();
 
-    bool call(void* arg);
+    bool run(const code_t* start, int count);
+    bool call(uint64_t id, code_t code, int offset);
     bool ret(void);
 };
 

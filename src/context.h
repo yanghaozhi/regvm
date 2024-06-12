@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include <list>
+#include "func.h"
 #include "scope.h"
 
 struct var;
@@ -15,13 +16,13 @@ class context
     friend class error;
 
 public:
-    context(scope& globals, context* cur, void* arg);
+    context(scope& globals, context* ctx, func* func);
     ~context();
 
     context*            up      = NULL;
     context*            down    = NULL;
 
-    regvm_src_location  func;
+    func*               running = NULL;
     regvm_src_location* cur     = NULL;
 
     //const code_t*       start   = NULL;     //first code pos

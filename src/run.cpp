@@ -11,27 +11,11 @@ extern "C"
 
 bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
 {
-    int rest = count;
-    int offset = 0;
-    const code_t* cur = start;
-    while (rest > 0)
+    if (vm->run(start, count) == false)
     {
-        int next = 0;
-        //TODO
-        //if (exec_step(vm, cur, offset, rest, &next) == false)
-        {
-            //TODO : ERROR
-            printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
-            return false;
-        }
-        if (next == 0)
-        {
-            return true;
-        }
-
-        cur += next;
-        rest -= next;
-        offset += next;
+        //TODO : ERROR
+        //printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
+        return false;
     }
     *exit = (int64_t)vm->reg.id(0);
     return true;
@@ -40,13 +24,34 @@ bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
 int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 {
     int next = 0;
-    //TODO
-    //return (exec_step(vm, code, 0, max, &next) == false) ? 0 : next;
-    return next;
+    return (func::step(vm, code, 0, max, &next) == false) ? 0 : next;
 }
 
+int regvm_code_len(struct regvm* vm, code_t code)
+{
+    int count = 1;
+    switch (code.id)
+    {
+    case CODE_NOP:
+        count += code.ex;
+        break;
+    case CODE_SETS:
+        count += 1;
+        break;
+    case CODE_SETI:
+        count += 2;
+        break;
+    case CODE_SETL:
+        count += 4;
+        break;
+    case CODE_CALL:
+        count += 4;
+        break;
+    default:
+        break;
+    }
+    return count;
+}
 }   //extern C
-
-#undef UNSUPPORT_TYPE
 
 

@@ -24,7 +24,7 @@ struct regvm_function
     uint64_t            id;
 
     regvm_src_location  entry;
-    code_t*             codes;
+    const code_t*       codes;
     int                 count;
 };
 
