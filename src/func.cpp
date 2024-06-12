@@ -325,15 +325,9 @@ static bool exec_step(struct regvm* vm, const code_t* code, int offset, int max,
         JUMP(JNL, >=);
 #undef JUMP
     case CODE_EXIT:
-        *next = 0;
-        if (code->ex == 0)
-        {
-            vm->err.exit = 0;
-        }
-        else
-        {
-            vm->err.exit = (int64_t)vm->reg.id(code->reg);
-        }
+        vm->err.exit = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
+        [[fallthrough]];
+    case CODE_RET:
         return true;
     default:
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);

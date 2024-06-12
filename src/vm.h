@@ -5,6 +5,7 @@
 
 #include "reg.h"
 #include "ivt.h"
+#include "func.h"
 #include "error.h"
 #include "scope.h"
 #include "context.h"
@@ -18,6 +19,7 @@ struct regvm
     context*    ctx     = NULL;
     error       err;
     ivt         idt;
+    func        funcs;
 
     regvm();
     ~regvm();
