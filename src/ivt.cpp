@@ -23,7 +23,7 @@ bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler handler, void* a
 //返回值为继续n条指令后再次自动发起，0表示不再发起
 static int64_t irq_TRAP(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra)
 {
-    return 0;
+    return 1;
 }
 
 //发生内部错误时发起
@@ -51,7 +51,7 @@ static int64_t irq_ERROR(struct regvm* vm, void* arg, int irq, code_t code, int 
 //需要获取当前源码的文件名/行号/函数名
 static int64_t irq_LOCATION(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra)
 {
-    return 1;
+    return 0;
 }
 
 //重定位字符串地址
@@ -73,12 +73,19 @@ ivt::ivt()
 {
     memset(isrs, 0, sizeof(isrs));
 
-#define SET_DEFAULT(x)  isrs[IRQ_##x].func = irq_##x; isrs[IRQ_##x].def_func = irq_##x;
-    SET_DEFAULT(TRAP);
-    SET_DEFAULT(ERROR);
-    SET_DEFAULT(LOCATION);
-    SET_DEFAULT(STR_RELOCATE);
-    SET_DEFAULT(FUNCTION_CALL);
+#define SET_DEFAULT(x, e)               \
+    {                                   \
+        isr& it = isrs[IRQ_##x];        \
+        it.func = irq_##x;              \
+        it.def_func = irq_##x;          \
+        it.id = IRQ_##x;                \
+        it.check_err = e;               \
+    }
+    SET_DEFAULT(TRAP, isr::DO_NOT_CHECK);
+    SET_DEFAULT(ERROR, 0);
+    SET_DEFAULT(LOCATION, -1);
+    SET_DEFAULT(STR_RELOCATE, 0);
+    SET_DEFAULT(FUNCTION_CALL, 0);
 #undef SET_DEFAULT
 }
 
@@ -104,7 +111,7 @@ int64_t ivt::call(struct regvm* vm, int id, code_t code, int offset, void* args,
 {
     isr& it = isrs[id];
     int64_t r = it.call(vm, id, code, offset, args);
-    if ((id == IRQ_ERROR) || (r == 0))
+    if ((id == IRQ_ERROR) || ((r == it.check_err) && (it.check_err != isr::DO_NOT_CHECK)))
     {
         vm->fatal = true;
     }

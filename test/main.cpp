@@ -406,7 +406,7 @@ class compile_2_file : public compile
 public:
     //compile_2_file(const char* file) : fd(open(file, O_WRONLY | O_CREAT | O_TRUNC))   {}
     compile_2_file(const char* file) :
-        fd(open("/tmp", O_TMPFILE | O_RDWR, 0666)),
+        fd(open("./", O_TMPFILE | O_RDWR, 0666)),
         out(file)
     {}
 
@@ -446,7 +446,8 @@ public:
             write(real, &end, sizeof(uint64_t));
             
             lseek(fd, 0, SEEK_SET);
-            copy_file_range(fd, NULL, real, NULL, size, 0);
+            int r = copy_file_range(fd, NULL, real, NULL, size, 0);
+            printf("%d : %d - %d : %d - %s\n", r, fd, real, errno, strerror(errno));
 
             close(real);
         }
@@ -498,6 +499,8 @@ public:
 
     virtual bool prepare(const char* file)
     {
+        run::prepare(file);
+
         fd = open(file, O_RDONLY);
         struct stat st;
         fstat(fd, &st);
