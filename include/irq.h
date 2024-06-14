@@ -35,6 +35,13 @@ struct regvm_error
     regvm_src_location* src;
 };
 
+struct regvm_mem
+{
+    void*               reg;
+    void*               ex;
+    uint64_t            value;
+};
+
 enum ERR_CODE
 {
     ERR_OK = 0,
@@ -66,10 +73,17 @@ enum IRQ
     //需要获取当前源码的文件名/行号/函数名
     IRQ_LOCATION,           //extra is pointer of regvm_src_location
 
-    //重定位字符串地址
-    //当调用SET指令时，如果类型为STRING，且指针值为奇数（合法指针值不会为奇数）
-    //则会发起该中断以获得具体的真实地址
-    IRQ_STR_RELOCATE,       //extra is string id
+    IRQ_SET,
+
+    IRQ_STORE,
+
+    IRQ_LOAD,
+
+    IRQ_BLOCK,
+    ////重定位字符串地址
+    ////当调用SET指令时，如果类型为STRING，且指针值为奇数（合法指针值不会为奇数）
+    ////则会发起该中断以获得具体的真实地址
+    //IRQ_STR_RELOCATE,       //extra is string id
 
     //发起函数调用
     //需要在此中断中提供新函数的具体信息
@@ -77,7 +91,7 @@ enum IRQ
 };
 
 //return 0 means FATAL ERROR, it will stop running !!!
-typedef int64_t (*regvm_irq_handler)(struct regvm* vm, void* arg, int irq, code_t code, int offset, void* extra);
+typedef int64_t (*regvm_irq_handler)(struct regvm* vm, void* arg, code_t code, int offset, void* extra);
 
 bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler func, void* arg);
 

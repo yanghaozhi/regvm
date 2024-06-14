@@ -4,34 +4,29 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "var.h"
+#include "structs.h"
 #include <code.h>
 
 
 class regs
 {
 public:
-    struct reg_v
+    struct v : public core::regv
     {
-        uvalue          value;
-        var*            from;
-        uint8_t         type;
-        int8_t          idx;
-
         inline operator double () const    {return conv_d(type);};
         inline operator int64_t () const   {return conv_i(type);};
         inline operator uint64_t () const  {return conv_u(type);};
 
         bool set(uint64_t num, int ex);
 
-        bool store() const;
-        bool store(var* v);
+        //bool store() const;
+        //bool store(core::var* v);
 
-        bool load(var* v);
-        
-        reg_v& neighbor(int id);
+        //bool load(core::var* v);
+        //
+        //v& neighbor(int id);
 
-        bool set_from(var* v);
+        //bool set_from(core::var* v);
 
         double conv_d(int type) const;
         int64_t conv_i(int type) const;
@@ -44,7 +39,7 @@ public:
     regs();
     ~regs();
 
-    inline reg_v& id(int i)
+    inline v& id(int i)
     {
 #ifdef DEBUG
         if (i < 0 || (i >= size))
@@ -59,7 +54,7 @@ public:
 
 private:
     static const int    size = 16;
-    reg_v               values[size];
+    v                   values[size];
 
 };
 

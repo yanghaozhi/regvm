@@ -7,7 +7,7 @@
 
 #include <list>
 #include "func.h"
-#include "scope.h"
+//#include "scope.h"
 
 struct var;
 
@@ -16,7 +16,7 @@ class context
     friend class error;
 
 public:
-    context(scope& globals, context* ctx, func* func);
+    context(context* ctx, func* func);
     ~context();
 
     context*            up      = NULL;
@@ -31,12 +31,12 @@ public:
     void enter_block();
     void leave_block();
 
-    var* add(const int type, const char* name);
+    //var* add(const int type, const char* name);
 
-    var* get(const char* name) const;
+    //var* get(const char* name) const;
 
-private:
-    scope&              globals;
-    std::list<scope>    scopes;
+//private:
+//    scope&              globals;
+//    std::list<scope>    scopes;
 };
 

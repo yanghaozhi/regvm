@@ -7,7 +7,7 @@
 #include "ivt.h"
 #include "func.h"
 #include "error.h"
-#include "scope.h"
+//#include "scope.h"
 #include "context.h"
 
 #include <map>
@@ -20,7 +20,7 @@ struct regvm
     int64_t     exit_code   = 0;
     context*    ctx         = NULL;
     regs        reg;
-    scope       globals;
+    //scope       globals;
     error       err;
     ivt         idt;
 

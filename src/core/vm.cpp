@@ -17,7 +17,7 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
-regvm::regvm() : reg(), globals(0)
+regvm::regvm() : reg()
 {
 }
 
@@ -40,7 +40,7 @@ bool regvm::run(const code_t* start, int count)
         ERROR(ERR_FUNCTION_INFO, *start, 0, "Can not get entry function");
         return false;
     }
-    ctx = new context(globals, ctx, &r.first->second);
+    ctx = new context(ctx, &r.first->second);
     return r.first->second.run(this);
 }
 
@@ -53,7 +53,7 @@ bool regvm::call(uint64_t id, code_t code, int offset)
         ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
         return false;
     }
-    context c(globals, ctx, &r.first->second);
+    context c(ctx, &r.first->second);
     auto o = ctx;
     ctx = &c;
     bool rr = r.first->second.run(this);

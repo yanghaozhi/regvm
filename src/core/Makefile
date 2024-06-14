@@ -2,12 +2,13 @@ SRCS = $(wildcard ./*.cpp)
 OBJS += $(patsubst %.cpp, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
-OUT=libregvm.so
-DIR=../libs
+ROOT=../../
+NAME=core
+DIR=$(ROOT)/libs
 
 DEPS= 
 
-all: $(OUT)
+all: $(NAME)
 
 tt:
 	@echo $(SRCS)
@@ -15,9 +16,10 @@ tt:
 	@echo $(OBJS)
 
 
-OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -I../include -DDEBUG
-CFLAGS=-std=gnu11 $(OPTS)
-CXXFLAGS=-std=c++17 $(OPTS)
+INC=-I$(ROOT)/include -I$(ROOT)/src/include
+OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DDEBUG
+CFLAGS=-std=gnu11 $(OPTS) $(INC)
+CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 
 CC=gcc
 CXX=g++
@@ -34,9 +36,10 @@ $(OBJS) : %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c -MMD $<
 
 
-$(OUT):$(OBJS)
+$(NAME):$(OBJS)
 	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -shared -o $(DIR)/$(OUT) $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -shared -o $(DIR)/lib$(NAME).so $(OBJS) $(DEPS)
+	ar rcs $(DIR)/lib$(NAME).a  $(OBJS) $(DEPS)
 
 
 -include *.d

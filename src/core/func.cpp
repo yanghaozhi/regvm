@@ -11,53 +11,57 @@
 static bool vm_set(struct regvm* vm, const code_t code, int64_t value, int offset)
 {
     auto& r = vm->reg.id(code.reg);
-    if ((code.ex == TYPE_STRING) && (value & 0x01))
-    {
-        auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-        if (it.func == NULL)
-        {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
-            return false;
-        }
-        value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
-        if (value == 0)
-        {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
-            return false;
-        }
-    }
+    //if ((code.ex == TYPE_STRING) && (value & 0x01))
+    //{
+    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
+    //    if (it.func == NULL)
+    //    {
+    //        ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+    //        return false;
+    //    }
+    //    value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
+    //    if (value == 0)
+    //    {
+    //        ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
+    //        return false;
+    //    }
+    //}
     return r.set(value, code.ex);
 }
 
 static bool vm_store(struct regvm* vm, const code_t code, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
-    if (code.ex == 0)
-    {
-        return r.store();
-    }
-    else
-    {
-        auto& e = vm->reg.id(code.ex);
-        if ((e.type & 0x07) != TYPE_STRING)
-        {
-            ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-            vm->fatal = true;
-            return false;
-        }
-        else
-        {
-            var* v = vm->ctx->add(r.type, e.value.str);
-            return r.store(v);
-        }
-    }
+    //TODO
+    //auto& r = vm->reg.id(code.reg);
+    //if (code.ex == 0)
+    //{
+    //    return r.store();
+    //}
+    //else
+    //{
+    //    auto& e = vm->reg.id(code.ex);
+    //    if ((e.type & 0x07) != TYPE_STRING)
+    //    {
+    //        ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
+    //        vm->fatal = true;
+    //        return false;
+    //    }
+    //    else
+    //    {
+    //        var* v = vm->ctx->add(r.type, e.value.str);
+    //        return r.store(v);
+    //    }
+    //}
+    return true;
 }
 
 static bool vm_load(struct regvm* vm, const code_t code)
 {
-    auto& e = vm->reg.id(code.ex);
-    auto& r = vm->reg.id(code.reg);
-    return r.load(vm->ctx->get(e.value.str));
+    //TODO
+    //auto& e = vm->reg.id(code.ex);
+    //auto& r = vm->reg.id(code.reg);
+    //return r.load(vm->ctx->get(e.value.str));
+    return true;
 }
 
 static bool vm_move(struct regvm* vm, const code_t code)
@@ -81,7 +85,7 @@ static bool vm_clear(struct regvm* vm, const code_t code)
     return true;
 }
 
-static bool vm_conv_impl(struct regvm* vm, regs::reg_v& r, int to)
+static bool vm_conv_impl(struct regvm* vm, regs::v& r, int to)
 {
     if (r.type == to) return true;
 
@@ -357,11 +361,12 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 func::func(struct regvm* vm, uint64_t id, code_t code, int offset)
 {
     info.id = id;
-    if (vm->idt.isrs[IRQ_STR_RELOCATE].call(vm, IRQ_FUNCTION_CALL, code, offset, (void*)&info) == false)
-    {
-        info.codes = NULL;
-        info.count = 0;
-    }
+    //TODO
+    //if (vm->idt.isrs[IRQ_STR_RELOCATE].call(vm, IRQ_FUNCTION_CALL, code, offset, (void*)&info) == false)
+    //{
+    //    info.codes = NULL;
+    //    info.count = 0;
+    //}
 }
 
 func::func(const code_t* start, int count)
