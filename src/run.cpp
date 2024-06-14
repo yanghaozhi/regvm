@@ -27,7 +27,7 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
     return (func::step(vm, code, 0, max, &next) == false) ? 0 : next;
 }
 
-int regvm_code_len(struct regvm* vm, code_t code)
+int regvm_code_len(code_t code)
 {
     int count = 1;
     switch (code.id)

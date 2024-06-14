@@ -28,7 +28,7 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int rest);
 
 //计算指令长度
 //单位：指令条数
-int regvm_code_len(struct regvm* vm, code_t code);
+int regvm_code_len(code_t code);
 
 //
 //bool regvm_exe_pages(struct regvm* vm, const int pages_count, const code_page* pages);
