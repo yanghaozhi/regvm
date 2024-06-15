@@ -9,6 +9,9 @@
 #include "func.h"
 //#include "scope.h"
 
+namespace core
+{
+
 struct var;
 
 class frame
@@ -39,4 +42,7 @@ public:
 //    scope&              globals;
 //    std::list<scope>    scopes;
 };
+
+
+}
 

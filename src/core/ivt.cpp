@@ -19,6 +19,8 @@ bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler handler, void* a
 #endif
 
 
+using namespace core;
+
 //遇到TRAP（调试）指令时发起
 //返回值为继续n条指令后再次自动发起，0表示不再发起
 static int64_t irq_TRAP(struct regvm* vm, void* arg, code_t code, int offset, void* extra)

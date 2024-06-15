@@ -8,6 +8,8 @@
 
 #define UNSUPPORT_TYPE(op, t, c, o) ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
+using namespace core;
+
 static bool vm_move(struct regvm* vm, const code_t code)
 {
     auto& e = vm->reg.id(code.ex);
@@ -29,7 +31,7 @@ static bool vm_clear(struct regvm* vm, const code_t code)
     return true;
 }
 
-static bool vm_conv_impl(struct regvm* vm, regs::v& r, int to)
+static bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
 {
     if (r.type == to) return true;
 

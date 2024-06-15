@@ -8,6 +8,8 @@
 #include <utility>
 
 
+namespace core
+{
 
 struct ivt
 {
@@ -31,3 +33,6 @@ struct ivt
 
     int64_t call(struct regvm* vm, int id, code_t code, int offset, void* args, int64_t defval = 0);
 };
+
+}
+

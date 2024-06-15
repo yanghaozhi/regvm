@@ -24,7 +24,7 @@ bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
 int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 {
     int next = 0;
-    return (func::step(vm, code, 0, max, &next) == false) ? 0 : next;
+    return (core::func::step(vm, code, 0, max, &next) == false) ? 0 : next;
 }
 
 int regvm_code_len(code_t code)

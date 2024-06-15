@@ -6,6 +6,8 @@
 
 #include "structs.h"
 
+using namespace core;
+
 frame::frame(frame* c, func* f)
 {
     //scopes.emplace_front(scopes.size() + 1);

@@ -7,6 +7,9 @@
 #include <irq.h>
 #include <code.h>
 
+namespace core
+{
+
 class func
 {
 public:
@@ -25,4 +28,7 @@ public:
     //bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
 
 };
+
+}
+
 

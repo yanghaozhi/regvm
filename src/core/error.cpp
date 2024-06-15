@@ -2,8 +2,9 @@
 
 #include "vm.h"
 
+using namespace core;
 
-void error::set(struct regvm* vm, int errcode, code_t cur, int offset, const char* fmt, ...)
+void error::set(regvm* vm, int errcode, code_t cur, int offset, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

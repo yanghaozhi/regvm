@@ -141,7 +141,7 @@ bool regvm::call(int64_t id, const code_t code, int offset)
         return false;
     }
 
-    frame f(call_stack, &it->second);
+    core::frame f(call_stack, &it->second);
     auto o = call_stack;
     call_stack = &f;
 

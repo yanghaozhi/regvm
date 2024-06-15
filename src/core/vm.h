@@ -34,18 +34,18 @@ struct regvm_ex
 
 struct regvm
 {
-    bool        exit        = false;
-    bool        fatal       = false;
-    int64_t     exit_code   = 0;
-    frame*      call_stack  = NULL;
-    regs        reg;
-    //scope       globals;
-    error       err;
-    ivt         idt;
-    regvm_ex    handlers;
-    void*       ext         = NULL; //for ext
+    bool            exit        = false;
+    bool            fatal       = false;
+    int64_t         exit_code   = 0;
+    core::frame*    call_stack  = NULL;
+    core::reg       reg;
+    //scope           globals;
+    core::error     err;
+    core::ivt       idt;
+    regvm_ex        handlers;
+    void*           ext         = NULL; //for ext
 
-    std::map<int64_t, func>   funcs;
+    std::map<int64_t, core::func>   funcs;
 
     regvm(struct regvm_ex* ext);
     ~regvm();
@@ -54,5 +54,3 @@ struct regvm
     bool call(int64_t id, const code_t code, int offset);
     bool ret(void);
 };
-
-

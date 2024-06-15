@@ -8,7 +8,10 @@
 #include <code.h>
 
 
-class regs
+namespace core
+{
+
+class reg
 {
 public:
     struct v : public core::regv
@@ -36,8 +39,8 @@ public:
 
     friend class error;
 
-    regs();
-    ~regs();
+    reg();
+    ~reg();
 
     inline v& id(int i)
     {
@@ -57,4 +60,7 @@ private:
     v                   values[size];
 
 };
+
+
+}
 

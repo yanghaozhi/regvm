@@ -7,7 +7,9 @@
 #include "structs.h"
 #include "error.h"
 
-regs::regs()
+using namespace core;
+
+reg::reg()
 {
     memset(values, 0, sizeof(values));
     for (int i = 0; i < size; i++)
@@ -16,7 +18,7 @@ regs::regs()
     }
 }
 
-regs::~regs()
+reg::~reg()
 {
     for (unsigned int i = 0; i < size; i++)
     {
@@ -27,7 +29,7 @@ regs::~regs()
     }
 }
 
-bool regs::v::set(uint64_t num, int ex)
+bool reg::v::set(uint64_t num, int ex)
 {
     store();
 
@@ -38,7 +40,7 @@ bool regs::v::set(uint64_t num, int ex)
     return true;
 }
 //
-//bool regs::v::load(core::var* v)
+//bool reg::v::load(core::var* v)
 //{
 //    if (v == NULL) return false;
 //
@@ -66,7 +68,7 @@ bool regs::v::set(uint64_t num, int ex)
 //}
 //
 //
-//bool regs::v::store(core::var* v)
+//bool reg::v::store(core::var* v)
 //{
 //    if (v->reg == idx) return store();
 //
@@ -96,7 +98,7 @@ bool regs::v::set(uint64_t num, int ex)
 //    return true;
 //}
 
-double regs::v::conv_d(int type) const
+double reg::v::conv_d(int type) const
 {
     switch (type)
     {
@@ -112,7 +114,7 @@ double regs::v::conv_d(int type) const
     }
 }
 
-int64_t regs::v::conv_i(int type) const
+int64_t reg::v::conv_i(int type) const
 {
     switch (type)
     {
@@ -127,7 +129,7 @@ int64_t regs::v::conv_i(int type) const
     }
 }
 
-uint64_t regs::v::conv_u(int type) const
+uint64_t reg::v::conv_u(int type) const
 {
     switch (type)
     {
@@ -142,7 +144,7 @@ uint64_t regs::v::conv_u(int type) const
     }
 }
 
-//regs::v& regs::v::neighbor(int id)
+//reg::v& reg::v::neighbor(int id)
 //{
 //    v* o = this + (id - idx);
 //    return *o;
