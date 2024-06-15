@@ -6,8 +6,9 @@
 
 #include "var.h"
 
+using namespace ext;
 
-scope::scope(int i) : id(i)
+scope::scope(int64_t i) : id(i)
 {
     memset(table, 0, sizeof(table));
 }

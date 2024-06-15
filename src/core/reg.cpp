@@ -39,64 +39,6 @@ bool reg::v::set(uint64_t num, int ex)
 
     return true;
 }
-//
-//bool reg::v::load(core::var* v)
-//{
-//    if (v == NULL) return false;
-//
-//    if (v->reg == idx)
-//    {
-//        type = v->type;
-//        value = v->value;
-//        return true;
-//    }
-//
-//    store();
-//
-//    if (v->reg >= 0)
-//    {
-//        auto& o = neighbor(v->reg);
-//        o.store();
-//        o.set_from(NULL);
-//    }
-//
-//    type = v->type;
-//    value = v->value;
-//    set_from(v);
-//
-//    return true;
-//}
-//
-//
-//bool reg::v::store(core::var* v)
-//{
-//    if (v->reg == idx) return store();
-//
-//    if (v == NULL) return false;
-//
-//    if (v->type != type)
-//    {
-//        //TODO : error handler
-//        assert(0);
-//        return false;
-//    }
-//
-//    core::var* old = from;
-//    if (old != NULL)
-//    {
-//        //do NOT writeback
-//        old->release();
-//    }
-//
-//    //v->acquire();
-//
-//    set_from(v);
-//
-//    v->value = value;
-//    v->reg = idx;
-//
-//    return true;
-//}
 
 double reg::v::conv_d(int type) const
 {
@@ -144,11 +86,11 @@ uint64_t reg::v::conv_u(int type) const
     }
 }
 
-//reg::v& reg::v::neighbor(int id)
-//{
-//    v* o = this + (id - idx);
-//    return *o;
-//}
+reg::v& reg::v::neighbor(int id)
+{
+    v* o = this + (id - idx);
+    return *o;
+}
 
 bool core::regv::store() const
 {

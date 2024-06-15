@@ -278,6 +278,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         *next += 8;
         break;
     default:
+        ERROR(ERR_TYPE_CODE, code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
         return false;
     };
@@ -312,8 +313,6 @@ bool func::run(struct regvm* vm)
         int next = 0;
         if (step(vm, cur, offset, rest, &next) == false)
         {
-            //TODO : ERROR
-            printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
             return false;
         }
         if (next == 0)

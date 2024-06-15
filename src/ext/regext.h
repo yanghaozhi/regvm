@@ -6,7 +6,7 @@ extern "C"
 
 struct regvm_ex;
 
-extern struct regvm_ex*     regext;
+extern struct regvm_ex     var_ext;
 
 
 #ifdef __cplusplus

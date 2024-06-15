@@ -1,11 +1,14 @@
 #include "var.h"
 
+#include "../core/reg.h"
+
 #include <new>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
+using namespace ext;
 
 var::var(uint8_t t, const char* n, const int l) :
     type(t),
@@ -81,5 +84,63 @@ bool var::release(void)
         return false;
     }
     return true;
+}
+
+bool var::store(core::regv& r)
+{
+    if (reg == r.idx) return r.store();
+
+    if (type != r.type)
+    {
+        //TODO : error handler
+        assert(0);
+        return false;
+    }
+
+    core::var* old = r.from;
+    if (old != NULL)
+    {
+        //do NOT writeback
+        old->release();
+    }
+
+    //v->acquire();
+
+    r.set_from(this);
+
+    value = r.value;
+    reg = r.idx;
+
+    return true;
+}
+
+bool var::load(core::regv& r)
+{
+    if (reg == r.idx)
+    {
+        r.type = type;
+        r.value = value;
+        return true;
+    }
+
+    r.store();
+
+    if (reg >= 0)
+    {
+        auto o = neighbor(&r, reg);
+        o->store();
+        o->set_from(NULL);
+    }
+
+    r.type = type;
+    r.value = value;
+    r.set_from(this);
+
+    return true;
+}
+
+core::regv* var::neighbor(core::regv* r, int id)
+{
+    return r + (id - r->idx);
 }
 

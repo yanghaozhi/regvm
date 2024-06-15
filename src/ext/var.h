@@ -6,6 +6,9 @@
 #include "../include/structs.h"
 
 
+namespace ext
+{
+
 
 class var : public core::var
 {
@@ -29,6 +32,12 @@ public:
     virtual void set_reg(const int id);
     virtual bool release(void);
 
+    core::regv* neighbor(core::regv* r, int id);
+
+    bool store(core::regv& v);
+    bool load(core::regv& v);
+
     bool cmp(uint32_t key, const char* name, int len);
 };
 
+}

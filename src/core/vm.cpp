@@ -74,11 +74,19 @@ static bool vm_call(struct regvm* vm, const code_t code, int offset, int64_t val
 struct regvm* regvm_init(struct regvm_ex* ext)
 {
     auto vm = new regvm(ext);
+    if (vm->handlers.init != NULL)
+    {
+        vm->handlers.init(vm);
+    }
     return vm;
 }
 
 bool regvm_exit(struct regvm* vm)
 {
+    if (vm->handlers.exit != NULL)
+    {
+        vm->handlers.exit(vm);
+    }
     delete vm;
     return true;
 }
@@ -89,6 +97,9 @@ regvm::regvm(struct regvm_ex* ext) : reg()
 {
     if (ext == NULL)
     {
+        handlers.init = NULL;
+        handlers.exit = NULL;
+
         handlers.vm_set = vm_set;
         handlers.vm_load = vm_load;
         handlers.vm_store = vm_store;
