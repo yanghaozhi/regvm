@@ -86,11 +86,11 @@ uint64_t reg::v::conv_u(int type) const
     }
 }
 
-reg::v& reg::v::neighbor(int id)
-{
-    v* o = this + (id - idx);
-    return *o;
-}
+//reg::v& reg::v::neighbor(int id)
+//{
+//    v* o = this + (id - idx);
+//    return *o;
+//}
 
 bool core::regv::store() const
 {

@@ -37,7 +37,7 @@ public:
     char                reason[1024];
 
 
-    void set(regvm* vm, int errcode, code_t code, int offset, const char* fmt, ...);
+    void set(regvm* vm, int errcode, const code_t code, int offset, const char* fmt, ...);
 
     //void print_stack();
 

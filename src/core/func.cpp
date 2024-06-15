@@ -278,7 +278,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         *next += 8;
         break;
     default:
-        ERROR(ERR_TYPE_CODE, code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
+        ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
         return false;
     };
