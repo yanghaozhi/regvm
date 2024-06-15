@@ -3,9 +3,9 @@
 all:
 	make -C core
 	make -C ext
-	make -C compiler
+	make -C asm
 
 clean:
 	make clean -C core
 	make clean -C ext
-	make clean -C compiler
+	make clean -C asm
