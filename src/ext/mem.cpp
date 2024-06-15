@@ -27,29 +27,29 @@
 
 bool vm_store(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
 {
-    regvm_mem* mem = (regvm_mem*)extra;
-    core::regv* r = (core::regv*)mem->reg;
-    if (code.ex == 0)
-    {
-        return r->store();
-    }
-    else
-    {
-        core::regv* e = (core::regv*)mem->ex;
-        if ((e->type & 0x07) != TYPE_STRING)
-        {
-            //TODO
-            //ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e->type);
-            //vm->fatal = true;
-            return false;
-        }
-        else
-        {
-            //TODO
-            //var* v = vm->ctx->add(r.type, e.value.str);
-            //return r->store(v);
-        }
-    }
+    //regvm_mem* mem = (regvm_mem*)extra;
+    //core::regv* r = (core::regv*)mem->reg;
+    //if (code.ex == 0)
+    //{
+    //    return r->store();
+    //}
+    //else
+    //{
+    //    core::regv* e = (core::regv*)mem->ex;
+    //    if ((e->type & 0x07) != TYPE_STRING)
+    //    {
+    //        //TODO
+    //        //ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e->type);
+    //        //vm->fatal = true;
+    //        return false;
+    //    }
+    //    else
+    //    {
+    //        //TODO
+    //        //var* v = vm->ctx->add(r.type, e.value.str);
+    //        //return r->store(v);
+    //    }
+    //}
     return true;
 }
 

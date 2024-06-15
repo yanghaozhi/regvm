@@ -14,7 +14,7 @@ TRAP    1   1
 # $2 = -6
 #SETS    2   8   -7
 SETC    2   9   #LABEL:  aaa
-TRAP    2   1
+TRAP    15   1
 # if ($1 > 0) jump $2
 JG      1   2
 TRAP    0   1

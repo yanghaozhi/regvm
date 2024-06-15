@@ -11,25 +11,25 @@
 
 struct var;
 
-class context
+class frame
 {
     friend class error;
 
 public:
-    context(context* ctx, func* func);
-    ~context();
+    frame(frame* ctx, func* func);
+    ~frame();
 
-    context*            up      = NULL;
-    context*            down    = NULL;
+    frame*              up      = NULL;
+    frame*              down    = NULL;
 
     func*               running = NULL;
     regvm_src_location* cur     = NULL;
 
     //const code_t*       start   = NULL;     //first code pos
-    //const code_t*       entry   = NULL;     //entry of current context
+    //const code_t*       entry   = NULL;     //entry of current frame
 
-    void enter_block();
-    void leave_block();
+    //void enter_block();
+    //void leave_block();
 
     //var* add(const int type, const char* name);
 

@@ -1,5 +1,5 @@
 #include <regvm.h>
-#include <debug.h>
+#include <irq.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -7,62 +7,6 @@
 #include "vm.h"
 
 #define UNSUPPORT_TYPE(op, t, c, o) ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
-
-static bool vm_set(struct regvm* vm, const code_t code, int64_t value, int offset)
-{
-    auto& r = vm->reg.id(code.reg);
-    //if ((code.ex == TYPE_STRING) && (value & 0x01))
-    //{
-    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-    //    if (it.func == NULL)
-    //    {
-    //        ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
-    //        return false;
-    //    }
-    //    value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
-    //    if (value == 0)
-    //    {
-    //        ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
-    //        return false;
-    //    }
-    //}
-    return r.set(value, code.ex);
-}
-
-static bool vm_store(struct regvm* vm, const code_t code, int offset)
-{
-    //TODO
-    //auto& r = vm->reg.id(code.reg);
-    //if (code.ex == 0)
-    //{
-    //    return r.store();
-    //}
-    //else
-    //{
-    //    auto& e = vm->reg.id(code.ex);
-    //    if ((e.type & 0x07) != TYPE_STRING)
-    //    {
-    //        ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-    //        vm->fatal = true;
-    //        return false;
-    //    }
-    //    else
-    //    {
-    //        var* v = vm->ctx->add(r.type, e.value.str);
-    //        return r.store(v);
-    //    }
-    //}
-    return true;
-}
-
-static bool vm_load(struct regvm* vm, const code_t code)
-{
-    //TODO
-    //auto& e = vm->reg.id(code.ex);
-    //auto& r = vm->reg.id(code.reg);
-    //return r.load(vm->ctx->get(e.value.str));
-    return true;
-}
 
 static bool vm_move(struct regvm* vm, const code_t code)
 {
@@ -180,23 +124,6 @@ static bool vm_chg(struct regvm* vm, const code_t code, int offset)
     }
 }
 
-static bool vm_block(struct regvm* vm, const code_t code, int offset)
-{
-    switch (code.ex)
-    {
-    case 0:
-        vm->ctx->enter_block();
-        break;
-    case 1:
-        vm->ctx->leave_block();
-        break;
-    default:
-        ERROR(ERR_INVALID_EX, code, offset, "UNKNOWN block op : %d", code.ex);
-        return false;
-    }
-    return true;
-}
-
 
 static int vm_jump(struct regvm* vm, const code_t code, int offset)
 {
@@ -242,18 +169,18 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         *next += (need);                                                        \
         break;
         EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, *code, *(int16_t*)&code[1], offset);
-        EXTRA_RUN(SETI, 2, vm_set, vm, *code, *(int32_t*)&code[1], offset);
-        EXTRA_RUN(SETL, 4, vm_set, vm, *code, *(int64_t*)&code[1], offset);
+        EXTRA_RUN(SETS, 1, vm->handlers.vm_set, vm, *code, offset, *(int16_t*)&code[1]);
+        EXTRA_RUN(SETI, 2, vm->handlers.vm_set, vm, *code, offset, *(int32_t*)&code[1]);
+        EXTRA_RUN(SETL, 4, vm->handlers.vm_set, vm, *code, offset, *(int64_t*)&code[1]);
 #undef EXTRA_RUN
 
 #define CODE_RUN(id, func, ...)             \
     case CODE_##id:                         \
         CALL(func, ##__VA_ARGS__);          \
         break;
-        CODE_RUN(STORE, vm_store, vm, *code, offset);
-        CODE_RUN(LOAD, vm_load, vm, *code);
-        CODE_RUN(BLOCK, vm_block, vm, *code, offset);
+        CODE_RUN(STORE, vm->handlers.vm_store, vm, *code, offset, -1);
+        CODE_RUN(LOAD, vm->handlers.vm_load, vm, *code, offset, -1);
+        CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, -1);
         CODE_RUN(MOVE, vm_move, vm, *code);
         CODE_RUN(CLEAR, vm_clear, vm, *code);
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
@@ -312,7 +239,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 #undef BITWISE
 
     case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->ctx->running->info.entry, *next);
+        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
         break;
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);
@@ -358,31 +285,25 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     return !vm->fatal;
 }
 
-func::func(struct regvm* vm, uint64_t id, code_t code, int offset)
+func::func(const code_t* s, int c, int64_t i, const regvm_src_location* e) :
+    count(c), codes(s), id(i)
 {
-    info.id = id;
-    //TODO
-    //if (vm->idt.isrs[IRQ_STR_RELOCATE].call(vm, IRQ_FUNCTION_CALL, code, offset, (void*)&info) == false)
-    //{
-    //    info.codes = NULL;
-    //    info.count = 0;
-    //}
-}
-
-func::func(const code_t* start, int count)
-{
-    info.id = 0;
-    info.codes = start;
-    info.count = count;
-    info.entry.line = 0;
-    info.entry.file = NULL;
-    info.entry.func = NULL;
+    if (e == NULL)
+    {
+        src.line = 0;
+        src.file = NULL;
+        src.func = NULL;
+    }
+    else
+    {
+        src = *e;
+    }
 }
 
 bool func::run(struct regvm* vm)
 {
-    int rest = info.count;
-    const code_t* cur = info.codes;
+    int rest = count;
+    const code_t* cur = codes;
     int offset = 0;
     while (rest > 0)
     {
@@ -390,7 +311,7 @@ bool func::run(struct regvm* vm)
         if (step(vm, cur, offset, rest, &next) == false)
         {
             //TODO : ERROR
-            printf("\e[31m run ERROR at %d\e[0m\n", info.count - rest);
+            printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
             return false;
         }
         if (next == 0)

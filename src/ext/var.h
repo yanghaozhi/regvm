@@ -5,6 +5,8 @@
 
 #include "../include/structs.h"
 
+
+
 class var : public core::var
 {
 private:

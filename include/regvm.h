@@ -11,9 +11,12 @@ extern "C"
 {
 #endif
 
-struct regvm* regvm_init();
+struct regvm_ex;
+
+struct regvm* regvm_init(struct regvm_ex* ext);
 
 bool regvm_exit(struct regvm* vm);
+
 
 //执行指令数组
 //从第一条指令开始执行，执行到末尾或者CODE_EXIT结束
@@ -36,3 +39,4 @@ int regvm_code_len(code_t code);
 #ifdef __cplusplus
 };
 #endif
+

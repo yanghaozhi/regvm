@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
@@ -11,6 +12,7 @@
 #include <regvm.h>
 #include <debug.h>
 
+#include <map>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -134,9 +136,12 @@ public:
 class txt : public run
 {
 public:
-    FILE*       fp = NULL;
-    uint64_t    size = 0;
-    uint32_t    str_id  = 0;
+    FILE*           fp = NULL;
+    uint32_t        lines   = 0;
+    uint32_t        str_id  = 0;
+    uint64_t        size    = 0;
+    std::string     src;
+
     std::unordered_map<std::string, uint32_t>   string_table;
     std::unordered_map<std::string, int>        ids;
 
@@ -146,6 +151,8 @@ public:
     virtual bool prepare(const char* file)
     {
         run::prepare(NULL);
+        src = file;
+
 #define SET_KEY(k) ids.emplace(#k, CODE_##k);
         SET_KEY(NOP);
         SET_KEY(TRAP);
@@ -219,6 +226,7 @@ public:
 
         while (fgets(buf, sizeof(buf), fp) != NULL)
         {
+            lines += 1;
             id.v = 0;
             if (buf[0] == '#')
             {
@@ -308,51 +316,46 @@ class step : public txt
 class compile : public txt
 {
 public:
-    std::unordered_map<std::string, uint64_t>        labels;
-    std::unordered_multimap<std::string, code_t*>    pending_labels;
+    int64_t        cur_label_id = 0;
 
-    void set_label(code_t* code, intptr_t* data, uint64_t pos)
+    std::unordered_map<std::string, int64_t>        label_ids;
+    std::map<uint64_t, int64_t>                     label_mod;  //mod -> id
+    struct label_info
     {
-        code->ex = 0x09;
+        uint32_t    pos;
+        uint32_t    line;
+        uint16_t    label_len;
+        uint16_t    file_len;
+        char        data[];
+    };
+    std::unordered_map<int64_t, label_info*>        label_infos;
 
-        if (pos <= 0xFFFF)
-        {
-            code->id = CODE_SETS;
-            *(uint16_t*)data = pos;
-        }
-        else if (pos <= 0xFFFFFFFF)
-        {
-            code->id = CODE_SETI;
-            *(uint32_t*)data = pos;
-        }
-        else
-        {
-            code->id = CODE_SETL;
-            *(uint64_t*)data = pos;
-        }
+    int64_t label_id(const std::string& label)
+    {
+        auto it = label_ids.find(label);
+        if (it != label_ids.end()) return it->second;
+        return label_ids.emplace(label, ++cur_label_id).first->second;
     }
 
-    bool find_label(const char* str, char* buf)
+    bool find_label(const char* str, std::string& label)
     {
-        return (sscanf(str, "#LABEL: %255[^\n]", buf) == 1) ? true : false;
+        char buf[256];
+        if (sscanf(str, "#LABEL: %255[^\n]", buf) == 0) return false;
+        buf[sizeof(buf) - 1] = '\0';
+        label = buf;
+        return true;
     }
     virtual uint32_t setc(code_t& code, intptr_t* next, const char* str)
     {
-        char buf[256];
-        buf[0] = '\0';
-        if (find_label(str, buf) == true)
+        std::string label;
+        if (find_label(str, label) == true)
         {
-            auto it = labels.find(buf);
-            if (it != labels.end())
-            {
-                set_label(&code, next, it->second);
-                printf("change %p => %lu\n", &code, it->second);
-            }
-            else
-            {
-                pending_labels.emplace(buf, &code);
-            }
-            printf("set label %s - %lu - %s\n", str, it->second, buf);
+            auto id = label_id(label);
+            code.ex = 0x09;
+            code.id = CODE_SETI;
+            *(uint32_t*)next= (uint32_t)id;
+            printf("write %u as %s \n", (uint32_t)id, str);
+            label_mod.emplace(size, id);
             return 0;
         }
         else
@@ -362,17 +365,23 @@ public:
     }
     virtual void comment(const char* line, uint64_t bytes)
     {
-        char label[256];
-        label[0] = '\0';
+        std::string label;
         if (find_label(line, label) == true)
         {
-            labels.emplace(label, bytes >> 1);
+            //label_infos.emplace(label, bytes >> 1);
+            auto id = label_id(label);
 
-            auto r = pending_labels.equal_range(label);
-            for (auto& it = r.first; it != r.second; ++it)
-            {
-                set_label(it->second, (intptr_t*)(it->second + 1), bytes >> 1);
-            }
+            label_info* info = (label_info*)malloc(sizeof(label_info) + src.length() + label.length() + 2);
+            info->pos = bytes >> 1;
+            info->line = lines;
+            info->label_len = label.length();
+            info->file_len = src.length();
+            memcpy(info->data, label.c_str(), label.length());
+            info->data[label.length()] = '\0';
+            memcpy(info->data + label.length() + 1, src.c_str(), src.length());
+            info->data[label.length() + 1 + src.length()] = '\0';
+
+            label_infos.emplace(id, info);
         }
     }
     virtual int line(const code_t* code, int max_bytes, const char* orig)
@@ -435,6 +444,8 @@ public:
         int real = open(out.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (real >= 0)
         {
+            uint64_t end = 0;
+
             for (auto& it : string_ids)
             {
                 uint32_t id = (it.first << 1) + 1;
@@ -442,12 +453,45 @@ public:
                 write(real, it.second.c_str(), it.second.length() + 1);
                 printf("remap %u - %u - %s\n", it.first, id, it.second.c_str());
             }
-            uint64_t end = 0;
+            write(real, &end, sizeof(uint64_t));
+
+            std::map<int64_t, uint32_t> offsets;
+            off64_t last = 0;
+            for (auto& it : label_infos)
+            {
+                offsets.emplace(it.first, last);
+                auto s = write(real, it.second, sizeof(label_info) + it.second->label_len + it.second->file_len + 2);
+                last += s;
+                delete it.second;
+            }
             write(real, &end, sizeof(uint64_t));
             
             lseek(fd, 0, SEEK_SET);
-            int r = copy_file_range(fd, NULL, real, NULL, size, 0);
-            printf("%d : %d - %d : %d - %s\n", r, fd, real, errno, strerror(errno));
+            last = 0;
+            for (auto& it : label_mod)
+            {
+                copy_file_range(fd, &last, real, NULL, it.first - last, 0);
+                lseek(fd, last, SEEK_SET);
+                auto o = offsets.find(it.second);
+#pragma pack(1)
+                struct
+                {
+                    code_t      code;
+                    uint32_t    label;
+                } sl;
+#pragma pack()
+                read(fd, &sl, sizeof(sl));
+                if ((sl.code.id != CODE_SETI) || (sl.code.ex != 0x09) || (sl.label != it.second))
+                {
+                    printf("%u\n", sl.label);
+                    assert(0);
+                }
+                sl.label = o->second;
+                write(real, &sl, sizeof(sl));
+                last += sizeof(sl);
+            }
+            //int r = copy_file_range(fd, NULL, real, NULL, size, 0);
+            //printf("%d : %d - %d : %d - %s\n", r, fd, real, errno, strerror(errno));
 
             close(real);
         }

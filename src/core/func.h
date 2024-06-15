@@ -5,14 +5,18 @@
 #include <map>
 
 #include <irq.h>
+#include <code.h>
 
 class func
 {
 public:
-    regvm_function  info;
+    const int                   count;
+    const code_t*               codes;
 
-    func(struct regvm* vm, uint64_t id, code_t code, int offset);
-    func(const code_t* start, int count);
+    const int64_t               id;
+    regvm_src_location          src;
+
+    func(const code_t* codes, int count, int64_t id, const regvm_src_location* src);
 
     bool run(struct regvm* vm);
 

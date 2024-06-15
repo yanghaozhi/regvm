@@ -1,4 +1,4 @@
-#include "context.h"
+#include "frame.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +6,7 @@
 
 #include "structs.h"
 
-context::context(context* c, func* f)
+frame::frame(frame* c, func* f)
 {
     //scopes.emplace_front(scopes.size() + 1);
 
@@ -18,28 +18,28 @@ context::context(context* c, func* f)
     }
 }
 
-context::~context()
+frame::~frame()
 {
 }
 
-void context::enter_block()
-{
-    //scopes.emplace_front(scopes.size() + 1);
-}
+//void frame::enter_block()
+//{
+//    //scopes.emplace_front(scopes.size() + 1);
+//}
+//
+//void frame::leave_block()
+//{
+//    //scopes.pop_front();
+//}
 
-void context::leave_block()
-{
-    //scopes.pop_front();
-}
-
-//var* context::add(const int type, const char* name)
+//var* frame::add(const int type, const char* name)
 //{
 //    auto v = var::create(type, name);
 //    scopes.front().add(v);
 //    return (v->release() == true) ? v : NULL;
 //}
 //
-//var* context::get(const char* name) const
+//var* frame::get(const char* name) const
 //{
 //    const int l = strlen(name);
 //    uint32_t h = var::calc_hash(name, l);

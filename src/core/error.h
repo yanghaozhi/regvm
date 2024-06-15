@@ -1,39 +1,24 @@
 #pragma once
 
+
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <irq.h>
 #include <debug.h>
 
 #include "reg.h"
-#include "context.h"
+#include "frame.h"
 
 #ifdef DEBUG
 #define ERROR(e, c, o, fmt, ...)                                                \
-    SET_ERROR(e, c, o, fmt, ##__VA_ARGS__);                                     \
     vm->err.self.line = __LINE__;                                               \
     vm->err.self.file = __FILE__;                                               \
-    vm->err.self.func = __func__;
+    vm->err.self.func = __func__;                                               \
+    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #else
-#define ERROR(errcode, fmt, ...)    SET_ERROR(errcode, fmt, ##__VA_ARGS__)
+#define ERROR(e, c, o, fmt, ...)    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #endif
-
-#define SET_ERROR(e, c, o, fmt, ...)                                            \
-    vm->err.code = e;                                                           \
-    snprintf(vm->err.reason, sizeof(vm->err.reason), fmt, ##__VA_ARGS__);       \
-    vm->err.reason[sizeof(vm->err.reason) - 1] = '\0';                          \
-    vm->err.func = vm->ctx->running->info.entry;                                \
-    {                                                                           \
-        regvm_error err;                                                        \
-        if (vm->ctx->cur != NULL)                                               \
-        {                                                                       \
-            vm->err.src = *vm->ctx->cur;                                        \
-            err.src = &vm->err.src;                                             \
-        }                                                                       \
-        err.code = e;                                                           \
-        err.reason = vm->err.reason;                                            \
-        vm->idt.call(vm, IRQ_ERROR, c, o, &err);                                \
-    }
 
 
 class error
@@ -48,6 +33,9 @@ public:
 #endif
 
     char                reason[1024];
+
+
+    void set(struct regvm* vm, int errcode, code_t code, int offset, const char* fmt, ...);
 
     //void print_stack();
 

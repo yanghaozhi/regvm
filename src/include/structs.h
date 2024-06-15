@@ -14,16 +14,16 @@ union uvalue
     double          dbl;
     const char*     str;
 
-    double conv(int type, double v) const;
-    int64_t conv(int type, int64_t v) const;
-    uint64_t conv(int type, uint64_t v) const;
+    //double conv(int type, double v) const;
+    //int64_t conv(int type, int64_t v) const;
+    //uint64_t conv(int type, uint64_t v) const;
 };
 
 class var
 {
 protected:
-    var();
-    virtual ~var();
+    //var();
+    //virtual ~var();
 
     int16_t         ref         = 1;
 
@@ -33,12 +33,11 @@ public:
 
     uvalue          value;
 
-
     virtual void set_val(int type, uvalue val)  = 0;
-    virtual void set_reg(const int id)  = 0;
+    virtual void set_reg(const int id)          = 0;
 
-    inline void acquire(void)           {++ref;};
-    virtual bool release(void)          = 0;
+    inline void acquire(void)                   {++ref;};
+    virtual bool release(void)                  = 0;
 };
 
 struct regv

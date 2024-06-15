@@ -183,49 +183,49 @@ bool core::regv::set_from(core::var* v)
     return true;
 }
 
-double core::uvalue::conv(int type, double v) const
-{
-    switch (type)
-    {
-    case TYPE_SIGNED:
-        return (double)sint;
-    case TYPE_UNSIGNED:
-        return (double)uint;
-    case TYPE_DOUBLE:
-        return dbl;
-    default:
-        assert(0);
-        return -1;
-    }
-}
-
-int64_t core::uvalue::conv(int type, int64_t t) const
-{
-    switch (type)
-    {
-    case TYPE_SIGNED:
-    case TYPE_UNSIGNED:
-        return sint;
-    case TYPE_DOUBLE:
-        return (int64_t)dbl;
-    default:
-        assert(0);
-        return -1;
-    }
-}
-
-uint64_t core::uvalue::conv(int type, uint64_t u) const
-{
-    switch (type)
-    {
-    case TYPE_SIGNED:
-    case TYPE_UNSIGNED:
-        return uint;
-    case TYPE_DOUBLE:
-        return (uint64_t)dbl;
-    default:
-        assert(0);
-        return -1;
-    }
-}
-
+//double core::uvalue::conv(int type, double v) const
+//{
+//    switch (type)
+//    {
+//    case TYPE_SIGNED:
+//        return (double)sint;
+//    case TYPE_UNSIGNED:
+//        return (double)uint;
+//    case TYPE_DOUBLE:
+//        return dbl;
+//    default:
+//        assert(0);
+//        return -1;
+//    }
+//}
+//
+//int64_t core::uvalue::conv(int type, int64_t t) const
+//{
+//    switch (type)
+//    {
+//    case TYPE_SIGNED:
+//    case TYPE_UNSIGNED:
+//        return sint;
+//    case TYPE_DOUBLE:
+//        return (int64_t)dbl;
+//    default:
+//        assert(0);
+//        return -1;
+//    }
+//}
+//
+//uint64_t core::uvalue::conv(int type, uint64_t u) const
+//{
+//    switch (type)
+//    {
+//    case TYPE_SIGNED:
+//    case TYPE_UNSIGNED:
+//        return uint;
+//    case TYPE_DOUBLE:
+//        return (uint64_t)dbl;
+//    default:
+//        assert(0);
+//        return -1;
+//    }
+//}
+//

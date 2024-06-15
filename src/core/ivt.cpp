@@ -64,10 +64,10 @@ static int64_t irq_LOCATION(struct regvm* vm, void* arg, code_t code, int offset
 
     //发起函数调用
     //需要在此中断中提供新函数的具体信息
-static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
-{
-    return 0;
-}
+//static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+//{
+//    return 0;
+//}
 
 ivt::ivt()
 {
@@ -85,7 +85,7 @@ ivt::ivt()
     SET_DEFAULT(ERROR, 0);
     SET_DEFAULT(LOCATION, -1);
     //SET_DEFAULT(STR_RELOCATE, 0);
-    SET_DEFAULT(FUNCTION_CALL, 0);
+    //SET_DEFAULT(FUNCTION_CALL, 0);
 #undef SET_DEFAULT
 }
 
