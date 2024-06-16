@@ -9,51 +9,61 @@ source::~source()
     fclose(fp);
 }
 
+bool source::finish()
+{
+    //return scan(comment2, setc2, line2);
+    return true;
+}
+
 bool source::open(const char* name)
 {
     file = name;
 
+    if (ids.empty() == true)
+    {
 #define SET_KEY(k) ids.emplace(#k, CODE_##k);
-    SET_KEY(NOP);
-    SET_KEY(TRAP);
-    SET_KEY(SETS);
-    SET_KEY(SETI);
-    SET_KEY(SETL);
-    SET_KEY(MOVE);
-    SET_KEY(CLEAR);
-    SET_KEY(LOAD);
-    SET_KEY(STORE);
-    SET_KEY(BLOCK);
-    SET_KEY(CALL);
-    SET_KEY(RET);
-    SET_KEY(CMD);
-    SET_KEY(INC);
-    SET_KEY(DEC);
-    SET_KEY(ADD);
-    SET_KEY(SUB);
-    SET_KEY(MUL);
-    SET_KEY(DIV);
-    SET_KEY(AND);
-    SET_KEY(OR);
-    SET_KEY(XOR);
-    SET_KEY(CONV);
-    SET_KEY(CHG);
-    SET_KEY(JUMP);
-    SET_KEY(JZ);
-    SET_KEY(JNZ);
-    SET_KEY(JG);
-    SET_KEY(JL);
-    SET_KEY(JNG);
-    SET_KEY(JNL);
-    SET_KEY(EXIT);
+        SET_KEY(NOP);
+        SET_KEY(TRAP);
+        SET_KEY(SETS);
+        SET_KEY(SETI);
+        SET_KEY(SETL);
+        SET_KEY(MOVE);
+        SET_KEY(CLEAR);
+        SET_KEY(LOAD);
+        SET_KEY(STORE);
+        SET_KEY(BLOCK);
+        SET_KEY(CALL);
+        SET_KEY(RET);
+        SET_KEY(CMD);
+        SET_KEY(INC);
+        SET_KEY(DEC);
+        SET_KEY(ADD);
+        SET_KEY(SUB);
+        SET_KEY(MUL);
+        SET_KEY(DIV);
+        SET_KEY(AND);
+        SET_KEY(OR);
+        SET_KEY(XOR);
+        SET_KEY(CONV);
+        SET_KEY(CHG);
+        SET_KEY(JUMP);
+        SET_KEY(JZ);
+        SET_KEY(JNZ);
+        SET_KEY(JG);
+        SET_KEY(JL);
+        SET_KEY(JNG);
+        SET_KEY(JNL);
+        SET_KEY(EXIT);
 #undef SET_KEY
+    }
+
     fp = fopen(name, "r");
     return fp != NULL;
 }
 
-bool source::scan(void)
+bool source::pass::scan(void)
 {
-    fseek(fp, 0, SEEK_SET);
+    fseek(src.fp, 0, SEEK_SET);
 
     union 
     {
@@ -73,13 +83,13 @@ bool source::scan(void)
     char buf[1024];
     char data[1024];
 
-    while (fgets(buf, sizeof(buf), fp) != NULL)
+    while (fgets(buf, sizeof(buf), src.fp) != NULL)
     {
         cur_line += 1;
         id.v = 0;
         if (buf[0] == '#')
         {
-            //comment(buf, size);
+            comment(buf);
             continue;
         }
 
@@ -93,8 +103,8 @@ bool source::scan(void)
 
         inst.code.ex = ex;
         inst.code.reg = reg;
-        auto it = ids.find(id.s);
-        if (it != ids.end())
+        auto it = src.ids.find(id.s);
+        if (it != src.ids.end())
         {
             inst.code.id = it->second;
 
@@ -122,7 +132,11 @@ bool source::scan(void)
         {
             if (id.v == 0x43544553) //SETC
             {
-                setc(inst.code, (intptr_t*)(&inst.code + 1), data);
+                if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
+                {
+                    printf("\e[31m --- setc ERROR : %s\e[0m\n", buf);
+                    return false;
+                }
             }
             else
             {
@@ -131,8 +145,7 @@ bool source::scan(void)
             }
         }
 
-        int b = line(&inst.code, sizeof(inst), buf);
-        if (b == 0)
+        if (line(&inst.code, sizeof(inst), buf) == false)
         {
             printf("\e[31m --- scan ERROR : %s\e[0m\n", buf);
             return false;

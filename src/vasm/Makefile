@@ -3,10 +3,10 @@ OBJS += $(patsubst %.cpp, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
 ROOT=../../
-NAME=asm
+NAME=vasm
 DIR=$(ROOT)/libs
 
-DEPS= 
+DEPS=$(DIR)/libcore.a $(DIR)/libext.a
 
 all: $(NAME)
 
@@ -38,8 +38,8 @@ $(OBJS) : %.o : %.cpp
 
 $(NAME):$(OBJS)
 	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -shared -o $(DIR)/lib$(NAME).so $(OBJS) $(DEPS)
-	ar rcs $(DIR)/lib$(NAME).a  $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $(DIR)/$(NAME) $(OBJS) $(DEPS)
+	ln -sf $(DIR)/$(NAME) $(NAME)
 
 
 -include *.d
