@@ -57,10 +57,11 @@ bool compile::pass1::setc(code_t& code, intptr_t* next, const char* str)
 
 bool compile::pass1::line(const code_t* code, int max_bytes, const char* orig)
 {
+    DEBUG("{} - {} - {}", code->id, code->reg, code->ex);
     int bytes = regvm_code_len(*code) << 1;
     if (bytes > max_bytes)
     {
-        DEBUG("\e[31m --- not enough bytes of code {}, want {}, got {}\e[0m", code->id, bytes, max_bytes);
+        ERROR("not enough bytes of code {}, want {}, got {}", code->id, bytes, max_bytes);
         return false;
     }
     code_size += bytes;
@@ -102,14 +103,14 @@ bool compile::pass2::setc(code_t& code, intptr_t* next, const char* str)
         auto it = data.label_ids.find(label);
         if (it == data.label_ids.end())
         {
-            ERROR("\e[31m --- Can not find id of label : {}\e[0m", label);
+            ERROR("Can not find id of label : {}", label);
             return false;
         }
         int64_t id = it->second;
         auto it2 = data.label_infos.find(id);
         if (it2 == data.label_infos.end())
         {
-            ERROR("\e[31m --- Can not find label info of label : {} - {}\e[0m", id, label);
+            ERROR("Can not find label info of label : {} - {}", id, label);
             return false;
         }
         *(uint64_t*)next= (uint64_t)it2->second.pos;
