@@ -12,6 +12,8 @@
 
 #include <code.h>
 
+#include "log.h"
+
 
 namespace vasm
 {

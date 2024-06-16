@@ -16,7 +16,7 @@ private:
     friend class error;
 
     var(uint8_t type, const char* name, const int len);
-    ~var();
+    virtual ~var();
 
 public:
     const uint16_t      type;

@@ -15,6 +15,8 @@ public:
 
         pass1(compile& o);
 
+        virtual int write_code(const code_t* code, int bytes) {return bytes;};
+
         virtual void comment(const char* line);
         virtual bool setc(code_t& code, intptr_t* next, const char* str);
         virtual bool line(const code_t* code, int max_bytes, const char* orig);

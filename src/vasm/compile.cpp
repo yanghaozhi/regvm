@@ -35,12 +35,12 @@ void compile::pass1::comment(const char* line)
         {
             //TODO
         }
-        r.first->second.pos = code_size;
+        r.first->second.pos = code_size >> 1;
         r.first->second.file = src.file;
         r.first->second.label = label;
         r.first->second.line = cur_line;
 
-        printf("find label : %ld - %ld - %s\n", code_size, cur_line, label.c_str());
+        DEBUG("find label : {} - {} - {}", code_size, cur_line, label);
     }
 }
 
@@ -57,14 +57,14 @@ bool compile::pass1::setc(code_t& code, intptr_t* next, const char* str)
 
 bool compile::pass1::line(const code_t* code, int max_bytes, const char* orig)
 {
-    int bytes = regvm_code_len(*code);
+    int bytes = regvm_code_len(*code) << 1;
     if (bytes > max_bytes)
     {
-        printf("\e[31m --- not enough bytes of code %d, want %d, got %d\e[0m\n", code->id, bytes, max_bytes);
+        DEBUG("\e[31m --- not enough bytes of code {}, want {}, got {}\e[0m", code->id, bytes, max_bytes);
         return false;
     }
     code_size += bytes;
-    return true;
+    return (bytes == write_code(code, bytes)) ? true : false;
 }
 
 compile::pass2::pass2(compile& o) : pass(o), data(o)
@@ -74,7 +74,7 @@ compile::pass2::pass2(compile& o) : pass(o), data(o)
     //{
     //    if (adjust != 0)
     //    {
-    //        printf("label adjust : %s - %ld -> %ld\n", label.c_str(), it.second.pos, it.second.pos - adjust);
+    //        DEBUG("label adjust : {} - {} -> {}", label.c_str(), it.second.pos, it.second.pos - adjust);
     //    }
     //    it.second.pos -= adjust;
     //    if (it.second.pos <= 0xFFFF)
@@ -102,25 +102,25 @@ bool compile::pass2::setc(code_t& code, intptr_t* next, const char* str)
         auto it = data.label_ids.find(label);
         if (it == data.label_ids.end())
         {
-            printf("\e[31m --- Can not find id of label : %s \e[0m\n", label.c_str());
+            ERROR("\e[31m --- Can not find id of label : {}\e[0m", label);
             return false;
         }
         int64_t id = it->second;
         auto it2 = data.label_infos.find(id);
         if (it2 == data.label_infos.end())
         {
-            printf("\e[31m --- Can not find label info of label : %ld - %s \e[0m\n", id, label.c_str());
+            ERROR("\e[31m --- Can not find label info of label : {} - {}\e[0m", id, label);
             return false;
         }
-        *(uint64_t*)next= (uint64_t)id;
-        printf("write %ld as %s \n", id, label.c_str());
+        *(uint64_t*)next= (uint64_t)it2->second.pos;
+        DEBUG("write {} as {} ", it2->second.pos, label);
     }
     return true;
 }
 
 bool compile::pass2::line(const code_t* code, int max_bytes, const char* orig)
 {
-    int bytes = regvm_code_len(*code);
+    int bytes = regvm_code_len(*code) << 1;
     return (bytes == write_code(code, bytes)) ? true : false;
 }
 

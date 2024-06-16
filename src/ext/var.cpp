@@ -54,6 +54,14 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
+void var::set_val(int t, core::uvalue v)
+{
+    if (type == t)
+    {
+        value = v;
+    }
+}
+
 void var::set_reg(const int id)
 {
     if (id == reg) return;

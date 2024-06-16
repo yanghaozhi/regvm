@@ -13,7 +13,10 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
 
     code = errcode;
     reason[sizeof(reason) - 1] = '\0';
-    func = vm->call_stack->running->src;
+    if (vm->call_stack->running != NULL)
+    {
+        func = vm->call_stack->running->src;
+    }
 
     regvm_error err;
     if (vm->call_stack->cur != NULL)
