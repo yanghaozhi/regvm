@@ -132,9 +132,9 @@ static int vm_jump(struct regvm* vm, const code_t code, int offset)
     auto& e = vm->reg.id(code.ex);
     switch (e.type)
     {
-    case 0x08:
-        return e.conv_i(TYPE_SIGNED);
-    case 0x09:
+    case TYPE_SIGNED:
+        return (int64_t)e;
+    case TYPE_ADDR:
         return e.conv_i(TYPE_UNSIGNED) - offset;
     default:
         return 0;
@@ -262,11 +262,12 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         vm->exit = true;
         [[fallthrough]];
     case CODE_RET:
+        *next = 0;
         return true;
     case CODE_CALL:
         {
             auto& r = vm->reg.id(code->reg);
-            if ((vm->call((uint64_t)r, *code, offset) == false) || (vm->fatal == true))
+            if ((vm->call(r, *code, offset) == false) || (vm->fatal == true))
             {
                 return false;
             }
@@ -275,7 +276,6 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
                 return true;
             }
         }
-        *next += 8;
         break;
     default:
         ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
@@ -303,11 +303,10 @@ func::func(const code_t* s, int c, int64_t i, const regvm_src_location* e) :
     }
 }
 
-bool func::run(struct regvm* vm)
+bool func::run(struct regvm* vm, int64_t offset)
 {
-    int rest = count;
-    const code_t* cur = codes;
-    int offset = 0;
+    int rest = count - offset;
+    const code_t* cur = codes + offset;
     while (rest > 0)
     {
         int next = 0;

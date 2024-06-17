@@ -62,6 +62,7 @@ int64_t reg::v::conv_i(int type) const
     {
     case TYPE_SIGNED:
     case TYPE_UNSIGNED:
+    case TYPE_ADDR:
         return value.sint;
     case TYPE_DOUBLE:
         return (int64_t)value.dbl;
@@ -77,6 +78,7 @@ uint64_t reg::v::conv_u(int type) const
     {
     case TYPE_SIGNED:
     case TYPE_UNSIGNED:
+    case TYPE_ADDR:
         return value.uint;
     case TYPE_DOUBLE:
         return (uint64_t)value.dbl;

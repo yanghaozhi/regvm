@@ -8,7 +8,7 @@
 
 using namespace core;
 
-frame::frame(frame* c, func* f)
+frame::frame(frame* c, func* f) : running(f)
 {
     //scopes.emplace_front(scopes.size() + 1);
 

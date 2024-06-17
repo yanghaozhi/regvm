@@ -49,9 +49,6 @@ int regvm_code_len(code_t code)
     case CODE_SETL:
         count += 4;
         break;
-    case CODE_CALL:
-        count += 4;
-        break;
     default:
         break;
     }

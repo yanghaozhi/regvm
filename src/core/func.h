@@ -21,7 +21,7 @@ public:
 
     func(const code_t* codes, int count, int64_t id, const regvm_src_location* src);
 
-    bool run(struct regvm* vm);
+    bool run(struct regvm* vm, int64_t offset = 0);
 
     static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
     //bool run(struct regvm* vm, const code_t* start, int count);

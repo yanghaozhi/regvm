@@ -57,8 +57,8 @@ constexpr const char* only_file_name(const char* f)
 
 #else   //SPDLOG_H
 
-#include <fmt/chrono.h>
-#include <fmt/printf.h>
+//#include <fmt/chrono.h>
+//#include <fmt/printf.h>
 
 
 #define TRACE SPDLOG_TRACE

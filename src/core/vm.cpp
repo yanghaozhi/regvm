@@ -1,5 +1,7 @@
 #include "vm.h"
 
+#include <code.h>
+
 extern "C"
 {
 
@@ -133,6 +135,26 @@ bool regvm::run(const code_t* start, int count)
         return false;
     }
     return call(0, code_t{0, 0, 0}, 0);
+}
+
+bool regvm::call(core::reg::v& reg, const code_t code, int offset)
+{
+    if (reg.type != TYPE_ADDR)
+    {
+        return call((int64_t)reg, code, offset);
+    }
+    else
+    {
+        auto o = call_stack;
+        auto cur = o->running;
+        core::frame f(call_stack, cur);
+        call_stack = &f;
+
+        bool rr = cur->run(this, (int64_t)reg);
+
+        call_stack = o;
+        return rr;
+    }
 }
 
 bool regvm::call(int64_t id, const code_t code, int offset)

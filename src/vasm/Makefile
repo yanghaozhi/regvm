@@ -6,7 +6,7 @@ ROOT=../../
 NAME=vasm
 DIR=$(ROOT)/libs
 
-DEPS=$(DIR)/libcore.a $(DIR)/libext.a -lfmt
+DEPS=$(DIR)/libcore.a $(DIR)/libext.a
 
 all: $(NAME)
 
@@ -19,7 +19,7 @@ tt:
 INC=-I$(ROOT)/include -I$(ROOT)/src/include
 OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
-CXXFLAGS=-std=c++20 $(OPTS) $(INC)
+CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 
 CC=gcc
 CXX=g++
@@ -36,9 +36,9 @@ $(OBJS) : %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c -MMD $<
 
 
-$(NAME):$(OBJS)
+$(NAME):$(OBJS) $(DEPS)
 	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -o $(DIR)/$(NAME) $(OBJS) $(DEPS)
+	$(CXX) $(CXXFLAGS) -o $(DIR)/$(NAME) $(OBJS) $(DEPS) -lfmt
 	ln -sf $(DIR)/$(NAME) $(NAME)
 
 

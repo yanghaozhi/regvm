@@ -49,7 +49,7 @@ bool compile::pass1::setc(code_t& code, intptr_t* next, const char* str)
     std::string label;
     if (data.find_label(str, label) == true)
     {
-        code.ex = 0x09;
+        code.ex = TYPE_ADDR;
         code.id = CODE_SETL;
     }
     return true;
@@ -98,7 +98,7 @@ bool compile::pass2::setc(code_t& code, intptr_t* next, const char* str)
     std::string label;
     if (data.find_label(str, label) == true)
     {
-        code.ex = 0x09;
+        code.ex = TYPE_ADDR;
         code.id = CODE_SETL;
         auto it = data.label_ids.find(label);
         if (it == data.label_ids.end())
