@@ -70,7 +70,7 @@ public:
     //}
     template <typename T> static void reg_info(const reg& reg, T cb, regvm_reg_info* info)
     {
-        //cb(vm->reg.values[i].value.num, vm->reg.values[i].from, vm->reg.values[i].type);
+        //cb(reg.values[i].value.num, reg.values[i].from, reg.values[i].type);
         for (int i = 0; i < reg::size; i++)
         {
             info->id = i;

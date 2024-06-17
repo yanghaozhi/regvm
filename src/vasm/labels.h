@@ -1,19 +1,19 @@
 #pragma once
 
-#include "source.h"
+#include "parser.h"
 
 namespace vasm
 {
 
-class compile : public source
+class labels : public parser
 {
 public:
-    struct pass1 : public source::pass
+    struct pass1 : public parser::pass
     {
         int64_t     code_size       = 0;
         int64_t     cur_label_id    = 0;
 
-        pass1(compile& o);
+        pass1(labels& o);
 
         virtual int write_code(const code_t* code, int bytes) {return bytes;};
 
@@ -23,12 +23,12 @@ public:
 
         int64_t label_id(const std::string& label);
     private:
-        compile& data;
+        labels& data;
     };
 
-    struct pass2 : public source::pass
+    struct pass2 : public parser::pass
     {
-        pass2(compile& o);
+        pass2(labels& o);
 
         virtual int write_code(const code_t* code, int bytes)     = 0;
 
@@ -37,7 +37,7 @@ public:
         virtual bool line(const code_t* code, int max_bytes, const char* orig);
 
     private:
-        compile& data;
+        labels& data;
     };
 
 

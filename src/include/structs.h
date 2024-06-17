@@ -25,6 +25,8 @@ protected:
     //var();
     //virtual ~var();
 
+    friend class error;
+
     int16_t         ref         = 1;
 
 public:

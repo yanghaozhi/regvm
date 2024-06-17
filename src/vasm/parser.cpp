@@ -1,21 +1,21 @@
-#include "source.h"
+#include "parser.h"
 
 #include <code.h>
 
 using namespace vasm;
 
-source::~source()
+parser::~parser()
 {
     fclose(fp);
 }
 
-bool source::finish()
+bool parser::finish()
 {
     //return scan(comment2, setc2, line2);
     return true;
 }
 
-bool source::open(const char* name)
+bool parser::open(const char* name)
 {
     file = name;
 
@@ -61,7 +61,7 @@ bool source::open(const char* name)
     return fp != NULL;
 }
 
-bool source::pass::scan(void)
+bool parser::pass::scan(void)
 {
     fseek(src.fp, 0, SEEK_SET);
 

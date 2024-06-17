@@ -28,3 +28,4 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
     err.reason = reason;
     vm->idt.call(vm, IRQ_ERROR, cur, offset, &err);
 }
+

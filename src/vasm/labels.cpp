@@ -1,10 +1,10 @@
-#include "compile.h"
+#include "labels.h"
 
 #include <regvm.h>
 
 using namespace vasm;
 
-bool compile::find_label(const char* str, std::string& label)
+bool labels::find_label(const char* str, std::string& label)
 {
     char buf[256];
     if (sscanf(str, "#LABEL: %255[^\n]", buf) == 0) return false;
@@ -13,18 +13,18 @@ bool compile::find_label(const char* str, std::string& label)
     return true;
 }
 
-int64_t compile::pass1::label_id(const std::string& label)
+int64_t labels::pass1::label_id(const std::string& label)
 {
     auto it = data.label_ids.find(label);
     if (it != data.label_ids.end()) return it->second;
     return data.label_ids.emplace(label, ++cur_label_id).first->second;
 }
 
-compile::pass1::pass1(compile& o) : pass(o), data(o)
+labels::pass1::pass1(labels& o) : pass(o), data(o)
 {
 }
 
-void compile::pass1::comment(const char* line)
+void labels::pass1::comment(const char* line)
 {
     std::string label;
     if (data.find_label(line, label) == true)
@@ -44,7 +44,7 @@ void compile::pass1::comment(const char* line)
     }
 }
 
-bool compile::pass1::setc(code_t& code, intptr_t* next, const char* str)
+bool labels::pass1::setc(code_t& code, intptr_t* next, const char* str)
 {
     std::string label;
     if (data.find_label(str, label) == true)
@@ -55,7 +55,7 @@ bool compile::pass1::setc(code_t& code, intptr_t* next, const char* str)
     return true;
 }
 
-bool compile::pass1::line(const code_t* code, int max_bytes, const char* orig)
+bool labels::pass1::line(const code_t* code, int max_bytes, const char* orig)
 {
     DEBUG("{} - {} - {}", code->id, code->reg, code->ex);
     int bytes = regvm_code_len(*code) << 1;
@@ -68,7 +68,7 @@ bool compile::pass1::line(const code_t* code, int max_bytes, const char* orig)
     return (bytes == write_code(code, bytes)) ? true : false;
 }
 
-compile::pass2::pass2(compile& o) : pass(o), data(o)
+labels::pass2::pass2(labels& o) : pass(o), data(o)
 {
     //int64_t adjust = 0;
     //for (auto& it : data.label_infos)
@@ -89,11 +89,11 @@ compile::pass2::pass2(compile& o) : pass(o), data(o)
     //}
 }
 
-void compile::pass2::comment(const char* line)
+void labels::pass2::comment(const char* line)
 {
 }
 
-bool compile::pass2::setc(code_t& code, intptr_t* next, const char* str)
+bool labels::pass2::setc(code_t& code, intptr_t* next, const char* str)
 {
     std::string label;
     if (data.find_label(str, label) == true)
@@ -115,11 +115,12 @@ bool compile::pass2::setc(code_t& code, intptr_t* next, const char* str)
         }
         *(uint64_t*)next= (uint64_t)it2->second.pos;
         DEBUG("write {} as {} ", it2->second.pos, label);
+        return true;
     }
-    return true;
+    return false;
 }
 
-bool compile::pass2::line(const code_t* code, int max_bytes, const char* orig)
+bool labels::pass2::line(const code_t* code, int max_bytes, const char* orig)
 {
     int bytes = regvm_code_len(*code) << 1;
     return (bytes == write_code(code, bytes)) ? true : false;

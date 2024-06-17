@@ -18,13 +18,13 @@
 namespace vasm
 {
 
-class source
+class parser
 {
 public:
     FILE*           fp          = NULL;
     std::string     file;
 
-    virtual ~source();
+    virtual ~parser();
 
     virtual bool open(const char* name);
 
@@ -33,10 +33,10 @@ public:
 protected:
     struct pass
     {
-        source&     src;
+        parser&     src;
         int64_t     cur_line    = 0;
 
-        pass(source& s) : src(s)  {}
+        pass(parser& s) : src(s)  {}
 
         bool scan(void);
 
