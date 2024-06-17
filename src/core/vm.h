@@ -25,7 +25,7 @@ struct regvm_ex
     bool (*init)(regvm* vm);
     bool (*exit)(regvm* vm);
 
-    vm_ext_handler_t    vm_set;
+    //vm_ext_handler_t    vm_set;
     vm_ext_handler_t    vm_store;
     vm_ext_handler_t    vm_load;
     vm_ext_handler_t    vm_block;       //value 0 enter, 1 leave
@@ -46,6 +46,7 @@ struct regvm
     void*           ext         = NULL; //for ext
 
     std::map<int64_t, core::func>   funcs;
+    std::map<int64_t, const char*>  strs;
 
     regvm(struct regvm_ex* ext);
     ~regvm();
@@ -55,3 +56,4 @@ struct regvm
     bool call(core::reg::v& reg, const code_t code, int offset);
     bool ret(void);
 };
+

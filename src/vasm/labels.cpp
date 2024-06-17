@@ -47,11 +47,12 @@ void labels::pass1::comment(const char* line)
 bool labels::pass1::setc(code_t& code, intptr_t* next, const char* str)
 {
     std::string label;
-    if (data.find_label(str, label) == true)
+    if (data.find_label(str, label) == false)
     {
-        code.ex = TYPE_ADDR;
-        code.id = CODE_SETL;
+        return false;
     }
+    code.ex = TYPE_ADDR;
+    code.id = CODE_SETL;
     return true;
 }
 

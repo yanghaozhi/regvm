@@ -83,6 +83,8 @@ bool parser::pass::scan(void)
     char buf[1024];
     char data[1024];
 
+    before();
+
     while (fgets(buf, sizeof(buf), src.fp) != NULL)
     {
         cur_line += 1;
@@ -155,6 +157,8 @@ bool parser::pass::scan(void)
             return false;
         }
     };
+
+    after();
 
     return true;
 }

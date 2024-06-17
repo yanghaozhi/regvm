@@ -13,7 +13,7 @@ namespace vasm
 class mem_2_run : public strs
 {
 public:
-    mem_2_run();
+    mem_2_run(const char*);
     virtual ~mem_2_run();
 
     struct pass1 : public strs::pass1

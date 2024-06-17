@@ -8,7 +8,7 @@
 
 using namespace vasm;
 
-mem_2_run::mem_2_run() : buf(NULL)
+mem_2_run::mem_2_run(const char*) : buf(NULL)
 {
 }
 

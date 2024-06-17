@@ -10,6 +10,22 @@
 
 using namespace core;
 
+static bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    auto& r = vm->reg.id(code.reg);
+    if ((code.ex == TYPE_STRING) && (value & 0x01))
+    {
+        auto it = vm->strs.find(value);
+        if (it == vm->strs.end())
+        {
+            ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+            return false;
+        }
+        value = (intptr_t)it->second;
+    }
+    return r.set(value, code.ex);
+}
+
 static bool vm_move(struct regvm* vm, const code_t code)
 {
     auto& e = vm->reg.id(code.ex);
@@ -171,9 +187,9 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         *next += (need);                                                        \
         break;
         EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm->handlers.vm_set, vm, *code, offset, *(int16_t*)&code[1]);
-        EXTRA_RUN(SETI, 2, vm->handlers.vm_set, vm, *code, offset, *(int32_t*)&code[1]);
-        EXTRA_RUN(SETL, 4, vm->handlers.vm_set, vm, *code, offset, *(int64_t*)&code[1]);
+        EXTRA_RUN(SETS, 1, vm_set, vm, *code, offset, *(int16_t*)&code[1]);
+        EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
+        EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
 #undef EXTRA_RUN
 
 #define CODE_RUN(id, func, ...)             \

@@ -4,6 +4,7 @@
 
 #include "log.h"
 #include "mem_run.h"
+#include "bin_file.h"
 
 using namespace vasm;
 
@@ -16,9 +17,12 @@ struct OP
 
 template <typename T> struct TOP : public OP
 {
+    TOP(const char* opt = NULL) : op(opt)  {}
+
+    T   op;
+
     virtual bool go(const char* name)
     {
-        T op;
         if (op.open(name) == false)
         {
             return false;
@@ -80,6 +84,7 @@ int main(int argc, char** argv)
             //o = new step();
             break;
         case 'c':
+            op = new TOP<bin_file>(optarg);
             //o = new compile_2_file(optarg);
             break;
         case 'b':

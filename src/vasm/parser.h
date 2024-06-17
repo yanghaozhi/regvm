@@ -21,7 +21,7 @@ namespace vasm
 class parser
 {
 public:
-    FILE*           fp          = NULL;
+    FILE*           fp              = NULL;
     std::string     file;
 
     virtual ~parser();
@@ -34,11 +34,15 @@ protected:
     struct pass
     {
         parser&     src;
-        int64_t     cur_line    = 0;
+        int64_t     cur_line        = 0;
 
-        pass(parser& s) : src(s)  {}
+        pass(parser& s) : src(s)    {}
+        virtual ~pass()             {}
 
         bool scan(void);
+
+        virtual void before()       {};
+        virtual void after()        {};
 
         virtual void comment(const char* line)
         {

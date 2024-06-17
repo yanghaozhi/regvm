@@ -5,27 +5,6 @@
 extern "C"
 {
 
-static bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    auto& r = vm->reg.id(code.reg);
-    //if ((code.ex == TYPE_STRING) && (value & 0x01))
-    //{
-    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-    //    if (it.func == NULL)
-    //    {
-    //        ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
-    //        return false;
-    //    }
-    //    value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
-    //    if (value == 0)
-    //    {
-    //        ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
-    //        return false;
-    //    }
-    //}
-    return r.set(value, code.ex);
-}
-
 static bool vm_store(struct regvm* vm, const code_t code, int offset, int64_t value)
 {
     assert(0);
@@ -102,7 +81,6 @@ regvm::regvm(struct regvm_ex* ext) : reg()
         handlers.init = NULL;
         handlers.exit = NULL;
 
-        handlers.vm_set = vm_set;
         handlers.vm_load = vm_load;
         handlers.vm_store = vm_store;
         handlers.vm_block = vm_block;
