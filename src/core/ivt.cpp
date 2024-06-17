@@ -56,13 +56,13 @@ static int64_t irq_LOCATION(struct regvm* vm, void* arg, code_t code, int offset
     return 0;
 }
 
-////重定位字符串地址
-////当调用SET指令时，如果类型为STRING，且指针值为奇数（合法指针值不会为奇数）
-////则会发起该中断以获得具体的真实地址
-//static int64_t irq_STR_RELOCATE(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
-//{
-//    return 0;
-//}
+//重定位字符串地址
+//当调用SET指令时，如果类型为STRING，且指针值为奇数（合法指针值不会为奇数）
+//则会发起该中断以获得具体的真实地址
+static int64_t irq_STR_RELOCATE(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+{
+    return 0;
+}
 
     //发起函数调用
     //需要在此中断中提供新函数的具体信息
@@ -81,12 +81,12 @@ ivt::ivt()
         it.func = irq_##x;              \
         it.def_func = irq_##x;          \
         it.id = IRQ_##x;                \
-        it.check_err = e;               \
+        it.err_ret = e;                 \
     }
     SET_DEFAULT(TRAP, isr::DO_NOT_CHECK);
     SET_DEFAULT(ERROR, 0);
     SET_DEFAULT(LOCATION, -1);
-    //SET_DEFAULT(STR_RELOCATE, 0);
+    SET_DEFAULT(STR_RELOCATE, 0);
     //SET_DEFAULT(FUNCTION_CALL, 0);
 #undef SET_DEFAULT
 }
@@ -113,7 +113,7 @@ int64_t ivt::call(struct regvm* vm, int id, code_t code, int offset, void* args,
 {
     isr& it = isrs[id];
     int64_t r = it.call(vm, id, code, offset, args);
-    if ((id == IRQ_ERROR) || ((r == it.check_err) && (it.check_err != isr::DO_NOT_CHECK)))
+    if ((id == IRQ_ERROR) || ((r == it.err_ret) && (it.err_ret != isr::DO_NOT_CHECK)))
     {
         vm->fatal = true;
     }

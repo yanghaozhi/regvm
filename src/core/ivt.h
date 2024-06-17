@@ -17,7 +17,7 @@ struct ivt
     {
         int8_t              id;
         static const int    DO_NOT_CHECK = -128;
-        int8_t              check_err;  //-128 means DO NOT check
+        int8_t              err_ret;  //-128 means DO NOT check
         regvm_irq_handler   func;
         void*               arg;
         regvm_irq_handler   def_func;

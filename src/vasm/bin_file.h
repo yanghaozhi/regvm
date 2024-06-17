@@ -35,6 +35,8 @@ public:
 
 private:
     std::string     out;
+
+    static int64_t str_relocate(struct regvm* vm, void* arg, code_t code, int offset, void* extra);
 };
 
 };

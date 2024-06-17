@@ -59,9 +59,11 @@ enum IRQ
 
     //需要获取当前源码的文件名/行号/函数名
     IRQ_LOCATION,           //extra is pointer of regvm_src_location
+
+    //重定位字符串
+    IRQ_STR_RELOCATE,       //extra is string id
 };
 
-//return 0 means FATAL ERROR, it will stop running !!!
 typedef int64_t (*regvm_irq_handler)(struct regvm* vm, void* arg, code_t code, int offset, void* extra);
 
 bool regvm_irq_set(struct regvm* vm, int irq, regvm_irq_handler func, void* arg);

@@ -33,3 +33,8 @@ int bin_file::pass2::write_code(const code_t* code, int bytes)
 {
     return write(fd, code, bytes);
 }
+
+int64_t bin_file::str_relocate(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+{
+    return 0;
+}
