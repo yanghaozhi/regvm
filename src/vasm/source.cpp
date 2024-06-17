@@ -130,16 +130,20 @@ bool source::pass::scan(void)
         }
         else
         {
-            if (id.v == 0x43544553) //SETC
+            switch (id.v)
             {
+            case 0x44544553:    //SETD
+                inst.code.id = CODE_SETL;
+                sscanf(data, "%lf", (double*)(&inst.code + 1));
+                break;
+            case 0x43544553:    //SETC
                 if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
                 {
                     printf("\e[31m --- setc ERROR : %s\e[0m\n", buf);
                     return false;
                 }
-            }
-            else
-            {
+                break;
+            default:
                 printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
                 continue;
             }
