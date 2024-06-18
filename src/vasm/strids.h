@@ -38,6 +38,8 @@ public:
 protected:
     uint32_t        str_id  = 0;
     std::map<std::string, uint32_t>   str_tab;
+
+    static bool calc_id_len(uint64_t id, code_t& code, intptr_t* next);
 };
 
 }

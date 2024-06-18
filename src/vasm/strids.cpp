@@ -18,6 +18,9 @@ bool strids::pass1::setc(code_t& code, intptr_t* next, const char* str)
     {
         auto id = ++data.str_id;
         it = data.str_tab.try_emplace(str, (id << 1) + 1).first;
+
+        code.ex = TYPE_STRING;
+        calc_id_len(it->second, code, next);
     }
     *next = (intptr_t)it->first.c_str();
     return true;
@@ -55,22 +58,27 @@ bool strids::pass2::setc(code_t& code, intptr_t* next, const char* str)
         }
 
         code.ex = TYPE_STRING;
-        if (it->second <= 0x7FFF)
-        {
-            code.id = CODE_SETS;
-            *next = (uint16_t)it->second;
-        }
-        else if (it->second <= 0x7FFFFFFF)
-        {
-            code.id = CODE_SETS;
-            *next = (uint32_t)it->second;
-        }
-        else
-        {
-            code.id = CODE_SETS;
-            *next = (uint64_t)it->second;
-        }
+        calc_id_len(it->second, code, next);
     }
     return true;
 }
 
+bool strids::calc_id_len(uint64_t id, code_t& code, intptr_t* next)
+{
+    if (id <= 0x7FFF)
+    {
+        code.id = CODE_SETS;
+        *next = (uint16_t)id;
+    }
+    else if (id <= 0x7FFFFFFF)
+    {
+        code.id = CODE_SETI;
+        *next = (uint32_t)id;
+    }
+    else
+    {
+        code.id = CODE_SETL;
+        *next = (uint64_t)id;
+    }
+    return true;
+}
