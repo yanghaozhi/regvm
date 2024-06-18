@@ -268,6 +268,29 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         BITWISE(XOR, ^=);
 #undef BITWISE
 
+#define SHIFT(i, op)                                                \
+    case CODE_##i:                                                  \
+        {                                                           \
+            auto& e = vm->reg.id(code->ex);                         \
+            auto& r = vm->reg.id(code->reg);                        \
+            switch (r.type)                                         \
+            {                                                       \
+            case TYPE_SIGNED:                                       \
+                r.value.sint op (uint64_t)e;                        \
+                break;                                              \
+            case TYPE_UNSIGNED:                                     \
+                r.value.uint op (uint64_t)e;                        \
+                break;                                              \
+            default:                                                \
+                UNSUPPORT_TYPE("shift", r.type, *code, offset);     \
+                break;                                              \
+            }                                                       \
+        }                                                           \
+        break;
+        SHIFT(SHL, <<=);
+        SHIFT(SHR, >>=);
+#undef BITWISE
+
     case CODE_TRAP:
         *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
         break;
