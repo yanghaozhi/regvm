@@ -88,10 +88,12 @@ struct regvm_ex     var_ext = {mem_init, mem_exit, mem_store, mem_load, mem_bloc
 
 mem::mem() : globals(0)
 {
+    scopes.emplace_front(1);
 }
 
 mem::~mem()
 {
+    scopes.clear();
 }
 
 void mem::enter_block()

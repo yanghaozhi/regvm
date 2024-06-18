@@ -6,7 +6,10 @@ using namespace vasm;
 
 parser::~parser()
 {
-    fclose(fp);
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
 }
 
 bool parser::finish()
