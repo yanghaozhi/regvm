@@ -31,11 +31,38 @@ reg::~reg()
 
 bool reg::v::set(uint64_t num, int ex)
 {
-    store();
+    clear();
 
+    need_free = false;
     type = ex;
     value.uint = num;
+
+    return true;
+}
+
+bool core::regv::clear()
+{
+    store();
+
     set_from(NULL);
+
+    if (need_free == true)
+    {
+        switch (type)
+        {
+        case TYPE_STRING:
+            free((char*)value.str);
+            value.str = NULL;
+            break;
+        case TYPE_DICT:
+            break;
+        case TYPE_LIST:
+            break;
+        default:
+            break;
+        }
+    }
+
 
     return true;
 }

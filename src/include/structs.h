@@ -48,7 +48,9 @@ struct regv
     var*            from;
     uint8_t         type;
     int8_t          idx;
+    bool            need_free;
 
+    bool clear();
     bool store() const;
     bool set_from(core::var* v);
 };

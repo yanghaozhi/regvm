@@ -131,13 +131,12 @@ bool var::load(core::regv& r)
         return true;
     }
 
-    r.store();
+    r.clear();
 
     if (reg >= 0)
     {
         auto o = neighbor(&r, reg);
-        o->store();
-        o->set_from(NULL);
+        o->clear();
     }
 
     r.type = type;

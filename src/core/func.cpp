@@ -42,8 +42,7 @@ static bool vm_move(struct regvm* vm, const code_t code)
 {
     auto& e = vm->reg.id(code.ex);
     auto& r = vm->reg.id(code.reg);
-    r.store();
-    r.set_from(NULL);
+    r.clear();
     r.value.uint = e.value.uint;
     r.type = e.type;
     return true;
@@ -52,8 +51,7 @@ static bool vm_move(struct regvm* vm, const code_t code)
 static bool vm_clear(struct regvm* vm, const code_t code)
 {
     auto& r = vm->reg.id(code.reg);
-    r.store();
-    r.set_from(NULL);
+    r.clear();
     r.value.uint = 0;
     r.type = code.ex;
     return true;
@@ -99,8 +97,7 @@ static bool vm_type(struct regvm* vm, const code_t code, int offset)
 {
     auto& r = vm->reg.id(code.reg);
     auto& e = vm->reg.id(code.ex);
-    r.store();
-    r.set_from(NULL);
+    r.clear();
     r.value.uint = e.type;
     r.type = TYPE_UNSIGNED;
     return true;

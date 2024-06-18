@@ -22,6 +22,8 @@ public:
 
         bool set(uint64_t num, int ex);
 
+        //bool clear();
+
         //bool store() const;
         //bool store(core::var* v);
 
