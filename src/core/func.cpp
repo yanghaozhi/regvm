@@ -95,6 +95,17 @@ static bool vm_conv(struct regvm* vm, const code_t code, int offset)
     return true;
 }
 
+static bool vm_type(struct regvm* vm, const code_t code, int offset)
+{
+    auto& r = vm->reg.id(code.reg);
+    auto& e = vm->reg.id(code.ex);
+    r.store();
+    r.set_from(NULL);
+    r.value.uint = e.type;
+    r.type = TYPE_UNSIGNED;
+    return true;
+}
+
 static bool vm_chg(struct regvm* vm, const code_t code, int offset)
 {
     auto& r = vm->reg.id(code.reg);
@@ -214,6 +225,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CODE_RUN(MOVE, vm_move, vm, *code);
         CODE_RUN(CLEAR, vm_clear, vm, *code);
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
+        CODE_RUN(TYPE, vm_type, vm, *code, offset);
         CODE_RUN(CHG, vm_chg, vm, *code, offset);
 #undef CODE_RUN
 
@@ -291,12 +303,6 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         SHIFT(SHR, >>=);
 #undef BITWISE
 
-    case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
-        break;
-    case CODE_JUMP:
-        *next = vm_jump(vm, *code, offset);
-        break;
 #define JUMP(i, cmp)                                                                        \
     case CODE_##i:                                                                          \
         *next = ((int64_t)vm->reg.id(code->reg) cmp 0) ? vm_jump(vm, *code, offset) : 1;    \
@@ -308,6 +314,13 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         JUMP(JNG, <=);
         JUMP(JNL, >=);
 #undef JUMP
+
+    case CODE_TRAP:
+        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
+        break;
+    case CODE_JUMP:
+        *next = vm_jump(vm, *code, offset);
+        break;
     case CODE_EXIT:
         vm->exit_code = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
         vm->exit = true;
