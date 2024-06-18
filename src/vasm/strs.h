@@ -2,7 +2,7 @@
 
 #include "labels.h"
 
-#include <unordered_set>
+#include <set>
 
 namespace vasm
 {
@@ -30,7 +30,7 @@ public:
 
 
 protected:
-    std::unordered_set<std::string>     str_tab;
+    std::set<std::string>     str_tab;
 };
 
 }

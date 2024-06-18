@@ -88,6 +88,7 @@ int main(int argc, char** argv)
             //o = new compile_2_file(optarg);
             break;
         case 'b':
+            op = new TOP<bin_file>(file);
             //o = new bin();
             break;
         case 'v':

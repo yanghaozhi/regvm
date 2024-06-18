@@ -2,7 +2,7 @@
 
 #include "labels.h"
 
-#include <unordered_map>
+#include <map>
 
 namespace vasm
 {
@@ -37,7 +37,7 @@ public:
 
 protected:
     uint32_t        str_id  = 0;
-    std::unordered_map<std::string, uint32_t>   str_tab;
+    std::map<std::string, uint32_t>   str_tab;
 };
 
 }
