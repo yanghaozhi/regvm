@@ -2,10 +2,10 @@
 
 #include "labels.h"
 #include "strs.h"
+#include "debugger.h"
 
 #include <regvm.h>
 #include <debug.h>
-
 
 namespace vasm
 {
@@ -44,6 +44,7 @@ protected:
         code_t*     codes;
         void*       buf;
     };
+    debugger        vmd;
 
     static void dump_reg_info(void* arg, const regvm_reg_info* info);
     static int64_t debug_trap(regvm* vm, void*, code_t code, int offset, void* extra);

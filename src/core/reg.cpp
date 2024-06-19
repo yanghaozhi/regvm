@@ -44,9 +44,7 @@ bool core::regv::clear()
 {
     store();
 
-    set_from(NULL);
-
-    if (need_free == true)
+    if ((from == NULL) && (need_free == true))
     {
         switch (type)
         {
@@ -62,6 +60,8 @@ bool core::regv::clear()
             break;
         }
     }
+
+    set_from(NULL);
 
 
     return true;

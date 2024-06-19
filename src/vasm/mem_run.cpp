@@ -36,7 +36,7 @@ bool mem_2_run::finish()
 
     auto vm = regvm_init(&var_ext);
 
-    regvm_irq_set(vm, IRQ_TRAP, debug_trap, NULL);
+    vmd.start(vm, debugger::VAR | debugger::REG);
 
     int64_t exit = 0;
     bool r = regvm_exec(vm, codes, code_bytes >> 1, &exit);
@@ -94,53 +94,3 @@ int mem_2_run::pass2::write_code(const code_t* code, int bytes)
 //    //cb(arg, (regvm_var_info*)(intptr_t)-1);
 //    return true;
 //}
-struct dump_arg
-{
-    int     reg;
-};
-
-int64_t mem_2_run::debug_trap(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
-{
-    printf("%d :\n", offset);
-    struct dump_arg a;
-    switch (code.ex)
-    {
-    case 0: //all regs
-        a.reg = -1;
-        regvm_debug_reg_callback(vm, dump_reg_info, &a);
-        break;
-    case 1: //1 arg
-        a.reg = code.reg;
-        regvm_debug_reg_callback(vm, dump_reg_info, &a);
-        break;
-    //case 2:
-    //    regvm_debug_var_callback(vm, dump_var_info, &arg);
-    //    break;
-    default:
-        break;
-    }
-    return true;
-}
-
-void mem_2_run::dump_reg_info(void* arg, const regvm_reg_info* info)
-{
-    auto p = (struct dump_arg*)arg;
-
-    switch ((intptr_t)info)
-    {
-    case 0:
-        printf("\e[33m id\ttype\tref\tvar\tvalue \e[0m\n");
-        break;
-    case -1:
-        break;
-    default:
-        if ((p->reg < 0) || (p->reg == info->id))
-        {
-            printf(" %d\t%d\t%d\t%p\t", info->id, info->type, info->ref, info->from);
-            regvm_debug_uvalue_print(info->type, info->value);
-            printf("\n");
-        }
-        break;
-    }
-}
-

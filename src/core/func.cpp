@@ -218,7 +218,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         break;
         CODE_RUN(STORE, vm->handlers.vm_store, vm, *code, offset, -1);
         CODE_RUN(LOAD, vm->handlers.vm_load, vm, *code, offset, -1);
-        CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, -1);
+        CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, vm->call_stack->id);
         CODE_RUN(MOVE, vm_move, vm, *code);
         CODE_RUN(CLEAR, vm_clear, vm, *code);
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
@@ -349,10 +349,10 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     return !vm->fatal;
 }
 
-func::func(const code_t* s, int c, int64_t i, const regvm_src_location* e) :
-    count(c), codes(s), id(i)
+func::func(const code_t* p, int64_t c, int64_t e, int64_t s, int32_t i, const regvm_src_location* l) :
+    id(i), codes(p), count(c), entry(e), size(s)
 {
-    if (e == NULL)
+    if (l == NULL)
     {
         src.line = 0;
         src.file = NULL;
@@ -360,13 +360,14 @@ func::func(const code_t* s, int c, int64_t i, const regvm_src_location* e) :
     }
     else
     {
-        src = *e;
+        src = *l;
     }
 }
 
-bool func::run(struct regvm* vm, int64_t offset)
+bool func::run(struct regvm* vm, int64_t start)
 {
-    int rest = count - offset;
+    int64_t offset = (start >= 0) ? start : entry;
+    int rest = size;
     const code_t* cur = codes + offset;
     while (rest > 0)
     {

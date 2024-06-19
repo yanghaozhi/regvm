@@ -105,14 +105,15 @@ regvm::~regvm()
 bool regvm::run(const code_t* start, int count)
 {
     regvm_src_location src = {0, "NULL", "..."};
-    auto r = funcs.try_emplace((int64_t)0, start, count, 0, &src);
+    auto r = funcs.try_emplace((int64_t)0, start, count, 0, count, 0, &src);
     if (r.second == false)
     {
         auto vm = this;
         ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
         return false;
     }
-    return call(0, code_t{0, 0, 0}, 0);
+    core::frame f(this, &r.first->second, code_t{0, 0, 0}, 0);
+    return f.run();
 }
 
 bool regvm::call(core::reg::v& reg, const code_t code, int offset)
@@ -123,27 +124,13 @@ bool regvm::call(core::reg::v& reg, const code_t code, int offset)
     }
     else
     {
-        auto o = call_stack;
-        auto cur = o->running;
-        core::frame f(call_stack, cur);
-        call_stack = &f;
-
-        bool rr = cur->run(this, (int64_t)reg);
-
-        call_stack = o;
-        return rr;
+        core::frame f(*call_stack, call_stack->running, code, offset);
+        return f.run((int64_t)reg);
     }
 }
 
 bool regvm::call(int64_t id, const code_t code, int offset)
 {
-    //auto r = funcs.try_emplace(id, this, id, code, offset);
-    //if ((r.second == false) || (r.first->second.codes == NULL) || (r.first->second.count == 0))
-    //{
-    //    auto vm = this;
-    //    ERROR(ERR_FUNCTION_INFO, code, offset, "Can not get function info : %lu", id);
-    //    return false;
-    //}
     auto vm = this;
     auto it = funcs.find(id);
     if (it == funcs.end())
@@ -152,26 +139,8 @@ bool regvm::call(int64_t id, const code_t code, int offset)
         return false;
     }
 
-    core::frame f(call_stack, &it->second);
-    auto o = call_stack;
-    call_stack = &f;
-
-    if (handlers.vm_call(this, code, offset, id) == false)
-    {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
-        return false;
-    }
-
-    bool rr = it->second.run(this);
-
-    if (handlers.vm_call(this, code, offset, -id) == false)
-    {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
-        return false;
-    }
-
-    call_stack = o;
-    return rr;
+    core::frame f(*call_stack, &it->second, code, offset);
+    return f.run();
 }
 
 bool regvm::ret(void)

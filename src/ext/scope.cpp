@@ -8,7 +8,7 @@
 
 using namespace ext;
 
-scope::scope(int64_t i) : id(i)
+scope::scope(int32_t i) : id(i)
 {
     memset(table, 0, sizeof(table));
 }
@@ -120,4 +120,32 @@ void scope::clear_list(items* it)
             it->vars[i]->release();
         }
     }
+}
+
+void scope::dump(var_cb cb, void* arg) const
+{
+    //for (int i = 0; i < size; i++)
+    //{
+    //    if (table[i].v != NULL)
+    //    {
+    //        cb(id, table[i].v);
+    //    }
+
+    //    auto it = table[i].next;
+    //    while (it != NULL)
+    //    {
+    //        for (int i = 0; i < items::size; i++)
+    //        {
+    //            if (it->vars[i] == NULL)
+    //            {
+    //                return;
+    //            }
+    //            if (it->vars[i] != NULL)
+    //            {
+    //                cb(id, it->vars[i]);
+    //            }
+    //        }
+    //        it = it->next;
+    //    }
+    //}
 }

@@ -4,6 +4,9 @@
 #include "irq.h"
 #include "structs.h"
 
+#include "error.h"
+#include "scope.h"
+
 #include "../core/vm.h"
 
 using namespace ext;
@@ -66,50 +69,49 @@ static bool mem_load(struct regvm* vm, code_t code, int offset, int64_t extra)
 static bool mem_block(struct regvm* vm, code_t code, int offset, int64_t extra)
 {
     auto m = (mem*)vm->ext;
-    switch (code.ex)
-    {
-    case 0:
-        m->enter_block();
-        break;
-    case 1:
-        m->leave_block();
-        break;
-    }
-    return true;
+    return m->block(extra, code.ex);
 }
 
 static bool mem_call(struct regvm* vm, code_t code, int offset, int64_t extra)
 {
-    return true;
+    auto m = (mem*)vm->ext;
+    return m->call(extra);
 }
-
-struct regvm_ex     var_ext = {mem_init, mem_exit, mem_store, mem_load, mem_block, mem_call};
 
 
 mem::mem() : globals(0)
 {
-    scopes.emplace_front(1);
 }
 
 mem::~mem()
 {
-    scopes.clear();
+    frames.clear();
 }
 
-void mem::enter_block()
+bool mem::block(int64_t frame, int ex)
 {
-    scopes.emplace_front(scopes.size() + 1);
-}
+    if (frames.size() == 0)
+    {
+        return false;
+    }
 
-void mem::leave_block()
-{
-    scopes.pop_front();
+    switch (ex)
+    {
+    case 0:
+        frames.back().enter_block();
+        break;
+    case 1:
+        frames.back().leave_block();
+        break;
+    }
+
+    return true;
 }
 
 var* mem::add(const int type, const char* name)
 {
     auto v = var::create(type, name);
-    scopes.front().add(v);
+    frames.front().scopes.front().add(v);
     return (v->release() == true) ? v : NULL;
 }
 
@@ -117,7 +119,7 @@ var* mem::get(const char* name) const
 {
     const int l = strlen(name);
     uint32_t h = var::calc_hash(name, l);
-    for (const auto& it : scopes)
+    for (const auto& it : frames.front().scopes)
     {
         auto v = it.get(h, name, l);
         if (v != NULL)
@@ -127,4 +129,87 @@ var* mem::get(const char* name) const
     }
     return globals.get(h, name, l);
 }
+
+bool mem::call(int64_t func)
+{
+    if ((func > 0) || ((func == 0) && (frames.empty() == true)))
+    {
+        frames.emplace_front(func);
+    }
+    else
+    {
+        if (frames.front().frame != -func)
+        {
+            assert(0);
+            return false;
+        }
+        frames.pop_front();
+    }
+    return true;
+}
+
+mem::context::context(int64_t f) : frame(f)
+{
+    scopes.emplace_front(0);
+}
+
+mem::context::~context()
+{
+    if (scopes.size() > 1)
+    {
+        //TODO
+        //warning
+    }
+}
+
+void mem::context::enter_block()
+{
+    scopes.emplace_front(scopes.size());
+}
+
+void mem::context::leave_block()
+{
+    scopes.pop_front();
+}
+
+void mem::dump(var_cb cb, void* arg) const
+{
+    for (auto& f : frames)
+    {
+        for (auto& s : f.scopes)
+        {
+            s.dump(cb, arg);
+        }
+    }
+}
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+struct regvm_ex     var_ext = {mem_init, mem_exit, mem_store, mem_load, mem_block, mem_call};
+
+bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
+{
+    regvm_var_info info;
+    memset(&info, 0, sizeof(info));
+    cb(arg, NULL);
+
+    auto m = (mem*)vm->ext;
+    m->dump(cb, arg);
+    //mem* m = (mem*)vm->ext;
+    //core::error::ctx_vars(*vm->call_stack, [cb, arg](const regvm_var_info* info)
+    //        {
+    //            cb(arg, info);
+    //        }, &info);
+    cb(arg, (regvm_var_info*)(intptr_t)-1);
+    return true;
+}
+
+
+#ifdef __cplusplus
+};
+#endif
+
 

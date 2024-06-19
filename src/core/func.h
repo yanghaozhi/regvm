@@ -13,15 +13,19 @@ namespace core
 class func
 {
 public:
-    const int                   count;
-    const code_t*               codes;
+    const int32_t               id;
 
-    const int64_t               id;
+    const code_t*               codes;      //code page(file) begins
+    const int64_t               count;      //code page count
+
+    const int64_t               entry;      //function entry position
+    const int64_t               size;       //function size
+
     regvm_src_location          src;
 
-    func(const code_t* codes, int count, int64_t id, const regvm_src_location* src);
+    func(const code_t* codes, int64_t count, int64_t entry, int64_t size, int32_t id, const regvm_src_location* src);
 
-    bool run(struct regvm* vm, int64_t offset = 0);
+    bool run(struct regvm* vm, int64_t start = -1);
 
     static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
     //bool run(struct regvm* vm, const code_t* start, int count);
