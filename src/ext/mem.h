@@ -28,7 +28,7 @@ public:
 
     bool call(int64_t func);
 
-    void dump(var_cb cb, void* arg) const;
+    void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
 private:
     struct context

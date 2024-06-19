@@ -25,7 +25,7 @@ public:
     bool add(var* v);
     var* get(uint32_t key, const char* name, int len) const;
 
-    void dump(var_cb cb, void* arg) const;
+    void dump(var_cb cb, void* arg, regvm_var_info* info) const;
 
 private:
     struct items

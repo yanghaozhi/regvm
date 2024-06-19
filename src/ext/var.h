@@ -13,7 +13,7 @@ namespace ext
 class var : public core::var
 {
 private:
-    friend class error;
+    friend class scope;
 
     var(uint8_t type, const char* name, const int len);
     virtual ~var();

@@ -172,13 +172,25 @@ void mem::context::leave_block()
     scopes.pop_front();
 }
 
-void mem::dump(var_cb cb, void* arg) const
+void mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
 {
     for (auto& f : frames)
     {
+        info->func_id = f.frame >> 32;
+        info->call_id = f.frame & 0xFFFFFFFF;
+        auto it = vm->funcs.find(info->func_id);
+        if (it != vm->funcs.end())
+        {
+            info->func_name = it->second.src.func;
+        }
+        else
+        {
+            info->func_name = NULL;
+        }
+
         for (auto& s : f.scopes)
         {
-            s.dump(cb, arg);
+            s.dump(cb, arg, info);
         }
     }
 }
@@ -197,12 +209,8 @@ bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
     cb(arg, NULL);
 
     auto m = (mem*)vm->ext;
-    m->dump(cb, arg);
-    //mem* m = (mem*)vm->ext;
-    //core::error::ctx_vars(*vm->call_stack, [cb, arg](const regvm_var_info* info)
-    //        {
-    //            cb(arg, info);
-    //        }, &info);
+    m->dump(vm, cb, arg, &info);
+
     cb(arg, (regvm_var_info*)(intptr_t)-1);
     return true;
 }

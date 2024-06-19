@@ -40,11 +40,13 @@ struct regvm_var_info
     int                 ref;
     int                 type;
     int                 reg;
-    int                 scope;
+    int                 func_id;
+    int                 call_id;
+    int                 scope_id;
     union regvm_uvalue  value;
-    const char*         func;
-    const char*         name;
-    const void*         var;
+    const char*         func_name;
+    const char*         var_name;
+    const void*         raw;
 };
 typedef void (*var_cb)(void* arg, const struct regvm_var_info* info);
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);

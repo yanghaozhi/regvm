@@ -122,30 +122,42 @@ void scope::clear_list(items* it)
     }
 }
 
-void scope::dump(var_cb cb, void* arg) const
+void scope::dump(var_cb cb, void* arg, regvm_var_info* info) const
 {
-    //for (int i = 0; i < size; i++)
-    //{
-    //    if (table[i].v != NULL)
-    //    {
-    //        cb(id, table[i].v);
-    //    }
+    auto call = [info, arg, cb](int id, var* v)
+    {
+        info->ref = v->ref;
+        info->type = v->type;
+        info->reg = v->reg;
+        info->scope_id = id;
+        info->value.sint = v->value.sint;
+        info->var_name = v->name;
+        info->raw = v;
+        cb(arg, info);
+    };
 
-    //    auto it = table[i].next;
-    //    while (it != NULL)
-    //    {
-    //        for (int i = 0; i < items::size; i++)
-    //        {
-    //            if (it->vars[i] == NULL)
-    //            {
-    //                return;
-    //            }
-    //            if (it->vars[i] != NULL)
-    //            {
-    //                cb(id, it->vars[i]);
-    //            }
-    //        }
-    //        it = it->next;
-    //    }
-    //}
+    for (int i = 0; i < size; i++)
+    {
+        if (table[i].v != NULL)
+        {
+            call(id, table[i].v);
+        }
+
+        auto it = table[i].next;
+        while (it != NULL)
+        {
+            for (int i = 0; i < items::size; i++)
+            {
+                if (it->vars[i] == NULL)
+                {
+                    return;
+                }
+                if (it->vars[i] != NULL)
+                {
+                    call(id, it->vars[i]);
+                }
+            }
+            it = it->next;
+        }
+    }
 }

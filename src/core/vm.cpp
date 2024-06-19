@@ -105,7 +105,7 @@ regvm::~regvm()
 bool regvm::run(const code_t* start, int count)
 {
     regvm_src_location src = {0, "NULL", "..."};
-    auto r = funcs.try_emplace((int64_t)0, start, count, 0, count, 0, &src);
+    auto r = funcs.try_emplace((int32_t)0, start, count, 0, count, 0, &src);
     if (r.second == false)
     {
         auto vm = this;

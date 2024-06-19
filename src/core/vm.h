@@ -45,7 +45,7 @@ struct regvm
     regvm_ex        handlers;
     void*           ext         = NULL; //for ext
 
-    std::map<int64_t, core::func>   funcs;
+    std::map<int32_t, core::func>   funcs;
     std::map<int64_t, const char*>  strs;
 
     regvm(struct regvm_ex* ext);
