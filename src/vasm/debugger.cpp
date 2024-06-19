@@ -78,12 +78,12 @@ void debugger::dump_var_info(void* arg, const regvm_var_info* info)
     switch ((intptr_t)info)
     {
     case 0:
-        printf("\e[32m type\treg\tref\tname @ func @ call @ scope\tptr\tvalue\e[0m\n");
+        printf("\e[32m type\treg\tref\tname\tfunc\tcall\tscope\tptr\tvalue\e[0m\n");
         break;
     case -1:
         break;
     default:
-        printf(" %d\t%d\t%d\t%s @ %d @ %d @ %d\t%p\t", info->type, info->reg, info->ref, info->var_name, info->func_id, info->call_id, info->scope_id, info->raw);
+        printf(" %d\t%d\t%d\t%s\t%d(%s)\t%d\t%d\t%p\t", info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->scope_id, info->raw);
         regvm_debug_uvalue_print(info->type, info->value);
         printf("\n");
         break;
