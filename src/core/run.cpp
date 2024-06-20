@@ -17,12 +17,7 @@ bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
         //printf("\e[31m run ERROR at %d\e[0m\n", count - rest);
         return false;
     }
-    auto e = vm->reg.id(0);
-    if (e.type == 0)
-    {
-        return false;
-    }
-    *exit = (int64_t)e;
+    *exit = vm->exit_code;
     return true;
 }
 

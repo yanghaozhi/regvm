@@ -1,19 +1,23 @@
 #include "parser.h"
 
+#include <fcntl.h>
+#include <sys/mman.h>
+
 #include <code.h>
 
 using namespace vasm;
 
 parser::~parser()
 {
-    if (fp != NULL)
-    {
-        fclose(fp);
-    }
 }
 
 bool parser::finish()
 {
+    if (fd >= 0)
+    {
+        munmap(data, size);
+        close(fd);
+    }
     //return scan(comment2, setc2, line2);
     return true;
 }
@@ -21,7 +25,17 @@ bool parser::finish()
 bool parser::open(const char* name)
 {
     file = name;
+    int fd = ::open(name, O_RDONLY);
+    struct stat st;
+    fstat(fd, &st);
+    auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    return open(d, st.st_size);
+}
 
+bool parser::open(char* d, int64_t s)
+{
+    data = d;
+    size = s;
     if (ids.empty() == true)
     {
 #define SET_KEY(k) ids.emplace(#k, CODE_##k);
@@ -59,15 +73,11 @@ bool parser::open(const char* name)
         SET_KEY(EXIT);
 #undef SET_KEY
     }
-
-    fp = fopen(name, "r");
-    return fp != NULL;
+    return true;
 }
 
 bool parser::pass::scan(void)
 {
-    fseek(src.fp, 0, SEEK_SET);
-
     union 
     {
         char        data[10];
@@ -82,23 +92,27 @@ bool parser::pass::scan(void)
     int             ex;
     int             reg;
 
-
-    char buf[1024];
-    char data[1024];
-
     before();
 
-    while (fgets(buf, sizeof(buf), src.fp) != NULL)
+    char* end = NULL;
+    const char* buf = NULL;
+    char data[1024];
+
+    while ((buf = src.next_line(&end)) != NULL)
     {
         cur_line += 1;
         id.v = 0;
-        if (buf[0] == '#')
+        switch (buf[0])
         {
+        case '#':
             comment(buf);
             continue;
+        case '\0':
+            continue;
+        default:
+            break;
         }
 
-        buf[sizeof(buf) - 1] = '\0';
         data[0] = '\0';
 
         sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
@@ -144,19 +158,19 @@ bool parser::pass::scan(void)
             case 0x43544553:    //SETC
                 if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
                 {
-                    printf("\e[31m --- setc ERROR : %s\e[0m\n", buf);
+                    ERROR("\e[31m --- setc ERROR : {}\e[0m\n", buf);
                     return false;
                 }
                 break;
             default:
-                printf("\e[31m --- 0x%lX : %s \e[0m\n", id.v, id.s);
+                ERROR("\e[31m --- 0x{} : {} \e[0m\n", id.v, id.s);
                 continue;
             }
         }
 
         if (line(&inst.code, sizeof(inst), buf) == false)
         {
-            printf("\e[31m --- scan ERROR : %s\e[0m\n", buf);
+            ERROR("\e[31m --- scan ERROR : {}\e[0m\n", buf);
             return false;
         }
     };
@@ -166,3 +180,30 @@ bool parser::pass::scan(void)
     return true;
 }
 
+const char* parser::next_line(char** end) const
+{
+    const char k = '\n';
+    char* s = data;
+    if (*end != NULL)
+    {
+        if (*end - data >= size)
+        {
+            return NULL;
+        }
+
+        **end = k;
+        s = *end + 1;
+    }
+    char* p = strchr(s, k);
+    if (p == NULL)
+    {
+        *end = data + size;
+        return s;
+    }
+    else
+    {
+        *p = k;
+        *end = p;
+        return s;
+    }
+}

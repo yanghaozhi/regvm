@@ -21,11 +21,11 @@ namespace vasm
 class parser
 {
 public:
-    FILE*           fp              = NULL;
     std::string     file;
 
     virtual ~parser();
 
+    virtual bool open(char* data, int64_t size);
     virtual bool open(const char* name);
 
     virtual bool finish();
@@ -53,6 +53,13 @@ protected:
     };
 
     std::unordered_map<std::string, int>        ids;
+
+private:
+    int         fd      = -1;
+    char*       data    = NULL;
+    int64_t     size    = -1;
+
+    const char* next_line(char** end) const;
 };
 
 }

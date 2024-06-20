@@ -30,9 +30,9 @@ struct regvm_reg_info
     void*               from;
 };
 typedef void (*reg_cb)(void* arg, const struct regvm_reg_info* info);
-bool regvm_debug_reg_callback(struct regvm* vm, reg_cb cb, void* arg);
+extern bool regvm_debug_reg_callback(struct regvm* vm, reg_cb cb, void* arg);
 
-void regvm_debug_uvalue_print(int type, union regvm_uvalue uv);
+extern void regvm_debug_uvalue_print(int type, union regvm_uvalue uv);
 
 
 struct regvm_var_info
@@ -49,7 +49,7 @@ struct regvm_var_info
     const void*         raw;
 };
 typedef void (*var_cb)(void* arg, const struct regvm_var_info* info);
-bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
+extern bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 
 #ifdef __cplusplus
 };

@@ -1,12 +1,13 @@
 SRCS = $(wildcard ./*.cpp)
 OBJS += $(patsubst %.cpp, %.o, $(SRCS))
+SRCDS += $(patsubst %.cpp, %.d, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
-ROOT=../../
+ROOT=$(CURDIR)/../../
 NAME=vasm
-DIR=$(ROOT)/libs
+OUT=$(ROOT)/libs
 
-DEPS=$(DIR)/libcore.a $(DIR)/libext.a
+DEPS=$(OUT)/libcore.a $(OUT)/libext.a
 
 all: $(NAME)
 
@@ -28,18 +29,19 @@ CXX=g++
 
 
 clean:
-	rm -f *.o test* *.a *.d
+	rm -f $(OUT)/lib$(NAME).* $(OBJS) $(SRCDS)
 
 lib:$(LIBS)
 
 $(OBJS) : %.o : %.cpp
-	$(CXX) $(CXXFLAGS) -c -MMD $<
+	$(CXX) $(CXXFLAGS) -c -o $*.o -MMD $<
 
 
 $(NAME):$(OBJS) $(DEPS)
-	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -o $(DIR)/$(NAME) $(OBJS) $(DEPS) -lfmt
-	ln -sf $(DIR)/$(NAME) $(NAME)
+	mkdir -p $(OUT)
+	ar rcs $(OUT)/lib$(NAME).a  $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $(OUT)/$(NAME) $(OBJS) $(DEPS) -lfmt
+	ln -sf $(OUT)/$(NAME) $(NAME)
 
 
 -include *.d
