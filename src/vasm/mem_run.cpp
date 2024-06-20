@@ -23,14 +23,17 @@ bool mem_2_run::finish()
     int j = 0;
     const unsigned char* p = (const unsigned char*)buf;
     INFO("total {} bytes of codes", code_bytes);
-    for (int i = 0; i < code_bytes; i++)
+    if (spdlog::default_logger()->should_log(spdlog::level::debug) == true)
     {
-        if (j++ >= line)
+        for (int i = 0; i < code_bytes; i++)
         {
-            printf("\n");
-            j = 1;
+            if (j++ >= line)
+            {
+                printf("\n");
+                j = 1;
+            }
+            printf("%02X ", p[i]);
         }
-        printf("%02X ", p[i]);
     }
     printf("\n\n");
 

@@ -17,44 +17,8 @@ struct dump_arg
     int     reg;
 };
 
-int64_t debugger::debug_trap(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+void debugger::reg_info(reg_arg* arg, const regvm_reg_info* info)
 {
-    auto d = (debugger*)arg;
-
-    printf("%d :\n", offset);
-    struct dump_arg a;
-    switch (code.ex)
-    {
-    case 0: //all regs
-        a.reg = -1;
-        if ((d->mode & REG) != 0)
-        {
-            regvm_debug_reg_callback(vm, dump_reg_info, &a);
-        }
-        break;
-    case 1: //1 arg
-        if ((d->mode & REG) != 0)
-        {
-            a.reg = code.reg;
-            regvm_debug_reg_callback(vm, dump_reg_info, &a);
-        }
-        break;
-    case 2:
-        if ((d->mode & VAR) != 0)
-        {
-            regvm_debug_var_callback(vm, dump_var_info, &arg);
-        }
-        break;
-    default:
-        break;
-    }
-    return true;
-}
-
-void debugger::dump_reg_info(void* arg, const regvm_reg_info* info)
-{
-    auto p = (struct dump_arg*)arg;
-
     switch ((intptr_t)info)
     {
     case 0:
@@ -63,7 +27,7 @@ void debugger::dump_reg_info(void* arg, const regvm_reg_info* info)
     case -1:
         break;
     default:
-        if ((p->reg < 0) || (p->reg == info->id))
+        if ((arg->reg_id < 0) || (arg->reg_id == info->id))
         {
             printf(" %d\t%d\t%d\t%p\t", info->id, info->type, info->ref, info->from);
             regvm_debug_uvalue_print(info->type, info->value);
@@ -73,7 +37,7 @@ void debugger::dump_reg_info(void* arg, const regvm_reg_info* info)
     }
 }
 
-void debugger::dump_var_info(void* arg, const regvm_var_info* info)
+void debugger::var_info(var_arg* arg, const regvm_var_info* info)
 {
     switch ((intptr_t)info)
     {
@@ -88,5 +52,51 @@ void debugger::dump_var_info(void* arg, const regvm_var_info* info)
         printf("\n");
         break;
     }
+}
+
+int64_t debugger::debug_trap(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+{
+    auto d = (debugger*)arg;
+
+    printf("%d :\n", offset);
+    reg_arg r = {d, -1};
+    var_arg v = {d};
+    switch (code.ex)
+    {
+    case 0: //all regs
+        if ((d->mode & REG) != 0)
+        {
+            regvm_debug_reg_callback(vm, dump_reg_info, &r);
+        }
+        break;
+    case 1: //1 arg
+        if ((d->mode & REG) != 0)
+        {
+            r.reg_id = code.reg;
+            regvm_debug_reg_callback(vm, dump_reg_info, &r);
+        }
+        break;
+    case 2:
+        if ((d->mode & VAR) != 0)
+        {
+            regvm_debug_var_callback(vm, dump_var_info, &v);
+        }
+        break;
+    default:
+        break;
+    }
+    return true;
+}
+
+void debugger::dump_reg_info(void* arg, const regvm_reg_info* info)
+{
+    auto p = (reg_arg*)arg;
+    p->self->reg_info(p, info);
+}
+
+void debugger::dump_var_info(void* arg, const regvm_var_info* info)
+{
+    auto p = (var_arg*)arg;
+    p->self->var_info(p, info);
 }
 

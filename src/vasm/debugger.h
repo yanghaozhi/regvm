@@ -15,7 +15,21 @@ public:
     bool start(regvm* vm, uint64_t mode);
 
 private:
-    uint64_t    mode    = 0;
+    uint64_t        mode    = 0;
+
+    struct reg_arg
+    {
+        debugger*   self;
+        int         reg_id;
+    };
+
+    virtual void reg_info(reg_arg* arg, const regvm_reg_info* info);
+
+    struct var_arg
+    {
+        debugger*   self;
+    };
+    virtual void var_info(var_arg* arg, const regvm_var_info* info);
 
     static void dump_reg_info(void* arg, const regvm_reg_info* info);
     static void dump_var_info(void* arg, const regvm_var_info* info);
