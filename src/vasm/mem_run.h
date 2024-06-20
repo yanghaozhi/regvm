@@ -16,6 +16,8 @@ public:
     mem_2_run(const char*);
     virtual ~mem_2_run();
 
+    void set_dbg(debugger* d);
+
     struct pass1 : public strs::pass1
     {
         pass1(mem_2_run& o);
@@ -44,7 +46,7 @@ protected:
         code_t*     codes;
         void*       buf;
     };
-    debugger        vmd;
+    debugger*       dbg;
 
     static void dump_reg_info(void* arg, const regvm_reg_info* info);
     static int64_t debug_trap(regvm* vm, void*, code_t code, int offset, void* extra);

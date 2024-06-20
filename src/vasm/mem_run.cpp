@@ -8,13 +8,18 @@
 
 using namespace vasm;
 
-mem_2_run::mem_2_run(const char*) : buf(NULL)
+mem_2_run::mem_2_run(const char*) : buf(NULL), dbg(NULL)
 {
 }
 
 mem_2_run::~mem_2_run()
 {
     free(buf);
+}
+
+void mem_2_run::set_dbg(debugger* d)
+{
+    dbg = d;
 }
 
 bool mem_2_run::finish()
@@ -39,11 +44,14 @@ bool mem_2_run::finish()
 
     auto vm = regvm_init(&var_ext);
 
-    vmd.start(vm, debugger::VAR | debugger::REG);
+    if (dbg != NULL)
+    {
+        dbg->start(vm, debugger::VAR | debugger::REG);
+    }
 
     int64_t exit = 0;
-    bool r = regvm_exec(vm, codes, code_bytes >> 1, &exit);
-    INFO("run result : {} and exit code : {}", r, exit);
+    bool r = regvm_exec(vm, codes, code_bytes >> 1, (dbg != NULL) ? &dbg->exit : &exit);
+    INFO("run result : {} and exit code : {}", r, (dbg != NULL) ? dbg->exit : exit);
 
     regvm_exit(vm);
     return r;

@@ -163,7 +163,7 @@ bool parser::pass::scan(void)
                 }
                 break;
             default:
-                ERROR("\e[31m --- 0x{} : {} \e[0m\n", id.v, id.s);
+                ERROR("\e[31m --- 0x{%x} : {} \e[0m\n", id.v, id.s);
                 continue;
             }
         }

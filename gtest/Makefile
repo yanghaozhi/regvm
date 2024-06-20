@@ -30,7 +30,7 @@ CXX=g++
 
 
 clean:
-	rm -f *.o test* *.a *.d $(OUT)/$(NAME) $(OBJS) $(patsubst %.cc, %.d, $(SRCS))
+	rm -f *.a $(OUT)/$(NAME) $(OBJS) $(patsubst %.cc, %.d, $(SRCS))
 
 lib:$(LIBS)
 

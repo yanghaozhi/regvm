@@ -385,6 +385,7 @@ bool func::run(struct regvm* vm, int64_t start)
         rest -= next;
         offset += next;
     }
+    vm->exit_code = (int64_t)vm->reg.id(0);
     return true;
 }
 
