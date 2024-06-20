@@ -39,8 +39,8 @@ bool mem_2_run::finish()
             }
             printf("%02X ", p[i]);
         }
+        printf("\n\n");
     }
-    printf("\n\n");
 
     auto vm = regvm_init(&var_ext);
 

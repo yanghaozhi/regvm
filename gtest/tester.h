@@ -27,3 +27,12 @@ private:
     static void check_var(void* arg, const regvm_var_info* info);
 };
 
+#define CHECK_REG(POS, ID, VAL, TYPE, REF, FROM)    \
+    if ((offset == POS) && (info->id == ID))        \
+    {                                               \
+        EXPECT_EQ(VAL, info->value.sint);           \
+        EXPECT_EQ(TYPE, info->type);                \
+        EXPECT_EQ(REF, info->ref);                  \
+        EXPECT_EQ(FROM, info->from);                \
+    }
+
