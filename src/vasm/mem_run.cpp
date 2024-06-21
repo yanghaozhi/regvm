@@ -15,6 +15,10 @@ mem_2_run::mem_2_run(const char*) : buf(NULL), dbg(NULL)
 mem_2_run::~mem_2_run()
 {
     free(buf);
+    if (dbg != NULL)
+    {
+        delete dbg;
+    }
 }
 
 void mem_2_run::set_dbg(debugger* d)

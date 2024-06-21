@@ -108,6 +108,8 @@ bool parser::pass::scan(void)
             comment(buf);
             continue;
         case '\0':
+        case '\n':
+        case '\r':
             continue;
         default:
             break;
@@ -163,7 +165,7 @@ bool parser::pass::scan(void)
                 }
                 break;
             default:
-                ERROR("\e[31m --- 0x{%x} : {} \e[0m\n", id.v, id.s);
+                ERROR("\e[31m --- 0x{:x} : {} - {} \e[0m\n", id.v, id.s, (int)buf[0]);
                 continue;
             }
         }

@@ -79,7 +79,11 @@ int main(int argc, char** argv)
         switch (opt)
         {
         case 'r':
-            op = new TOP<mem_2_run>();
+            {
+                auto p = new TOP<mem_2_run>();
+                p->op.set_dbg(new vasm::debugger());
+                op = p;
+            }
             break;
         case 's':
             //o = new step();

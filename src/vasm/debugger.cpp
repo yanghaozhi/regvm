@@ -6,6 +6,10 @@
 
 using namespace vasm;
 
+debugger::~debugger()
+{
+}
+
 bool debugger::start(regvm* vm, uint64_t m)
 {
     regvm_irq_set(vm, IRQ_TRAP, debug_trap, this);

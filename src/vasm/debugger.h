@@ -9,6 +9,8 @@ namespace vasm
 class debugger
 {
 public:
+    virtual ~debugger();
+
     enum
     {
         REG = 1,

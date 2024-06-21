@@ -1,4 +1,4 @@
-SRCS = $(wildcard ./*.cc) $(wildcard ./vcore/*.cc)
+SRCS = $(wildcard ./*.cc) $(wildcard ./vcore/*.cc) $(wildcard ./mix/*.cc)
 OBJS += $(patsubst %.cc, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cc, lib%.a, $(shell find -iname '*.cc' | grep -v main))
 

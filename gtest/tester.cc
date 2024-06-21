@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-int64_t tester::go(char* txt)
+int64_t test_base::go(char* txt)
 {
     vasm::mem_2_run vm(NULL);
 
@@ -18,40 +18,52 @@ int64_t tester::go(char* txt)
 
     EXPECT_TRUE(vm.finish());
 
+    vm.set_dbg(NULL);
+
     return exit;
 }
 
-void tester::trap(regvm* vm, code_t code, int offset)
+void test_base::trap(regvm* vm, code_t code, int offset)
 {
-    cur.code = code;
+    key = code.reg;
+    key <<= 4;
+    key += code.ex;
     this->offset = offset;
-    regvm_debug_reg_callback(vm, check_reg, this);
-    regvm_debug_var_callback(vm, check_var, this);
+    trap_arg arg;
+    arg.self = this;
+    arg.result = false;
+    regvm_debug_reg_callback(vm, check_reg, &arg);
+    regvm_debug_var_callback(vm, check_var, &arg);
+    EXPECT_TRUE(arg.result);
 }
 
-void tester::check_reg(const regvm_reg_info* info)
+bool test_base::check_reg(const regvm_reg_info* info)
 {
+    return true;
 }
 
-void tester::check_var(const regvm_var_info* info)
+bool test_base::check_var(const regvm_var_info* info)
 {
+    return true;
 }
 
-void tester::check_reg(void* arg, const regvm_reg_info* info)
+void test_base::check_reg(void* arg, const regvm_reg_info* info)
 {
     auto i = (intptr_t)info;
+    auto p = (trap_arg*)arg;
     if ((i != 0) && (i != -1))
     {
-        ((tester*)arg)->check_reg(info);
+        p->result |= p->self->check_reg(info);
     }
 }
 
-void tester::check_var(void* arg, const regvm_var_info* info)
+void test_base::check_var(void* arg, const regvm_var_info* info)
 {
     auto i = (intptr_t)info;
+    auto p = (trap_arg*)arg;
     if ((i != 0) && (i != -1))
     {
-        ((tester*)arg)->check_var(info);
+        p->result |= p->self->check_var(info);
     }
 }
 
