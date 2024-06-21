@@ -21,9 +21,9 @@ var::var(uint8_t t, const char* n, const int l) :
 
 var::~var()
 {
-    if (reg >= 0)
+    if (reg != NULL)
     {
-        auto& r = core::reg
+        //auto& r = core::reg
     }
 }
 
@@ -66,20 +66,20 @@ void var::set_val(int t, core::uvalue v)
     }
 }
 
-void var::set_reg(const int new_reg)
+void var::set_reg(core::regv* new_reg)
 {
     if (new_reg == reg) return;
 
-    if (reg == -1)
+    if (reg == NULL)
     {
-        if (new_reg != -1)
+        if (new_reg != NULL)
         {
             ++ref;
         }
     }
     else
     {
-        if (new_reg == -1)
+        if (new_reg == NULL)
         {
             release();
         }
@@ -101,7 +101,7 @@ bool var::release(void)
 
 bool var::store(core::regv& r)
 {
-    if (reg == r.idx) return r.store();
+    if (reg == &r) return r.store();
 
     if (type != r.type)
     {
@@ -122,14 +122,14 @@ bool var::store(core::regv& r)
     r.set_from(this);
 
     value = r.value;
-    reg = r.idx;
+    reg = &r;
 
     return true;
 }
 
 bool var::load(core::regv& r)
 {
-    if (reg == r.idx)
+    if (reg == &r)
     {
         r.type = type;
         r.value = value;
@@ -138,9 +138,9 @@ bool var::load(core::regv& r)
 
     r.clear();
 
-    if (reg >= 0)
+    if (reg != NULL)
     {
-        auto o = neighbor(&r, reg);
+        auto o = neighbor(&r, reg->idx);
         o->clear();
     }
 

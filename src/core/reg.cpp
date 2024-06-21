@@ -129,7 +129,7 @@ bool core::regv::store() const
     }
 
     //if ((v->type != type) || (v->reg != idx))
-    if (v->reg != idx)
+    if (v->reg != this)
     {
         //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[i]);
         return false;
@@ -145,11 +145,11 @@ bool core::regv::set_from(core::var* v)
 {
     if (from != NULL)
     {
-        from->set_reg(-1);
+        from->set_reg(NULL);
     }
     if (v != NULL)
     {
-        v->set_reg(idx);
+        v->set_reg(this);
     }
     from = v;
     return true;

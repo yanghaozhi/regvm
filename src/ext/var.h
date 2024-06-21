@@ -29,7 +29,7 @@ public:
     static uint32_t calc_hash(const char* name, const int len);
 
     virtual void set_val(int type, core::uvalue val);
-    virtual void set_reg(const int id);
+    virtual void set_reg(core::regv* reg);
     virtual bool release(void);
 
     core::regv* neighbor(core::regv* r, int id);

@@ -19,6 +19,10 @@ scope::~scope()
     {
         if (table[i].v != NULL)
         {
+            if (table[i].v->reg != NULL)
+            {
+                table[i].v->reg->set_from(NULL);
+            }
             table[i].v->release();
         }
         clear_list(table[i].next);
@@ -128,7 +132,7 @@ void scope::dump(var_cb cb, void* arg, regvm_var_info* info) const
     {
         info->ref = v->ref;
         info->type = v->type;
-        info->reg = v->reg;
+        info->reg = (v->reg != NULL) ? v->reg->idx : -1;
         info->scope_id = id;
         info->value.sint = v->value.sint;
         info->var_name = v->name;

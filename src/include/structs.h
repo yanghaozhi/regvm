@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
+
 #include <code.h>
 
 
@@ -19,6 +21,8 @@ union uvalue
     //uint64_t conv(int type, uint64_t v) const;
 };
 
+struct regv;
+
 class var
 {
 protected:
@@ -30,13 +34,13 @@ protected:
     int16_t         ref         = 1;
 
 public:
-    int16_t         reg         = -1;
     uint16_t        type;
+    regv*           reg         = NULL;
 
     uvalue          value;
 
     virtual void set_val(int type, uvalue val)  = 0;
-    virtual void set_reg(const int id)          = 0;
+    virtual void set_reg(regv*  reg)            = 0;
 
     inline void acquire(void)                   {++ref;};
     virtual bool release(void)                  = 0;
