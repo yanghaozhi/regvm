@@ -2,15 +2,17 @@ SRCS = $(wildcard ./*.cpp)
 OBJS += $(patsubst %.cpp, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
-ROOT=../../
+ROOT=$(CURDIR)/../../
 NAME=ext
-DIR=$(ROOT)/libs
+OUT=$(ROOT)/out
 
 DEPS= 
 
 all: $(NAME)
 
 tt:
+	@echo $(CURDIR)
+	@echo $(ROOT)
 	@echo $(SRCS)
 	@echo $(LIBS)
 	@echo $(OBJS)
@@ -28,7 +30,7 @@ CXX=g++
 
 
 clean:
-	rm -f *.o test* *.a *.d
+	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
 
 lib:$(LIBS)
 
@@ -37,9 +39,9 @@ $(OBJS) : %.o : %.cpp
 
 
 $(NAME):$(OBJS)
-	mkdir -p $(DIR)
-	$(CXX) $(CXXFLAGS) -shared -o $(DIR)/lib$(NAME).so $(OBJS) $(DEPS)
-	ar rcs $(DIR)/lib$(NAME).a  $(OBJS)
+	mkdir -p $(OUT)
+	$(CXX) $(CXXFLAGS) -shared -o $(OUT)/lib$(NAME).so $(OBJS) $(DEPS)
+	ar rcs $(OUT)/lib$(NAME).a  $(OBJS)
 
 
 -include *.d

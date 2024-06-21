@@ -1,11 +1,10 @@
 SRCS = $(wildcard ./*.cc) $(wildcard ./vcore/*.cc)
-#SRCS = $(foreach dir,$(DIRS),$(wildcard $(dir)/*.cpp))
 OBJS += $(patsubst %.cc, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cc, lib%.a, $(shell find -iname '*.cc' | grep -v main))
 
 ROOT=$(CURDIR)/../
 NAME=gtester
-OUT=$(ROOT)/libs
+OUT=$(ROOT)/out
 
 DEPS= $(OUT)/libvasm.a $(OUT)/libext.a $(OUT)/libvasm.a $(OUT)/libcore.a /usr/lib/x86_64-linux-gnu/libgtest.a -lpthread
 
@@ -30,7 +29,7 @@ CXX=g++
 
 
 clean:
-	rm -f *.a $(OUT)/$(NAME) $(OBJS) $(patsubst %.cc, %.d, $(SRCS))
+	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
 
 lib:$(LIBS)
 

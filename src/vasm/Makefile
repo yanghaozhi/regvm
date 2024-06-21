@@ -1,11 +1,10 @@
 SRCS = $(wildcard ./*.cpp)
 OBJS += $(patsubst %.cpp, %.o, $(SRCS))
-SRCDS += $(patsubst %.cpp, %.d, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
 ROOT=$(CURDIR)/../../
 NAME=vasm
-OUT=$(ROOT)/libs
+OUT=$(ROOT)/out
 
 DEPS=$(OUT)/libcore.a $(OUT)/libext.a
 
@@ -29,7 +28,7 @@ CXX=g++
 
 
 clean:
-	rm -f $(OUT)/lib$(NAME).* $(OBJS) $(SRCDS)
+	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
 
 lib:$(LIBS)
 
