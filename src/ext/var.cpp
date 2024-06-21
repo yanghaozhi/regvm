@@ -62,24 +62,25 @@ void var::set_val(int t, core::uvalue v)
     }
 }
 
-void var::set_reg(const int id)
+void var::set_reg(const int new_reg)
 {
-    if (id == reg) return;
+    if (new_reg == reg) return;
 
     if (reg == -1)
     {
-        if (id != -1)
+        if (new_reg != -1)
         {
             ++ref;
         }
     }
     else
     {
-        if (id == -1)
+        if (new_reg == -1)
         {
             release();
         }
     }
+    reg = new_reg;
 }
 
 bool var::release(void)

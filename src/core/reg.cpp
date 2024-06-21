@@ -63,7 +63,6 @@ bool core::regv::clear()
 
     set_from(NULL);
 
-
     return true;
 }
 

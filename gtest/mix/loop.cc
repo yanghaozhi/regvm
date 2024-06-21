@@ -32,13 +32,16 @@ TEST(mix, loop)
 {
     tester t([](auto key, auto offset, auto info)
         {
-            CHECK_REG(offset,  2, 1, I, 12, 1, -1, EXPECT_EQ);
-            CHECK_REG(offset,  4, 0, I, 0,  1, -1, EXPECT_EQ);
-            CHECK_REG(offset, 16, 0, I, 78, 1, -1, EXPECT_EQ);
-            CHECK_REG(offset, 18, 0, I, 88, 1, -1, EXPECT_EQ);
+            bool match = false;
+            CHECK_REG(offset,  2, 1, EQ, I, 12, 1, -1);
+            CHECK_REG(offset,  4, 0, EQ, I, 0,  1, -1);
+            CHECK_REG(offset, 16, 0, EQ, I, 78, 1, -1);
+            CHECK_REG(offset, 18, 0, EQ, I, 88, 1, -1);
+            return true;
         },
         [](auto key, auto offset, auto info)
         {
+            return true;
         });
     ASSERT_EQ(88, t.go(txt));
 }
