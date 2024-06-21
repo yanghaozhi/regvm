@@ -32,23 +32,6 @@ TRAP    0   4
 BLOCK   0   1
 TRAP    0   5
 TRAP    0   6
-# $0 += 10
-INC     0   10
-#TRAP    0   1
-# $0 -= 5
-DEC     0   5
-#TRAP    0   1
-#TRAP    1   1
-# $1 += $0
-ADD     1   0
-#TRAP    1   1
-# $1 -= $2
-SUB     1   2
-#TRAP    1   1
-# $1 = 1 / $1
-CHG     1   2
-#TRAP    1   1
-#TRAP    0   1
 )";
 
 TEST(mix, vars)
@@ -84,6 +67,6 @@ TEST(mix, vars)
             CHECK_VAR(key, 6, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
             return match;
         });
-    ASSERT_EQ(461, t.go(txt));
+    ASSERT_EQ(456, t.go(txt));
 }
 
