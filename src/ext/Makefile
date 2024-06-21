@@ -22,12 +22,17 @@ INC=-I$(ROOT)/include -I$(ROOT)/src/include
 OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DDEBUG
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
+GCOV=-fprofile-arcs -ftest-coverage
 
 CC=gcc
 CXX=g++
 #CC=clang
 #CXX=clang++
 
+
+cov: CXXFLAGS=-std=c++17 $(OPTS) $(INC) $(GCOV)
+
+cov:$(NAME)
 
 clean:
 	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))

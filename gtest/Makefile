@@ -27,6 +27,8 @@ CXX=g++
 #CC=clang
 #CXX=clang++
 
+cov: LDFLAGS=-lgcov
+cov:$(NAME)
 
 clean:
 	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
@@ -39,7 +41,7 @@ $(OBJS) : %.o : %.cc
 
 $(NAME):$(OBJS) $(DEPS) 
 	mkdir -p $(OUT)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lfmt
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lfmt -lgcov
 	ln -sf $(OUT)/$(NAME) $(NAME)
 
 

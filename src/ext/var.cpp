@@ -21,6 +21,10 @@ var::var(uint8_t t, const char* n, const int l) :
 
 var::~var()
 {
+    if (reg >= 0)
+    {
+        auto& r = core::reg
+    }
 }
 
 var* var::create(uint8_t t, const char* n)
