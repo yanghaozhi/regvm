@@ -7,12 +7,13 @@
 
 
 
-#define CHECK_REG_I(val)    EXPECT_EQ(val, info->value.uint)
-#define CHECK_REG_F(val)    EXPECT_DOUBLE_EQ(val, info->value.dbl)
-#define CHECK_REG_S(val)    EXPECT_STREQ(val, info->value.str)
+#define CHECK_TYPE_SIGNED(val)      EXPECT_EQ(val, info->value.sint)
+#define CHECK_TYPE_UNSIGNED(val)    EXPECT_EQ(val, info->value.uint)
+#define CHECK_TYPE_DOUBLE(val)      EXPECT_DOUBLE_EQ(val, info->value.dbl)
+#define CHECK_TYPE_STRING(val)      EXPECT_STREQ(val, info->value.str)
 
-#define CHECK_UV(K2, CMP, VAL, TYPE, REF)                       \
-    CHECK_REG_##CMP(VAL) << "at TRAP " << K2;                   \
+#define CHECK_UV(K2, TYPE, VAL, REF)                            \
+    CHECK_##TYPE(VAL) << "at TRAP " << K2;                      \
     EXPECT_EQ(TYPE, info->type) << "at TRAP " << K2;            \
     EXPECT_EQ(REF, info->ref) << "at TRAP " << K2;
 
