@@ -34,7 +34,6 @@ protected:
     int16_t         ref         = 1;
 
 public:
-    uint16_t        type;
     regv*           reg         = NULL;
 
     uvalue          value;

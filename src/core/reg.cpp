@@ -31,7 +31,10 @@ reg::~reg()
 
 bool reg::v::set(uint64_t num, int ex)
 {
-    clear();
+    if (ex != type)
+    {
+        clear();
+    }
 
     need_free = false;
     type = ex;

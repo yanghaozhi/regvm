@@ -114,7 +114,7 @@ bool var::store(core::regv& r)
     if (old != NULL)
     {
         //do NOT writeback
-        old->release();
+        old->set_reg(NULL);
     }
 
     //v->acquire();
