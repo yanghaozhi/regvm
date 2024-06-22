@@ -9,16 +9,59 @@ SETS    2   2   321
 SETD    3   3   321.123
 SETC    4   4   abc
 # watch ：1/2/3/4
-TRAP    4   1
-# abc = $2
-STORE   2   4
-# $2.from != NULL, $2.ref = 2
-TRAP    2   2
-# abc.reg == 2, abc.ref = 2
-SETS    2   1   456
-# $2.from == NULL, $2.ref = -1
-# abc.reg == -1, abc.ref = 1
+TRAP    4   0
+
+STORE   1   4
+# $1.value == 123, $1.ref == 2
+# $abc.value == 123, $abc.ref == 2
+TRAP    2   1
+
+LOAD    6   4
+# $1.value == 123, $1.ref == -1
+# $6.value == 123, $6.ref == 2
+# $abc.value == 123, $abc.ref == 2
+TRAP    3   2
+
+BLOCK   0   0
+
+# $4 = "def"
+SETC    5   4   def
+STORE   3   5
+# $3.ref == 2
+# $def.value == 321.123, $def.ref == 2
 TRAP    2   3
+
+STORE   2   4
+# $abc.0.reg == 6, $abc.0.type == 2, $abc.0.ref == 2
+# $abc.1.value == 321, $abc.1.type == 2, $abc.1.ref == 2
+# $2.ref ==  2
+# $6.ref ==  2
+TRAP    4   4
+
+LOAD    7   4
+# $2.ref == -1
+# $7.value == 321, $7.ref == 2
+# $abc.0.ref == 2
+# $abc.1.ref == 2
+TRAP    4   5
+
+BLOCK   0   1
+
+# $7.value == 321, $7.ref == -1
+# $3.value == 321.123, $7.ref == -1
+# $abc.0.reg == 6, $abc.0.type == 2, $abc.0.ref == 2
+TRAP    3   6
+
+# $abc.1 == NULL
+# $def.1 == NULL
+TRAP    0   7
+
+LOAD    8   4
+# $6.value == 123, $6.ref == -1
+# $8.value == 123, $8.ref == 2
+# $abc.value == 123, $abc.ref == 2
+TRAP    3   8
+
 EXIT    0   0
 )";
 
@@ -27,24 +70,55 @@ TEST(code, load)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   123,     -1);
-            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 321,     -1);
-            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   321.123, -1);
-            CHECK_REG(key, 1, 4, N, TYPE_STRING,   "abc",   -1);
-                                                      
-            CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED, 321,     2);
-                                                   
-            CHECK_REG(key, 3, 2, N, TYPE_SIGNED,   456,     -1);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,    123,     -1);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED,  321,     -1);
+            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,    321.123, -1);
+            CHECK_REG(key, 0, 4, N, TYPE_STRING,    "abc",   -1);
+                                                       
+            CHECK_REG(key, 1, 1, Y, TYPE_SIGNED,    123,     2);
+                                                    
+            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,    123,     -1);
+            CHECK_REG(key, 2, 6, Y, TYPE_SIGNED,    123,     2);
+
+            CHECK_REG(key, 3, 3, Y, TYPE_DOUBLE,    321.123, 2);
+
+            CHECK_REG(key, 4, 2, Y, TYPE_UNSIGNED,  321,     2);
+            CHECK_REG(key, 4, 6, Y, TYPE_SIGNED,    123,     2);
+
+            CHECK_REG(key, 5, 2, N, TYPE_UNSIGNED,  321,     -1);
+            CHECK_REG(key, 5, 7, Y, TYPE_UNSIGNED,  321,     2);
+
+            CHECK_REG(key, 6, 3, N, TYPE_DOUBLE,    321.123, -1);
+            CHECK_REG(key, 6, 7, N, TYPE_UNSIGNED,  321,     -1);
+
+            CHECK_REG(key, 8, 6, N, TYPE_SIGNED,    123,    -1);
+            CHECK_REG(key, 8, 8, Y, TYPE_SIGNED,    123,    2);
+
             return match;
         },
         [](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_VAR(key, 2, "abc", 0, 0, 2,  TYPE_UNSIGNED, 321, 2);
-            CHECK_VAR(key, 3, "abc", 0, 0, -1, TYPE_UNSIGNED, 321, 1);
+
+            CHECK_VAR(key, 1, "abc", 0, 0, 1,   TYPE_SIGNED,    123, 2);
+
+            CHECK_VAR(key, 2, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+
+            CHECK_VAR(key, 3, "def", 0, 1, 3,   TYPE_DOUBLE,    321.123, 2);
+
+            CHECK_VAR(key, 4, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 4, "abc", 0, 1, 2,   TYPE_UNSIGNED,  321, 2);
+
+            CHECK_VAR(key, 5, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 5, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2);
+
+            CHECK_VAR(key, 6, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+
+            CHECK_VAR(key, 7, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2);
+            CHECK_VAR(key, 7, "def", 0, 1, 7,   TYPE_DOUBLE,    321.123, 2);
+
+            CHECK_VAR(key, 8, "abc", 0, 0, 8,   TYPE_SIGNED,    123, 2);
             return match;
-            //printf("%d - %d\t%d\t%d\t%s\t%d(%s)\t%d\t%d\t%p\n", key, info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->scope_id, info->raw);
-            //printf("%d\n", (strcmp("abc", info->var_name) == 0));
         });
     ASSERT_EQ(0, t.go(txt));
 }
