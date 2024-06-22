@@ -17,12 +17,15 @@
     EXPECT_EQ(TYPE, info->type) << "at TRAP " << K2;            \
     EXPECT_EQ(REF, info->ref) << "at TRAP " << K2;
 
+#define CHECK_FROM_Y    EXPECT_NE(nullptr, info->from)
+#define CHECK_FROM_N    EXPECT_EQ(nullptr, info->from)
+
 #define CHECK_REG(K1, K2, REG, FROM, ...)                       \
     if ((K1 == K2) && (info->id == REG))                        \
     {                                                           \
         match += 1;                                             \
         CHECK_UV(K2, __VA_ARGS__);                              \
-        EXPECT_##FROM(nullptr, info->from) << "at TRAP " << K2; \
+        CHECK_FROM_##FROM << "at TRAP " << K2;                  \
     }
 
 #define CHECK_VAR(K1, K2, NAME, CALL, SCOPE, REG, ...)          \

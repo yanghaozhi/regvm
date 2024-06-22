@@ -38,23 +38,23 @@ TEST(mix, call)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key,  1, 0, EQ, TYPE_SIGNED, 12,    -1);
-            CHECK_REG(key,  1, 1, EQ, TYPE_SIGNED, 321,   -1);
+            CHECK_REG(key,  1, 0, N, TYPE_SIGNED, 12,    -1);
+            CHECK_REG(key,  1, 1, N, TYPE_SIGNED, 321,   -1);
                                                    
-            CHECK_REG(key,  2, 0, EQ, TYPE_DOUBLE, 26.75, -1);
+            CHECK_REG(key,  2, 0, N, TYPE_DOUBLE, 26.75, -1);
                                                    
-            CHECK_REG(key,  3, 0, EQ, TYPE_SIGNED, 12,    -1);
-            CHECK_REG(key,  3, 1, EQ, TYPE_SIGNED, 321,   -1);
+            CHECK_REG(key,  3, 0, N, TYPE_SIGNED, 12,    -1);
+            CHECK_REG(key,  3, 1, N, TYPE_SIGNED, 321,   -1);
                                                    
-            CHECK_REG(key,  4, 0, EQ, TYPE_DOUBLE, 12,    -1);
-            CHECK_REG(key,  4, 1, EQ, TYPE_DOUBLE, 321,   -1);
+            CHECK_REG(key,  4, 0, N, TYPE_DOUBLE, 12,    -1);
+            CHECK_REG(key,  4, 1, N, TYPE_DOUBLE, 321,   -1);
                                                    
-            CHECK_REG(key,  5, 0, EQ, TYPE_DOUBLE, 26.75, -1);
-            CHECK_REG(key,  5, 1, EQ, TYPE_DOUBLE, 26.75, -1);
+            CHECK_REG(key,  5, 0, N, TYPE_DOUBLE, 26.75, -1);
+            CHECK_REG(key,  5, 1, N, TYPE_DOUBLE, 26.75, -1);
                                                    
-            CHECK_REG(key,  6, 1, EQ, TYPE_DOUBLE, 3.21,  -1);
+            CHECK_REG(key,  6, 1, N, TYPE_DOUBLE, 3.21,  -1);
                                                    
-            CHECK_REG(key,  7, 0, EQ, TYPE_DOUBLE, 29.96, -1);
+            CHECK_REG(key,  7, 0, N, TYPE_DOUBLE, 29.96, -1);
             return match;
         },
         [](auto key, auto offset, auto info)

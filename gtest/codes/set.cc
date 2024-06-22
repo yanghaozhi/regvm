@@ -27,14 +27,14 @@ TEST(code, set)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 1, 1, EQ, TYPE_SIGNED,   123,     -1);
-            CHECK_REG(key, 1, 2, EQ, TYPE_UNSIGNED, 321,     -1);
-            CHECK_REG(key, 1, 3, EQ, TYPE_DOUBLE,   321.123, -1);
-            CHECK_REG(key, 1, 4, EQ, TYPE_STRING,   "abc",   -1);
+            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   123,     -1);
+            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 321,     -1);
+            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   321.123, -1);
+            CHECK_REG(key, 1, 4, N, TYPE_STRING,   "abc",   -1);
                                                       
-            CHECK_REG(key, 2, 2, NE, TYPE_UNSIGNED, 321,     2);
+            CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED, 321,     2);
                                                    
-            CHECK_REG(key, 3, 2, EQ, TYPE_SIGNED,   456,     -1);
+            CHECK_REG(key, 3, 2, N, TYPE_SIGNED,   456,     -1);
             return match;
         },
         [](auto key, auto offset, auto info)

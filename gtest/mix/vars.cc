@@ -37,18 +37,18 @@ TEST(mix, vars)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 0, 0, EQ, TYPE_UNSIGNED, 456,    -1);
-            CHECK_REG(key, 0, 1, EQ, TYPE_SIGNED,   123,    -1);
-            CHECK_REG(key, 0, 2, EQ, TYPE_UNSIGNED, 321,    -1);
-            CHECK_REG(key, 0, 3, EQ, TYPE_STRING,   "abc",  -1);
+            CHECK_REG(key, 0, 0, N, TYPE_UNSIGNED, 456,    -1);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,    -1);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,    -1);
+            CHECK_REG(key, 0, 3, N, TYPE_STRING,   "abc",  -1);
                                                   
-            CHECK_REG(key, 1, 0, NE, TYPE_UNSIGNED, 456,    2);
+            CHECK_REG(key, 1, 0, Y, TYPE_UNSIGNED, 456,    2);
                                                   
-            CHECK_REG(key, 2, 2, NE, TYPE_UNSIGNED, 321,    2);
+            CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED, 321,    2);
                                                   
-            CHECK_REG(key, 3, 1, NE, TYPE_SIGNED,   123,    2);
+            CHECK_REG(key, 3, 1, Y, TYPE_SIGNED,   123,    2);
                                                   
-            CHECK_REG(key, 4, 1, EQ, TYPE_SIGNED,   123,    -1);
+            CHECK_REG(key, 4, 1, N, TYPE_SIGNED,   123,    -1);
             return match;
         },
         [](auto key, auto offset, auto info)

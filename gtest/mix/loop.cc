@@ -33,10 +33,10 @@ TEST(mix, loop)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 1, 1, EQ, TYPE_SIGNED, 12, -1);
-            CHECK_REG(key, 2, 0, EQ, TYPE_SIGNED, 0,  -1);
-            CHECK_REG(key, 6, 0, EQ, TYPE_SIGNED, 78, -1);
-            CHECK_REG(key, 7, 0, EQ, TYPE_SIGNED, 88, -1);
+            CHECK_REG(key, 1, 1, N, TYPE_SIGNED, 12, -1);
+            CHECK_REG(key, 2, 0, N, TYPE_SIGNED, 0,  -1);
+            CHECK_REG(key, 6, 0, N, TYPE_SIGNED, 78, -1);
+            CHECK_REG(key, 7, 0, N, TYPE_SIGNED, 88, -1);
             return match;
         },
         [](auto key, auto offset, auto info)
