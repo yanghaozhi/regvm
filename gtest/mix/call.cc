@@ -7,28 +7,28 @@ static char txt[] = R"(
 SETS    0   1   12
 SETS    1   1   321
 SETC    2   9   #LABEL: test
-TRAP    0   1
+TRAP    2   1
 #call test
 CALL    2   2
 #continue
-TRAP    0   2
+TRAP    1   2
 SETD    1   3   3.21
-TRAP    0   6
+TRAP    1   6
 ADD     0   1
-TRAP    0   7
+TRAP    1   7
 #exit
 EXIT    0   1
 #function test
 #LABEL: test
-TRAP    0   3
+TRAP    2   3
 CONV    0   3
 CONV    1   3
-TRAP    0   4
+TRAP    2   4
 # $1 /= $0
 DIV     1   0
 # $0 = $1
 MOVE    0   1
-TRAP    0   5
+TRAP    2   5
 # ret $0
 RET     0   1
 )";
@@ -37,7 +37,7 @@ TEST(mix, call)
 {
     tester t([](auto key, auto offset, auto info)
         {
-            bool match = false;
+            int match = 0;
             CHECK_REG(key,  1, 0, EQ, I, 12,    TYPE_SIGNED, -1);
             CHECK_REG(key,  1, 1, EQ, I, 321,   TYPE_SIGNED, -1);
 
@@ -59,7 +59,7 @@ TEST(mix, call)
         },
         [](auto key, auto offset, auto info)
         {
-            return true;
+            return 0;
         });
     ASSERT_EQ(29, t.go(txt));
 }

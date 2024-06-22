@@ -5,10 +5,10 @@
 static char txt[] = R"(
 # $1 = 12
 SETS    1   1   12
-TRAP    0   1
+TRAP    1   1
 # $0 = 0
 CLEAR   0   1
-TRAP    0   2
+TRAP    1   2
 # $0 += $1
 #LABEL: aaa
 ADD     0   1
@@ -22,17 +22,17 @@ SETC    2   9   #LABEL:  aaa
 #TRAP    0   5
 # if ($1 > 0) jump $2
 JG      1   2
-TRAP    0   6
+TRAP    1   6
 # $0 += 10
 INC     0   10
-TRAP    0   7
+TRAP    1   7
 )";
 
 TEST(mix, loop)
 {
     tester t([](auto key, auto offset, auto info)
         {
-            bool match = false;
+            int match = 0;
             CHECK_REG(key, 1, 1, EQ, I, 12, TYPE_SIGNED, -1);
             CHECK_REG(key, 2, 0, EQ, I, 0,  TYPE_SIGNED, -1);
             CHECK_REG(key, 6, 0, EQ, I, 78, TYPE_SIGNED, -1);
@@ -41,7 +41,7 @@ TEST(mix, loop)
         },
         [](auto key, auto offset, auto info)
         {
-            return true;
+            return 0;
         });
     ASSERT_EQ(88, t.go(txt));
 }

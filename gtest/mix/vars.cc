@@ -11,34 +11,32 @@ SETL    0   2   456
 SETI    2   2   321
 # $3 = "abc"
 SETC    3   4   abc
-TRAP    0   0
+TRAP    4   0
 # abc = $0
 STORE   0   3
-TRAP    0   1
+TRAP    2   1
 BLOCK   0   0   
 # $4 = "def"
 SETC    4   4   def
 # def = $2
 STORE   2   4   
-TRAP    0   2
+TRAP    2   2
 # $4 = "qwer"
 SETC    5   4   qwer
 # $6 = "abc"
 SETC    6   4   abc
 # abc = $1
 STORE   1   3   
-TRAP    0   3
-TRAP    0   4
+TRAP    3   3
 BLOCK   0   1
-TRAP    0   5
-TRAP    0   6
+TRAP    2   4
 )";
 
 TEST(mix, vars)
 {
     tester t([](auto key, auto offset, auto info)
         {
-            bool match = false;
+            int match = 0;
             CHECK_REG(key, 0, 0, EQ, I, 456,    TYPE_UNSIGNED, -1);
             CHECK_REG(key, 0, 1, EQ, I, 123,    TYPE_SIGNED, -1);
             CHECK_REG(key, 0, 2, EQ, I, 321,    TYPE_UNSIGNED, -1);
@@ -50,21 +48,21 @@ TEST(mix, vars)
 
             CHECK_REG(key, 3, 1, NE, I, 123,    TYPE_SIGNED,  2);
 
-            CHECK_REG(key, 5, 1, EQ, I, 123,    TYPE_SIGNED,  -1);
+            CHECK_REG(key, 4, 1, EQ, I, 123,    TYPE_SIGNED,  -1);
             return match;
         },
         [](auto key, auto offset, auto info)
         {
-            bool match = false;
+            int match = 0;
             CHECK_VAR(key, 1, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
             CHECK_VAR(key, 2, "def", 0, 1, 2,  I, 321, TYPE_UNSIGNED, 2);
 
             //two var named abc in diff scope here
-            CHECK_VAR(key, 4, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
-            CHECK_VAR(key, 4, "abc", 0, 1, 1,  I, 123, TYPE_SIGNED, 2);
+            CHECK_VAR(key, 3, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
+            CHECK_VAR(key, 3, "abc", 0, 1, 1,  I, 123, TYPE_SIGNED, 2);
 
             //one abc now
-            CHECK_VAR(key, 6, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
+            CHECK_VAR(key, 4, "abc", 0, 0, 0,  I, 456, TYPE_UNSIGNED, 2);
             return match;
         });
     ASSERT_EQ(456, t.go(txt));
