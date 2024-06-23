@@ -108,10 +108,10 @@ static bool vm_chg(struct regvm* vm, const code_t code, int offset)
     auto& r = vm->reg.id(code.reg);
     switch (code.ex)
     {
-    case 0:
+    case 0: //clear
         r.value.uint = 0;
         return true;
-    case 1:
+    case 1: //minus
         switch (r.type)
         {
         case TYPE_UNSIGNED:
@@ -126,7 +126,7 @@ static bool vm_chg(struct regvm* vm, const code_t code, int offset)
             return false;
         }
         return true;
-    case 2:
+    case 2: //reciprocal
         switch (r.type)
         {
         case TYPE_UNSIGNED:
@@ -145,7 +145,7 @@ static bool vm_chg(struct regvm* vm, const code_t code, int offset)
             return false;
         }
         return true;
-    case 3:
+    case 3: //NOT
         if (r.type == TYPE_UNSIGNED)
         {
             r.value.uint = ~r.value.uint;
