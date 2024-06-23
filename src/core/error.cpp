@@ -19,6 +19,7 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
     }
 
     regvm_error err;
+    memset(&err, 0, sizeof(err));
     if (vm->call_stack->cur != NULL)
     {
         src = *vm->call_stack->cur;
@@ -26,6 +27,9 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
     }
     err.code = errcode;
     err.reason = reason;
+#ifdef DEBUG
+    err.self = &vm->err.self;
+#endif
     vm->idt.call(vm, IRQ_ERROR, cur, offset, &err);
 }
 

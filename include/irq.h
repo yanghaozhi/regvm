@@ -25,6 +25,7 @@ struct regvm_error
     int                 code;
     const char*         reason;
     regvm_src_location* src;
+    regvm_src_location* self;
 };
 
 enum ERR_CODE

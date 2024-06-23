@@ -45,6 +45,10 @@ static int64_t irq_ERROR(struct regvm* vm, void* arg, code_t code, int offset, v
         {
             printf("\e[31m\t %d @ %p - %s \e[0m\n", e->code, e->src, e->reason);
         }
+        if (e->self != NULL)
+        {
+            printf("\e[31m\t core location : %s @ %s : %d \e[0m\n", e->self->func, e->self->file, e->self->line);
+        }
     }
     return 0;
 }
