@@ -47,6 +47,7 @@ public:
     test_base()     {};
 
     int64_t go(char* txt);
+    int64_t go(char* txt, bool expect);
 
 protected:
     int             key;

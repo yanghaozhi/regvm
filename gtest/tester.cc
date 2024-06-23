@@ -4,6 +4,11 @@
 
 int64_t test_base::go(char* txt)
 {
+    return go(txt, true);
+}
+
+int64_t test_base::go(char* txt, bool expect)
+{
     vasm::mem_2_run vm(NULL);
 
     vm.set_dbg(this);
@@ -16,7 +21,7 @@ int64_t test_base::go(char* txt)
     vasm::mem_2_run::pass2 s2(vm);
     EXPECT_TRUE(s2.scan());
 
-    EXPECT_TRUE(vm.finish());
+    EXPECT_TRUE(vm.finish() == expect);
 
     vm.set_dbg(NULL);
 
