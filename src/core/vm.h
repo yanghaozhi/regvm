@@ -54,6 +54,6 @@ struct regvm
     bool run(const code_t* start, int count);
     bool call(int64_t id, const code_t code, int offset);
     bool call(core::reg::v& reg, const code_t code, int offset);
-    bool ret(void);
+    //bool ret(void);
 };
 

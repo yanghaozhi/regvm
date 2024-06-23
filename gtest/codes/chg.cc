@@ -12,11 +12,14 @@ SETC    4   4   abc
 # watch ：1/2/3/4
 TRAP    5   0
 
-CHG     1   0
+CHG     1   1
 CHG     3   1
 CHG     0   2
 CHG     2   3
 TRAP    4   1
+
+CHG     2   0
+TRAP    1   2
 
 EXIT    0   0
 )";
@@ -33,9 +36,11 @@ TEST(code, chg)
             CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1);
                                                       
             CHECK_REG(key, 1, 0, N, TYPE_DOUBLE,   (double)1 / 456,     -1);
-            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   0,     -1);
+            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   -123,     -1);
             CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, (uint64_t)-322,     -1);
             CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   -321.12,  -1);
+
+            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, 0,     -1);
 
             return match;
         },

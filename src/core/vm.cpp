@@ -143,18 +143,18 @@ bool regvm::call(int64_t id, const code_t code, int offset)
     return f.run();
 }
 
-bool regvm::ret(void)
-{
-    if (call_stack->up == NULL)
-    {
-        return false;
-    }
-
-    auto cur = call_stack;
-    cur->up->down = NULL;
-
-    delete cur;
-
-    return true;
-}
+//bool regvm::ret(void)
+//{
+//    if (call_stack->up == NULL)
+//    {
+//        return false;
+//    }
+//
+//    auto cur = call_stack;
+//    cur->up->down = NULL;
+//
+//    delete cur;
+//
+//    return true;
+//}
 
