@@ -156,6 +156,24 @@ static bool vm_chg(struct regvm* vm, const code_t code, int offset)
             UNSUPPORT_TYPE("chg", r.type, code, offset);
             return false;
         }
+    case 4: //malloc
+        if (r.type == TYPE_STRING)
+        {
+            //r.value.uint = ~r.value.uint;
+            if (r.need_free == false)
+            {
+                r.set_from(NULL);
+                char* p = strdup(r.value.str);
+                r.value.str = p;
+                r.need_free = true;
+            }
+            return true;
+        }
+        else
+        {
+            UNSUPPORT_TYPE("chg", r.type, code, offset);
+            return false;
+        }
     default:
         UNSUPPORT_TYPE("chg", code.ex, code, offset);
         return false;

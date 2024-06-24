@@ -26,6 +26,17 @@ var::~var()
         reg->set_from(NULL);
         //auto& r = core::reg
     }
+    if (need_free == true)
+    {
+        switch (type)
+        {
+        case TYPE_STRING:
+            free((void*)value.str);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 var* var::create(uint8_t t, const char* n)
@@ -124,6 +135,8 @@ bool var::store(core::regv<var>& r)
 
     value = r.value;
     reg = &r;
+    need_free = r.need_free;
+    r.need_free = false;
 
     return true;
 }
@@ -148,6 +161,7 @@ bool var::load(core::regv<var>& r)
     r.type = type;
     r.value = value;
     r.set_from(this);
+    r.need_free = false;
 
     return true;
 }

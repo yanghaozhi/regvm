@@ -30,6 +30,7 @@ protected:
     friend class error;
 
     int16_t         ref         = 1;
+    bool            need_free   = false;
 
 public:
     regv<T>*        reg         = NULL;

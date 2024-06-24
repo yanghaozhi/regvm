@@ -21,6 +21,9 @@ TRAP    4   1
 CHG     2   0
 TRAP    1   2
 
+CHG     4   4
+TRAP    1   3
+
 EXIT    0   0
 )";
 
@@ -41,6 +44,8 @@ TEST(code, chg)
             CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   -321.12,  -1);
 
             CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, 0,     -1);
+
+            CHECK_REG(key, 3, 4, N, TYPE_STRING,   "abc",     -1);
 
             return match;
         },

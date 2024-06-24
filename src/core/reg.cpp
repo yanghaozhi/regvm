@@ -26,6 +26,17 @@ reg::~reg()
         {
             values[i].from->release();
         }
+        if(values[i].need_free == true)
+        {
+            switch (values[i].type)
+            {
+            case TYPE_STRING:
+                free((void*)values[i].value.str);
+                break;
+            default:
+                break;
+            }
+        }
     }
 }
 
