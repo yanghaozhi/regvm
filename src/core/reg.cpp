@@ -43,31 +43,31 @@ bool reg::v::set(uint64_t num, int ex)
     return true;
 }
 
-bool core::regv::clear()
-{
-    store();
-
-    if ((from == NULL) && (need_free == true))
-    {
-        switch (type)
-        {
-        case TYPE_STRING:
-            free((char*)value.str);
-            value.str = NULL;
-            break;
-        case TYPE_DICT:
-            break;
-        case TYPE_LIST:
-            break;
-        default:
-            break;
-        }
-    }
-
-    set_from(NULL);
-
-    return true;
-}
+//template <typename T> bool core::regv<T>::clear()
+//{
+//    store();
+//
+//    if ((from == NULL) && (need_free == true))
+//    {
+//        switch (type)
+//        {
+//        case TYPE_STRING:
+//            free((char*)value.str);
+//            value.str = NULL;
+//            break;
+//        case TYPE_DICT:
+//            break;
+//        case TYPE_LIST:
+//            break;
+//        default:
+//            break;
+//        }
+//    }
+//
+//    set_from(NULL);
+//
+//    return true;
+//}
 
 double reg::v::conv_d(int type) const
 {
@@ -129,38 +129,38 @@ uint64_t reg::v::conv_u(int type) const
     }
 }
 
-bool core::regv::store() const
-{
-    core::var* v = from;
-    if (v == NULL)
-    {
-        return false;
-    }
-
-    //if ((v->type != type) || (v->reg != idx))
-    if (v->reg != this)
-    {
-        //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[i]);
-        return false;
-    }
-
-    //v->value = value;
-    v->set_val(type, value);
-
-    return true;
-}
-
-bool core::regv::set_from(core::var* v)
-{
-    if (from != NULL)
-    {
-        from->set_reg(NULL);
-    }
-    if (v != NULL)
-    {
-        v->set_reg(this);
-    }
-    from = v;
-    return true;
-}
+//template <typename T> bool core::regv<T>::store() const
+//{
+//    core::var<T>* v = from;
+//    if (v == NULL)
+//    {
+//        return false;
+//    }
+//
+//    //if ((v->type != type) || (v->reg != idx))
+//    if (v->reg != this)
+//    {
+//        //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[i]);
+//        return false;
+//    }
+//
+//    //v->value = value;
+//    v->set_val(type, value);
+//
+//    return true;
+//}
+//
+//template <typename T> bool core::regv<T>::set_from(core::var<T>* v)
+//{
+//    if (from != NULL)
+//    {
+//        from->set_reg(NULL);
+//    }
+//    if (v != NULL)
+//    {
+//        v->set_reg(this);
+//    }
+//    from = v;
+//    return true;
+//}
 

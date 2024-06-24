@@ -12,8 +12,6 @@
 namespace core
 {
 
-struct var;
-
 class frame
 {
     friend class error;

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <code.h>
 
@@ -21,41 +22,117 @@ union uvalue
     //uint64_t conv(int type, uint64_t v) const;
 };
 
-struct regv;
+template <typename T> struct regv;
 
-class var
+template <typename T> class var
 {
 protected:
-    //var();
-    //virtual ~var();
-
     friend class error;
 
     int16_t         ref         = 1;
 
 public:
-    regv*           reg         = NULL;
+    regv<T>*        reg         = NULL;
 
     uvalue          value;
 
-    virtual void set_val(int type, uvalue val)  = 0;
-    virtual void set_reg(regv*  reg)            = 0;
+    inline void set_val(int type, uvalue val)
+    {
+#ifdef VAR_IMPL
+        static_cast<T*>(this)->set_val(type, val);
+#else
+        assert(0);
+#endif
+    }
+    inline void set_reg(regv<T>* reg)
+    {
+#ifdef VAR_IMPL
+        static_cast<T*>(this)->set_reg(reg);
+#else
+        assert(0);
+#endif
+    }
 
     inline void acquire(void)                   {++ref;};
-    virtual bool release(void)                  = 0;
+    inline bool release(void)
+    {
+#ifdef VAR_IMPL
+        return static_cast<T*>(this)->release();
+#else
+        assert(0);
+        return false;
+#endif
+    }
 };
 
-struct regv
+template <typename T> struct regv
 {
     uvalue          value;
-    var*            from;
+    var<T>*         from;
     uint8_t         type;
     int8_t          idx;
     bool            need_free;
 
-    bool clear();
-    bool store() const;
-    bool set_from(core::var* v);
+    inline bool clear()
+    {
+        store();
+
+        if ((from == NULL) && (need_free == true))
+        {
+            switch (type)
+            {
+            case TYPE_STRING:
+                free((char*)value.str);
+                value.str = NULL;
+                break;
+            case TYPE_DICT:
+                break;
+            case TYPE_LIST:
+                break;
+            default:
+                break;
+            }
+        }
+
+        set_from(NULL);
+
+        return true;
+    }
+
+    inline bool store() const
+    {
+        core::var<T>* v = from;
+        if (v == NULL)
+        {
+            return false;
+        }
+
+        //if ((v->type != type) || (v->reg != idx))
+        if (v->reg != this)
+        {
+            //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[i]);
+            return false;
+        }
+
+        //v->value = value;
+        v->set_val(type, value);
+
+        return true;
+    }
+
+    inline bool set_from(var<T>* v)
+    {
+        if (from != NULL)
+        {
+            from->set_reg(NULL);
+        }
+        if (v != NULL)
+        {
+            v->set_reg(this);
+        }
+        from = v;
+        return true;
+    }
 };
 
 };

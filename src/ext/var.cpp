@@ -23,6 +23,7 @@ var::~var()
 {
     if (reg != NULL)
     {
+        reg->set_from(NULL);
         //auto& r = core::reg
     }
 }
@@ -66,7 +67,7 @@ void var::set_val(int t, core::uvalue v)
     }
 }
 
-void var::set_reg(core::regv* new_reg)
+void var::set_reg(core::regv<var>* new_reg)
 {
     if (new_reg == reg) return;
 
@@ -99,7 +100,7 @@ bool var::release(void)
     return true;
 }
 
-bool var::store(core::regv& r)
+bool var::store(core::regv<var>& r)
 {
     if (reg == &r) return r.store();
 
@@ -110,7 +111,7 @@ bool var::store(core::regv& r)
         return false;
     }
 
-    core::var* old = r.from;
+    core::var<var>* old = r.from;
     if (old != NULL)
     {
         //do NOT writeback
@@ -127,7 +128,7 @@ bool var::store(core::regv& r)
     return true;
 }
 
-bool var::load(core::regv& r)
+bool var::load(core::regv<var>& r)
 {
     if (reg == &r)
     {
@@ -151,7 +152,7 @@ bool var::load(core::regv& r)
     return true;
 }
 
-core::regv* var::neighbor(core::regv* r, int id)
+core::regv<var>* var::neighbor(core::regv<var>* r, int id)
 {
     return r + (id - r->idx);
 }

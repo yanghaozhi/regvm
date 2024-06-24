@@ -7,6 +7,11 @@
 #include "structs.h"
 #include <code.h>
 
+namespace ext
+{
+    class var;
+}
+
 
 namespace core
 {
@@ -14,7 +19,7 @@ namespace core
 class reg
 {
 public:
-    struct v : public core::regv
+    struct v : public core::regv<ext::var>
     {
         inline operator double () const    {return conv_d(type);};
         inline operator int64_t () const   {return conv_i(type);};

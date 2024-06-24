@@ -3,20 +3,23 @@
 #include <stdint.h>
 #include <code.h>
 
+#define VAR_IMPL    ext::var
+
 #include "../include/structs.h"
+
 
 
 namespace ext
 {
 
 
-class var : public core::var
+class var : public core::var<var>
 {
 private:
     friend class scope;
 
     var(uint8_t type, const char* name, const int len);
-    virtual ~var();
+    ~var();
 
 public:
     const uint16_t      type;
@@ -28,14 +31,14 @@ public:
     static var* create(uint8_t type, const char* name);
     static uint32_t calc_hash(const char* name, const int len);
 
-    virtual void set_val(int type, core::uvalue val);
-    virtual void set_reg(core::regv* reg);
-    virtual bool release(void);
+    void set_val(int type, core::uvalue val);
+    void set_reg(core::regv<var>* reg);
+    bool release(void);
 
-    core::regv* neighbor(core::regv* r, int id);
+    core::regv<var>* neighbor(core::regv<var>* r, int id);
 
-    bool store(core::regv& v);
-    bool load(core::regv& v);
+    bool store(core::regv<var>& v);
+    bool load(core::regv<var>& v);
 
     bool cmp(uint32_t key, const char* name, int len);
 };
