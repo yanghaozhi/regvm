@@ -25,7 +25,7 @@ public:
         inline operator int64_t () const   {return conv_i(type);};
         inline operator uint64_t () const  {return conv_u(type);};
 
-        bool set(uint64_t num, int ex);
+        bool write(uint64_t num, int type, bool clear);
 
         //bool clear();
 

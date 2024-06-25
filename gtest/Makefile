@@ -1,6 +1,5 @@
-SRCS = $(wildcard ./*.cc) $(wildcard ./codes/*.cc) $(wildcard ./mix/*.cc) $(wildcard ./error/*.cc)
-OBJS += $(patsubst %.cc, %.o, $(SRCS))
-LIBS += $(patsubst ./%.cc, lib%.a, $(shell find -iname '*.cc' | grep -v main))
+SRCS = $(shell find ./ -iname "*.cc")
+OBJS += $(SRCS:.cc=.o)
 
 ROOT=$(CURDIR)/../
 NAME=gtester
@@ -12,9 +11,8 @@ all: $(NAME)
 
 tt:
 	@echo $(SRCS)
-	@echo $(LIBS)
 	@echo $(OBJS)
-	@echo $(SRCS:.cc=.o)
+	#@echo $(SRCS:.cc=.o)
 
 
 INC=-I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/vasm
@@ -32,8 +30,6 @@ cov:$(NAME)
 
 clean:
 	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
-
-lib:$(LIBS)
 
 $(OBJS) : %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c -o $*.o -MMD $<

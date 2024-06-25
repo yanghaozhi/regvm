@@ -50,6 +50,9 @@ enum DATA_TYPE
 //+---------+---------------+-----------------------+-----------------------+
 //| CLEAR   | CODE_CLEAR    | reg                   | type                  |
 //  $reg = 0
+//      type == TYPE_STRING :   $reg = ""
+//           == TYPE_DICT :     $reg = DICT{}
+//           == TYPE_LIST :     $reg = LIST{}
 //+---------+---------------+-----------------------+-----------------------+
 //| LOAD    | CODE_LOAD     | reg                   | reg stores var name   |
 //  把变量的值加载到$reg中，变量名存于$ex里
@@ -71,9 +74,6 @@ enum DATA_TYPE
 //+---------+---------------+-----------------------+-----------------------+
 //| RET     | CODE_RET      | N/A                   | return value count    |
 //  退出函数，ex表示返回值个数（方法如同CALL的参数）
-//+---------+---------------+-----------------------+-----------------------+
-//| CMD     | CODE_CMD      | reg                   | ex                    |
-//  执行内置命令，命令id为：reg << 4 + ex（一共255）
 //+---------+---------------+-----------------------+-----------------------+
 //| INC     | CODE_INC      | reg                   | ex                    |
 //  $reg += ex
@@ -148,10 +148,14 @@ enum DATA_TYPE
 
 //扩展指令（32bit长度）
 //+---------+---------------+-----------------------+-----------------------+
-//| STR     | CODE_STR      | reg                   | op code               |
+//| CMD     | CODE_CMD      | return value          | cmd id                |
+//| 调用内置命令            | a1        | a2        | a3        | a4        |
+//  id  0   : 打印变量的值 | 变量个数  | 依次为存放变量的寄存器            |
+//+---------+---------------+-----------------------+-----------------------+
+//| STR     | CODE_STR      | return value          | op code               |
 //| 字符串操作              | a1        | a2        | a3        | a4        |
-//          | 0 : len       | result    | N/A       | N/A       | N/A       |
-//          | 1 : substr    | result    | $start    | $len      | N/A       |
+//          | 0 : len       | str       | N/A       | N/A       | N/A       |
+//          | 1 : substr    | str       | $start    | $len      | N/A       |
 //+---------+---------------+-----------------------+-----------------------+
 
 //+---------+---------------+-----------------------+-----------------------+
@@ -174,7 +178,6 @@ enum CODE_ID
     CODE_BLOCK,
     CODE_CALL,
     CODE_RET,
-    CODE_CMD,
     CODE_INC,
     CODE_DEC,
     CODE_ADD,
@@ -196,6 +199,9 @@ enum CODE_ID
     CODE_JL,
     CODE_JNG,
     CODE_JNL,
+
+    CODE_CMD    = 128,
+    CODE_STR,
 
     CODE_EXIT   = 255,
 };

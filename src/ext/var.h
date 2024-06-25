@@ -22,6 +22,7 @@ private:
     ~var();
 
 public:
+    const uint16_t      type;
     const uint16_t      name_len;
     const uint32_t      hash;
 

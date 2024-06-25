@@ -10,6 +10,18 @@
 namespace core
 {
 
+union extend_args
+{
+    uint16_t        v;
+    struct
+    {
+        uint16_t    a1 : 4;
+        uint16_t    a2 : 4;
+        uint16_t    a3 : 4;
+        uint16_t    a4 : 4;
+    };
+};
+
 class func
 {
 public:

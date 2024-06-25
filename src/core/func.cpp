@@ -10,192 +10,38 @@
 
 using namespace core;
 
-static bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value)
+extern bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value);
+extern bool vm_move(struct regvm* vm, const code_t code);
+extern bool vm_clear(struct regvm* vm, const code_t code);
+extern bool vm_conv(struct regvm* vm, const code_t code, int offset);
+extern bool vm_type(struct regvm* vm, const code_t code, int offset);
+extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
+extern int vm_jump(struct regvm* vm, const code_t code, int offset);
+
+extern bool vm_cmd(regvm* vm, int ret, int op, const extend_args& args);
+
+extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
+
+typedef bool (*vm_run_ex)(regvm* vm, int ret, int op, const extend_args& args);
+typedef bool (*vm_run_type)(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
+
+bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, vm_run_type func, int type)
 {
-    auto& r = vm->reg.id(code.reg);
-    if ((code.ex == TYPE_STRING) && (value & 0x01))
+    extend_args args = {*extra};
+    auto& r = vm->reg.id(args.a1);
+    if ((type >= 0) && (r.type != type))
     {
-        //auto it = vm->strs.find(value);
-        //if (it == vm->strs.end())
-        //{
-        //    ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
-        //    return false;
-        //}
-        //value = (intptr_t)it->second;
-        auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-        if (it.func == NULL)
-        {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
-            return false;
-        }
-        value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
-        if (value == 0)
-        {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
-            return false;
-        }
-    }
-    return r.set(value, code.ex);
-}
-
-static bool vm_move(struct regvm* vm, const code_t code)
-{
-    auto& e = vm->reg.id(code.ex);
-    auto& r = vm->reg.id(code.reg);
-    r.clear();
-    r.value.uint = e.value.uint;
-    r.type = e.type;
-    return true;
-}
-
-static bool vm_clear(struct regvm* vm, const code_t code)
-{
-    auto& r = vm->reg.id(code.reg);
-    r.clear();
-    r.value.uint = 0;
-    r.type = code.ex;
-    return true;
-}
-
-static bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
-{
-    if (r.type == to) return true;
-
-    switch (to)
-    {
-    case TYPE_UNSIGNED:
-        r.value.uint = (uint64_t)r;
-        break;
-    case TYPE_SIGNED:
-        r.value.sint = (int64_t)r;
-        break;
-    case TYPE_DOUBLE:
-        r.value.dbl = (double)r;
-        break;
-    default:
+        ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", r.type, type);
         return false;
     }
-
-    r.set_from(NULL);
-    r.type = to;
-
-    return true;
+    return func(vm, code.reg, code.ex, r, args);
 }
 
-static bool vm_conv(struct regvm* vm, const code_t code, int offset)
+bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, vm_run_ex func)
 {
-    auto& r = vm->reg.id(code.reg);
-    if (vm_conv_impl(vm, r, code.ex) == false)
-    {
-        UNSUPPORT_TYPE("conv", code.ex, code, offset);
-        return false;
-    }
-    return true;
+    extend_args args = {*extra};
+    return func(vm, code.reg, code.ex, args);
 }
-
-static bool vm_type(struct regvm* vm, const code_t code, int offset)
-{
-    auto& r = vm->reg.id(code.reg);
-    auto& e = vm->reg.id(code.ex);
-    r.clear();
-    r.value.uint = e.type;
-    r.type = TYPE_UNSIGNED;
-    return true;
-}
-
-static bool vm_chg(struct regvm* vm, const code_t code, int offset)
-{
-    auto& r = vm->reg.id(code.reg);
-    switch (code.ex)
-    {
-    case 0: //clear
-        r.value.uint = 0;
-        return true;
-    case 1: //minus
-        switch (r.type)
-        {
-        case TYPE_UNSIGNED:
-        case TYPE_SIGNED:
-            r.value.sint = 0 - r.value.sint;
-            break;
-        case TYPE_DOUBLE:
-            r.value.dbl = 0 - r.value.dbl;
-            break;
-        default:
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
-            return false;
-        }
-        return true;
-    case 2: //reciprocal
-        switch (r.type)
-        {
-        case TYPE_UNSIGNED:
-        case TYPE_SIGNED:
-            if (vm_conv_impl(vm, r, TYPE_DOUBLE) == false)
-            {
-                UNSUPPORT_TYPE("chg", r.type, code, offset);
-                return false;
-            }
-            [[fallthrough]];
-        case TYPE_DOUBLE:
-            r.value.dbl = 1 / r.value.dbl;
-            break;
-        default:
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
-            return false;
-        }
-        return true;
-    case 3: //NOT
-        if (r.type == TYPE_UNSIGNED)
-        {
-            r.value.uint = ~r.value.uint;
-            return true;
-        }
-        else
-        {
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
-            return false;
-        }
-    case 4: //malloc
-        if (r.type == TYPE_STRING)
-        {
-            //r.value.uint = ~r.value.uint;
-            if (r.need_free == false)
-            {
-                r.set_from(NULL);
-                char* p = strdup(r.value.str);
-                r.value.str = p;
-                r.need_free = true;
-            }
-            return true;
-        }
-        else
-        {
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
-            return false;
-        }
-    default:
-        UNSUPPORT_TYPE("chg", code.ex, code, offset);
-        return false;
-    }
-}
-
-
-static int vm_jump(struct regvm* vm, const code_t code, int offset)
-{
-    auto& e = vm->reg.id(code.ex);
-    switch (e.type)
-    {
-    case TYPE_SIGNED:
-        return (int64_t)e;
-    case TYPE_ADDR:
-        return e.conv_i(TYPE_UNSIGNED) - offset;
-    default:
-        return 0;
-    }
-}
-
-
 
 #define NULL_CALL() true
 
@@ -228,7 +74,11 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         EXTRA_RUN(SETS, 1, vm_set, vm, *code, offset, *(int16_t*)&code[1]);
         EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
         EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
+
+        EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_cmd);
+        EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_str, TYPE_STRING);
 #undef EXTRA_RUN
+
 
 #define CODE_RUN(id, func, ...)             \
     case CODE_##id:                         \
@@ -330,11 +180,11 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         JUMP(JNL, >=);
 #undef JUMP
 
-    case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
-        break;
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);
+        break;
+    case CODE_TRAP:
+        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
         break;
     case CODE_EXIT:
         vm->exit_code = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);

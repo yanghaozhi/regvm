@@ -51,7 +51,6 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(BLOCK);
         SET_KEY(CALL);
         SET_KEY(RET);
-        SET_KEY(CMD);
         SET_KEY(INC);
         SET_KEY(DEC);
         SET_KEY(ADD);
@@ -73,6 +72,8 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(JL);
         SET_KEY(JNG);
         SET_KEY(JNL);
+        SET_KEY(CMD);
+        SET_KEY(STR);
         SET_KEY(EXIT);
 #undef SET_KEY
     }
@@ -148,7 +149,26 @@ bool parser::pass::scan(void)
                 inst.code.id = CODE_SETL;
                 sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
                 break;
+            case CODE_EXIT:
+                break;
             default:
+                if (inst.code.id >= 128)
+                {
+                    int argv[4];
+                    sscanf(data, "%d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
+                    union
+                    {
+                        struct
+                        {
+                            uint16_t    a1 : 4;
+                            uint16_t    a2 : 4;
+                            uint16_t    a3 : 4;
+                            uint16_t    a4 : 4;
+                        };
+                        uint16_t        v;
+                    }   args = {argv[0], argv[1], argv[2], argv[3]};
+                    *(int16_t*)(&inst.code + 1) = args.v;
+                }
                 break;
             }
         }

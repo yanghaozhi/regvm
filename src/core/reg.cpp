@@ -40,16 +40,16 @@ reg::~reg()
     }
 }
 
-bool reg::v::set(uint64_t num, int ex)
+bool reg::v::write(uint64_t v, int t, bool c)
 {
-    if (ex != type)
+    if (c == true)
     {
         clear();
     }
 
     need_free = false;
-    type = ex;
-    value.uint = num;
+    type = t;
+    value.uint = v;
 
     return true;
 }
