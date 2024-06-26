@@ -78,7 +78,7 @@ template <typename T> struct regv
     {
         store();
 
-        if ((from == NULL) && (need_free == true))
+        if (need_free == true)
         {
             switch (type)
             {

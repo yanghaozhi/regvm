@@ -13,6 +13,8 @@ TRAP    4   1
 STR     0   0   4
 TRAP    1   2
 CMD     0   0   1   0
+SETC    4   4   def
+TRAP    1   3
 EXIT    0   0
 )";
 
@@ -27,6 +29,8 @@ TEST(cmd, str)
             CHECK_REG(key, 1, 4, N, TYPE_STRING,   "abc",   -1);
 
             CHECK_REG(key, 2, 0, N, TYPE_SIGNED,   3,   -1);
+
+            CHECK_REG(key, 3, 4, N, TYPE_STRING,   "def",   -1);
             return match;
         },
         [](auto key, auto offset, auto info)

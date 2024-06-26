@@ -154,7 +154,7 @@ bool parser::pass::scan(void)
             default:
                 if (inst.code.id >= 128)
                 {
-                    int argv[4];
+                    int argv[4] = {0};
                     sscanf(data, "%d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
                     union
                     {
