@@ -74,8 +74,6 @@ TEST(cmd, str)
 
             CHECK_VAR(key, 6, "asdf", 0, 1, 6,  TYPE_STRING, "qwer", 2, 0);
             return match;
-            //printf("%d - %d\t%d\t%d\t%s\t%d(%s)\t%d\t%d\t%p\n", key, info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->scope_id, info->raw);
-            //printf("%d\n", (strcmp("abc", info->var_name) == 0));
         });
     ASSERT_EQ(0, t.go(txt));
 }

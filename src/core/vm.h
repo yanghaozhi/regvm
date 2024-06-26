@@ -26,6 +26,7 @@ struct regvm_ex
     bool (*exit)(regvm* vm);
 
     //vm_ext_handler_t    vm_set;
+    vm_ext_handler_t    vm_new;
     vm_ext_handler_t    vm_store;
     vm_ext_handler_t    vm_load;
     vm_ext_handler_t    vm_block;       //value 0 enter, 1 leave

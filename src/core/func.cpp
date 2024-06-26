@@ -85,6 +85,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CALL(func, ##__VA_ARGS__);          \
         break;
         CODE_RUN(STORE, vm->handlers.vm_store, vm, *code, offset, -1);
+        CODE_RUN(NEW, vm->handlers.vm_store, vm, *code, offset, -1);
         CODE_RUN(LOAD, vm->handlers.vm_load, vm, *code, offset, -1);
         CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, vm->call_stack->id);
         CODE_RUN(MOVE, vm_move, vm, *code);

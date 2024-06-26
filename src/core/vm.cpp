@@ -5,40 +5,21 @@
 extern "C"
 {
 
+static bool vm_new(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    assert(0);
+    return true;
+}
+
 static bool vm_store(struct regvm* vm, const code_t code, int offset, int64_t value)
 {
     assert(0);
-    //TODO
-    //auto& r = vm->reg.id(code.reg);
-    //if (code.ex == code.reg)
-    //{
-    //    return r.store();
-    //}
-    //else
-    //{
-    //    auto& e = vm->reg.id(code.ex);
-    //    if ((e.type & 0x07) != TYPE_STRING)
-    //    {
-    //        ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-    //        vm->fatal = true;
-    //        return false;
-    //    }
-    //    else
-    //    {
-    //        var* v = vm->call_stack->add(r.type, e.value.str);
-    //        return r.store(v);
-    //    }
-    //}
     return true;
 }
 
 static bool vm_load(struct regvm* vm, const code_t code, int offset, int64_t value)
 {
     assert(0);
-    //TODO
-    //auto& e = vm->reg.id(code.ex);
-    //auto& r = vm->reg.id(code.reg);
-    //return r.load(vm->call_stack->get(e.value.str));
     return true;
 }
 
@@ -83,6 +64,7 @@ regvm::regvm(struct regvm_ex* ext) : reg()
 
         handlers.vm_load = vm_load;
         handlers.vm_store = vm_store;
+        handlers.vm_new = vm_new;
         handlers.vm_block = vm_block;
         handlers.vm_call = vm_call;
     }

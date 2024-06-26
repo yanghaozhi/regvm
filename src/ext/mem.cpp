@@ -24,6 +24,19 @@ static bool mem_exit(regvm* vm)
     return true;
 }
 
+static bool mem_new(struct regvm* vm, code_t code, int offset, int64_t extra)
+{
+    auto m = (mem*)vm->ext;
+    auto& r = vm->reg.id(code.reg);
+    auto v = m->get(r.value.str);
+    if (v != NULL)
+    {
+        return (v->type == code.ex) ? true : false;
+    }
+    v = m->add(code.ex, r.value.str);
+    return (v != NULL) ? true : false;
+}
+
 static bool mem_store(struct regvm* vm, code_t code, int offset, int64_t extra)
 {
     auto& r = vm->reg.id(code.reg);
@@ -208,7 +221,7 @@ extern "C"
 {
 #endif
 
-struct regvm_ex     var_ext = {mem_init, mem_exit, mem_store, mem_load, mem_block, mem_call};
+struct regvm_ex     var_ext = {mem_init, mem_exit, mem_new, mem_store, mem_load, mem_block, mem_call};
 
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
 {

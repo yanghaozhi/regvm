@@ -48,6 +48,7 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(CLEAR);
         SET_KEY(LOAD);
         SET_KEY(STORE);
+        SET_KEY(NEW);
         SET_KEY(BLOCK);
         SET_KEY(CALL);
         SET_KEY(RET);

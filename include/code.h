@@ -49,8 +49,8 @@ enum DATA_TYPE
 //  $reg = $ex
 //+---------+---------------+-----------------------+-----------------------+
 //| CLEAR   | CODE_CLEAR    | reg                   | type                  |
-//  $reg = 0
-//      type == TYPE_STRING :   $reg = ""
+//  重置寄存器的变量为默认值，类型为type
+//      type == TYPE_STRING :   $reg = NULL
 //           == TYPE_DICT :     $reg = DICT{}
 //           == TYPE_LIST :     $reg = LIST{}
 //+---------+---------------+-----------------------+-----------------------+
@@ -62,6 +62,10 @@ enum DATA_TYPE
 //      如果ex == reg，则把reg的值回写到原始加载的变量中
 //      如果ex != reg，则新变量名存于ex内
 //      type==4是局部变量，type==0x0C是全局变量enum CODE_ID
+//+---------+---------------+-----------------------+-----------------------+
+//| NEW     | CODE_NEW      | reg                   | type                  |
+//  在当前scope中创建新的变量，变量名位于$reg内，ex则为变量类型
+//  变量的值为默认值，具体情况和CLEAR一样
 //+---------+---------------+-----------------------+-----------------------+
 //| BLOCK   | CODE_BLOCK    | N/A                   | enter or leave        |
 //  ex == 0 means enter block, ex == 1 means exit block
@@ -175,6 +179,7 @@ enum CODE_ID
     CODE_CLEAR,
     CODE_LOAD,
     CODE_STORE,
+    CODE_NEW,
     CODE_BLOCK,
     CODE_CALL,
     CODE_RET,
