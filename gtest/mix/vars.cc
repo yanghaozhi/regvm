@@ -37,32 +37,32 @@ TEST(mix, vars)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 0, 0, N, TYPE_UNSIGNED, 456,    -1);
-            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,    -1);
-            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,    -1);
-            CHECK_REG(key, 0, 3, N, TYPE_STRING,   "abc",  -1);
+            CHECK_REG(key, 0, 0, N, TYPE_UNSIGNED, 456,    -1, 0);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,    -1, 0);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,    -1, 0);
+            CHECK_REG(key, 0, 3, N, TYPE_STRING,   "abc",  -1, 0);
                                                   
-            CHECK_REG(key, 1, 0, Y, TYPE_UNSIGNED, 456,    2);
+            CHECK_REG(key, 1, 0, Y, TYPE_UNSIGNED, 456,    2, 0);
                                                   
-            CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED, 321,    2);
+            CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED, 321,    2, 0);
                                                   
-            CHECK_REG(key, 3, 1, Y, TYPE_SIGNED,   123,    2);
+            CHECK_REG(key, 3, 1, Y, TYPE_SIGNED,   123,    2, 0);
                                                   
-            CHECK_REG(key, 4, 1, N, TYPE_SIGNED,   123,    -1);
+            CHECK_REG(key, 4, 1, N, TYPE_SIGNED,   123,    -1, 0);
             return match;
         },
         [](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_VAR(key, 1, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2);
-            CHECK_VAR(key, 2, "def", 0, 1, 2,  TYPE_UNSIGNED, 321, 2);
+            CHECK_VAR(key, 1, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2, 0);
+            CHECK_VAR(key, 2, "def", 0, 1, 2,  TYPE_UNSIGNED, 321, 2, 0);
                                                               
             //two var named abc in diff scope here
-            CHECK_VAR(key, 3, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2);
-            CHECK_VAR(key, 3, "abc", 0, 1, 1,  TYPE_SIGNED,   123, 2);
+            CHECK_VAR(key, 3, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2, 0);
+            CHECK_VAR(key, 3, "abc", 0, 1, 1,  TYPE_SIGNED,   123, 2, 0);
                                                               
             //one abc now                                     
-            CHECK_VAR(key, 4, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2);
+            CHECK_VAR(key, 4, "abc", 0, 0, 0,  TYPE_UNSIGNED, 456, 2, 0);
             return match;
         });
     ASSERT_EQ(456, t.go(txt));

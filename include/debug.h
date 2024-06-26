@@ -26,6 +26,7 @@ struct regvm_reg_info
     int                 id;
     int                 ref;
     int                 type;
+    int                 attr;
     union regvm_uvalue  value;
     void*               from;
 };
@@ -43,6 +44,7 @@ struct regvm_var_info
     int                 func_id;
     int                 call_id;
     int                 scope_id;
+    int                 attr;
     union regvm_uvalue  value;
     const char*         func_name;
     const char*         var_name;

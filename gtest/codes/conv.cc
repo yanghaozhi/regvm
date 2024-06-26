@@ -31,18 +31,18 @@ TEST(code, conv)
         {
             int match = 0;
 
-            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,    -1);
-            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,    -1);
-            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12, -1);
-            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",  -1);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,    -1, 0);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,    -1, 0);
+            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12, -1, 0);
+            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",  -1, 0);
                                                       
-            CHECK_REG(key, 1, 1, N, TYPE_DOUBLE,   123.0,  -1);
-            CHECK_REG(key, 1, 2, N, TYPE_SIGNED,   321,    -1);
-            CHECK_REG(key, 1, 3, N, TYPE_SIGNED,   321,    -1);
+            CHECK_REG(key, 1, 1, N, TYPE_DOUBLE,   123.0,  -1, 0);
+            CHECK_REG(key, 1, 2, N, TYPE_SIGNED,   321,    -1, 0);
+            CHECK_REG(key, 1, 3, N, TYPE_SIGNED,   321,    -1, 0);
                                                    
-            CHECK_REG(key, 2, 1, Y, TYPE_DOUBLE,   123.0,  2);
+            CHECK_REG(key, 2, 1, Y, TYPE_DOUBLE,   123.0,  2, 0);
                                                    
-            CHECK_REG(key, 3, 1, N, TYPE_SIGNED,   123,    -1);
+            CHECK_REG(key, 3, 1, N, TYPE_SIGNED,   123,    -1, 0);
 
             return match;
         },
@@ -50,9 +50,9 @@ TEST(code, conv)
         {
             int match = 0;
 
-            CHECK_VAR(key, 2, "abc", 0, 0, 1,  TYPE_DOUBLE, 123.0, 2);
+            CHECK_VAR(key, 2, "abc", 0, 0, 1,  TYPE_DOUBLE, 123.0, 2, 0);
                                                            
-            CHECK_VAR(key, 3, "abc", 0, 0, -1, TYPE_DOUBLE, 123.0, 1);
+            CHECK_VAR(key, 3, "abc", 0, 0, -1, TYPE_DOUBLE, 123.0, 1, 0);
             return match;
         });
     ASSERT_EQ(0, t.go(txt));

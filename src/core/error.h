@@ -77,6 +77,7 @@ public:
             info->type = reg.values[i].type;
             info->value.sint = reg.values[i].value.sint;
             info->from = reg.values[i].from;
+            info->attr = reg.values[i].need_free;
             cb(info);
         }
     }

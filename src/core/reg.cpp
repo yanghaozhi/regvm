@@ -42,7 +42,7 @@ reg::~reg()
 
 bool reg::v::write(uint64_t v, int t, bool c)
 {
-    if (c == true)
+    if ((c == true) || (need_free == true))
     {
         clear();
     }

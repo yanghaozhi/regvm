@@ -137,6 +137,7 @@ void scope::dump(var_cb cb, void* arg, regvm_var_info* info) const
         info->value.sint = v->value.sint;
         info->var_name = v->name;
         info->raw = v;
+        info->attr = v->need_free;
         cb(arg, info);
     };
 

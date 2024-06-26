@@ -44,37 +44,37 @@ TEST(code, calc)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 0, 0, N, TYPE_SIGNED,   456,     -1);
-            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,     -1);
-            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,     -1);
-            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12,  -1);
-            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1);
+            CHECK_REG(key, 0, 0, N, TYPE_SIGNED,   456,     -1, 0);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,     -1, 0);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,     -1, 0);
+            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12,  -1, 0);
+            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1, 0);
                                                       
-            CHECK_REG(key, 1, 0, N, TYPE_SIGNED,   461,     -1);
-            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   318.12,  -1);
-            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 444,     -1);
+            CHECK_REG(key, 1, 0, N, TYPE_SIGNED,   461,     -1, 0);
+            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
+            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 444,     -1, 0);
                                                    
-            CHECK_REG(key, 2, 0, N, TYPE_SIGNED,   461,     -1);
-            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,   -195,    -1);
-            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,     -1);
-            CHECK_REG(key, 2, 3, N, TYPE_DOUBLE,   318.12,  -1);
+            CHECK_REG(key, 2, 0, N, TYPE_SIGNED,   461,     -1, 0);
+            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,   -195,    -1, 0);
+            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,     -1, 0);
+            CHECK_REG(key, 2, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
 
-            CHECK_REG(key, 3, 3, N, TYPE_DOUBLE,   318.12 / -195, -1);
-            CHECK_REG(key, 3, 1, N, TYPE_SIGNED,   -195 * -17,     -1);
+            CHECK_REG(key, 3, 3, N, TYPE_DOUBLE,   318.12 / -195, -1, 0);
+            CHECK_REG(key, 3, 1, N, TYPE_SIGNED,   -195 * -17,     -1, 0);
 
-            CHECK_REG(key, 4, 5, N, TYPE_UNSIGNED, TYPE_DOUBLE,   -1);
+            CHECK_REG(key, 4, 5, N, TYPE_UNSIGNED, TYPE_DOUBLE,   -1, 0);
 
-            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   3688, -1);
-            CHECK_REG(key, 5, 1, N, TYPE_SIGNED,   414,     -1);
+            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   3688, -1, 0);
+            CHECK_REG(key, 5, 1, N, TYPE_SIGNED,   414,     -1, 0);
 
             return match;
         },
         [](auto key, auto offset, auto info)
         {
             int match = 0;
-            //CHECK_VAR(key, 2, "abc", 0, 0, 1,  F, 123.0, TYPE_DOUBLE, 2);
+            //CHECK_VAR(key, 2, "abc", 0, 0, 1,  F, 123.0, TYPE_DOUBLE, 2, 0);
 
-            //CHECK_VAR(key, 3, "abc", 0, 0, -1, F, 123.0, TYPE_DOUBLE, 1);
+            //CHECK_VAR(key, 3, "abc", 0, 0, -1, F, 123.0, TYPE_DOUBLE, 1, 0);
             return match;
         });
     ASSERT_EQ(0, t.go(txt));

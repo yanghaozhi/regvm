@@ -70,29 +70,29 @@ TEST(code, load)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,    123,     -1);
-            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED,  321,     -1);
-            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,    321.123, -1);
-            CHECK_REG(key, 0, 4, N, TYPE_STRING,    "abc",   -1);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,    123,     -1, 0);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED,  321,     -1, 0);
+            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,    321.123, -1, 0);
+            CHECK_REG(key, 0, 4, N, TYPE_STRING,    "abc",   -1, 0);
                                                        
-            CHECK_REG(key, 1, 1, Y, TYPE_SIGNED,    123,     2);
+            CHECK_REG(key, 1, 1, Y, TYPE_SIGNED,    123,     2, 0);
                                                     
-            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,    123,     -1);
-            CHECK_REG(key, 2, 6, Y, TYPE_SIGNED,    123,     2);
+            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,    123,     -1, 0);
+            CHECK_REG(key, 2, 6, Y, TYPE_SIGNED,    123,     2, 0);
 
-            CHECK_REG(key, 3, 3, Y, TYPE_DOUBLE,    321.123, 2);
+            CHECK_REG(key, 3, 3, Y, TYPE_DOUBLE,    321.123, 2, 0);
 
-            CHECK_REG(key, 4, 2, Y, TYPE_UNSIGNED,  321,     2);
-            CHECK_REG(key, 4, 6, Y, TYPE_SIGNED,    123,     2);
+            CHECK_REG(key, 4, 2, Y, TYPE_UNSIGNED,  321,     2, 0);
+            CHECK_REG(key, 4, 6, Y, TYPE_SIGNED,    123,     2, 0);
 
-            CHECK_REG(key, 5, 2, N, TYPE_UNSIGNED,  321,     -1);
-            CHECK_REG(key, 5, 7, Y, TYPE_UNSIGNED,  321,     2);
+            CHECK_REG(key, 5, 2, N, TYPE_UNSIGNED,  321,     -1, 0);
+            CHECK_REG(key, 5, 7, Y, TYPE_UNSIGNED,  321,     2, 0);
 
-            CHECK_REG(key, 6, 3, N, TYPE_DOUBLE,    321.123, -1);
-            CHECK_REG(key, 6, 7, N, TYPE_UNSIGNED,  321,     -1);
+            CHECK_REG(key, 6, 3, N, TYPE_DOUBLE,    321.123, -1, 0);
+            CHECK_REG(key, 6, 7, N, TYPE_UNSIGNED,  321,     -1, 0);
 
-            CHECK_REG(key, 8, 6, N, TYPE_SIGNED,    123,    -1);
-            CHECK_REG(key, 8, 8, Y, TYPE_SIGNED,    123,    2);
+            CHECK_REG(key, 8, 6, N, TYPE_SIGNED,    123,    -1, 0);
+            CHECK_REG(key, 8, 8, Y, TYPE_SIGNED,    123,    2, 0);
 
             return match;
         },
@@ -100,24 +100,24 @@ TEST(code, load)
         {
             int match = 0;
 
-            CHECK_VAR(key, 1, "abc", 0, 0, 1,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 1, "abc", 0, 0, 1,   TYPE_SIGNED,    123, 2, 0);
 
-            CHECK_VAR(key, 2, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 2, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2, 0);
 
-            CHECK_VAR(key, 3, "def", 0, 1, 3,   TYPE_DOUBLE,    321.123, 2);
+            CHECK_VAR(key, 3, "def", 0, 1, 3,   TYPE_DOUBLE,    321.123, 2, 0);
 
-            CHECK_VAR(key, 4, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
-            CHECK_VAR(key, 4, "abc", 0, 1, 2,   TYPE_UNSIGNED,  321, 2);
+            CHECK_VAR(key, 4, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2, 0);
+            CHECK_VAR(key, 4, "abc", 0, 1, 2,   TYPE_UNSIGNED,  321, 2, 0);
 
-            CHECK_VAR(key, 5, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
-            CHECK_VAR(key, 5, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2);
+            CHECK_VAR(key, 5, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2, 0);
+            CHECK_VAR(key, 5, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2, 0);
 
-            CHECK_VAR(key, 6, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 6, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2, 0);
 
-            CHECK_VAR(key, 7, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2);
-            CHECK_VAR(key, 7, "def", 0, 1, 7,   TYPE_DOUBLE,    321.123, 2);
+            CHECK_VAR(key, 7, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2, 0);
+            CHECK_VAR(key, 7, "def", 0, 1, 7,   TYPE_DOUBLE,    321.123, 2, 0);
 
-            CHECK_VAR(key, 8, "abc", 0, 0, 8,   TYPE_SIGNED,    123, 2);
+            CHECK_VAR(key, 8, "abc", 0, 0, 8,   TYPE_SIGNED,    123, 2, 0);
             return match;
         });
     ASSERT_EQ(0, t.go(txt));

@@ -24,11 +24,11 @@ TEST(error, chg)
     tester t([](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_REG(key, 0, 0, N, TYPE_SIGNED,   456,     -1);
-            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,     -1);
-            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,     -1);
-            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12,  -1);
-            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1);
+            CHECK_REG(key, 0, 0, N, TYPE_SIGNED,   456,     -1, 0);
+            CHECK_REG(key, 0, 1, N, TYPE_SIGNED,   123,     -1, 0);
+            CHECK_REG(key, 0, 2, N, TYPE_UNSIGNED, 321,     -1, 0);
+            CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12,  -1, 0);
+            CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1, 0);
                                                       
             return match;
         },

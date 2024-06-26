@@ -12,9 +12,10 @@
 #define CHECK_TYPE_DOUBLE(val)      EXPECT_DOUBLE_EQ(val, info->value.dbl)
 #define CHECK_TYPE_STRING(val)      EXPECT_STREQ(val, info->value.str)
 
-#define CHECK_UV(K2, TYPE, VAL, REF)                            \
+#define CHECK_UV(K2, TYPE, VAL, REF, ATTR)                      \
     CHECK_##TYPE(VAL) << "at TRAP " << K2;                      \
     EXPECT_EQ(TYPE, info->type) << "at TRAP " << K2;            \
+    EXPECT_EQ(ATTR, info->attr) << "at TRAP " << K2;            \
     EXPECT_EQ(REF, info->ref) << "at TRAP " << K2;
 
 #define CHECK_FROM_Y    EXPECT_NE(nullptr, info->from)
