@@ -43,6 +43,14 @@ static bool mem_store(struct regvm* vm, code_t code, int offset, int64_t extra)
         else
         {
             auto m = (mem*)vm->ext;
+            auto v = m->get(e.value.str);
+            if (v != NULL)
+            {
+                if (v->store(r) == true)
+                {
+                    return true;
+                }
+            }
             return m->add(r.type, e.value.str)->store(r);
         }
     }

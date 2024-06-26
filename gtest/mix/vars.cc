@@ -48,7 +48,7 @@ TEST(mix, vars)
                                                   
             CHECK_REG(key, 3, 1, Y, TYPE_SIGNED,   123,    2, 0);
                                                   
-            CHECK_REG(key, 4, 1, N, TYPE_SIGNED,   123,    -1, 0);
+            CHECK_REG(key, 4, 1, Y, TYPE_SIGNED,   123,    1, 0);
             return match;
         },
         [](auto key, auto offset, auto info)

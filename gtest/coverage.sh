@@ -32,4 +32,13 @@ genhtml ${REPORT} -o ./result
 #else
 #    xdg-open ./result/index.html
 #fi
-xdg-open ./result/index.html
+
+cloc ../src/core/ ../src/ext/
+
+which xdg-open > /dev/null
+if [ $? -eq 0 ]
+then
+    xdg-open ./result/index.html
+fi
+
+

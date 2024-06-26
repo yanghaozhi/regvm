@@ -88,8 +88,8 @@ TEST(code, load)
             CHECK_REG(key, 5, 2, N, TYPE_UNSIGNED,  321,     -1, 0);
             CHECK_REG(key, 5, 7, Y, TYPE_UNSIGNED,  321,     2, 0);
 
-            CHECK_REG(key, 6, 3, N, TYPE_DOUBLE,    321.123, -1, 0);
-            CHECK_REG(key, 6, 7, N, TYPE_UNSIGNED,  321,     -1, 0);
+            CHECK_REG(key, 6, 3, Y, TYPE_DOUBLE,    321.123, 1, 0);
+            CHECK_REG(key, 6, 7, Y, TYPE_UNSIGNED,  321,     1, 0);
 
             CHECK_REG(key, 8, 6, N, TYPE_SIGNED,    123,    -1, 0);
             CHECK_REG(key, 8, 8, Y, TYPE_SIGNED,    123,    2, 0);
@@ -113,6 +113,7 @@ TEST(code, load)
             CHECK_VAR(key, 5, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2, 0);
 
             CHECK_VAR(key, 6, "abc", 0, 0, 6,   TYPE_SIGNED,    123, 2, 0);
+            CHECK_VAR(key, 6, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2, 0);
 
             CHECK_VAR(key, 7, "abc", 0, 1, 7,   TYPE_UNSIGNED,  321, 2, 0);
             CHECK_VAR(key, 7, "def", 0, 1, 7,   TYPE_DOUBLE,    321.123, 2, 0);

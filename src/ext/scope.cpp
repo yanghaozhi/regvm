@@ -19,10 +19,10 @@ scope::~scope()
     {
         if (table[i].v != NULL)
         {
-            if (table[i].v->reg != NULL)
-            {
-                table[i].v->reg->set_from(NULL);
-            }
+            //if (table[i].v->reg != NULL)
+            //{
+            //    table[i].v->reg->set_from(NULL);
+            //}
             table[i].v->release();
         }
         clear_list(table[i].next);
@@ -137,7 +137,7 @@ void scope::dump(var_cb cb, void* arg, regvm_var_info* info) const
         info->value.sint = v->value.sint;
         info->var_name = v->name;
         info->raw = v;
-        info->attr = v->need_free;
+        info->attr = 0;
         cb(arg, info);
     };
 

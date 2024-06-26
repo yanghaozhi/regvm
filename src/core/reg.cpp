@@ -24,7 +24,10 @@ reg::~reg()
     {
         if (values[i].from != NULL)
         {
-            values[i].from->release();
+            //values[i].from->release();
+            //
+            //values[i].from->reg = NULL;
+            values[i].set_from(NULL);
         }
         if(values[i].need_free == true)
         {

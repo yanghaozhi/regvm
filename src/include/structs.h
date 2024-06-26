@@ -30,17 +30,16 @@ protected:
     friend class error;
 
     int16_t         ref         = 1;
-    bool            need_free   = false;
 
 public:
     regv<T>*        reg         = NULL;
 
     uvalue          value;
 
-    inline void set_val(int type, uvalue val)
+    inline bool set_val(int type, uvalue val)
     {
 #ifdef VAR_IMPL
-        static_cast<T*>(this)->set_val(type, val);
+        return static_cast<T*>(this)->set_val(type, val);
 #else
         assert(0);
 #endif
@@ -116,9 +115,7 @@ template <typename T> struct regv
         }
 
         //v->value = value;
-        v->set_val(type, value);
-
-        return true;
+        return v->set_val(type, value);
     }
 
     inline bool set_from(var<T>* v)

@@ -4,6 +4,18 @@
 
 using namespace core;
 
+error::error(void)
+{
+    code = ERR_OK;
+
+    memset(&src, 0, sizeof(src));
+    memset(&func, 0, sizeof(func));
+#ifdef DEBUG
+    memset(&self, 0, sizeof(self));
+#endif
+    reason[0] = '\0';
+}
+
 void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char* fmt, ...)
 {
     va_list ap;

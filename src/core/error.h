@@ -26,6 +26,8 @@ namespace core
 class error
 {
 public:
+    error(void);
+
     int                 code;
 
     regvm_src_location  src;

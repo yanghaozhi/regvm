@@ -24,18 +24,14 @@ var::~var()
     if (reg != NULL)
     {
         reg->set_from(NULL);
-        //auto& r = core::reg
     }
-    if (need_free == true)
+    switch (type)
     {
-        switch (type)
-        {
-        case TYPE_STRING:
-            free((void*)value.str);
-            break;
-        default:
-            break;
-        }
+    case TYPE_STRING:
+        free((void*)value.str);
+        break;
+    default:
+        break;
     }
 }
 
@@ -70,12 +66,27 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
-void var::set_val(int t, core::uvalue v)
+bool var::set_val(int t, core::uvalue v)
 {
-    if (type == t)
+    if (type != t)
     {
-        value = v;
+        return false;
     }
+
+    switch (t)
+    {
+    case TYPE_STRING:
+        if (value.str != NULL)
+        {
+            free((void*)value.str);
+        }
+        value.str = strdup(v.str);
+        break;
+    default:
+        value = v;
+        break;
+    }
+    return true;
 }
 
 void var::set_reg(core::regv<var>* new_reg)
@@ -93,7 +104,10 @@ void var::set_reg(core::regv<var>* new_reg)
     {
         if (new_reg == NULL)
         {
-            release();
+            if (release() == false)
+            {
+                return;
+            }
         }
     }
     reg = new_reg;
@@ -101,14 +115,19 @@ void var::set_reg(core::regv<var>* new_reg)
 
 bool var::release(void)
 {
-    if (--ref <= 0)
+    if (--ref > 0)
+    {
+        return true;
+    }
+
+    if (ref == 0)
     {
         //delete this;
         this->~var();
         free(this);
-        return false;
     }
-    return true;
+
+    return false;
 }
 
 bool var::store(core::regv<var>& r)
@@ -117,9 +136,12 @@ bool var::store(core::regv<var>& r)
 
     if (type != r.type)
     {
-        //TODO : error handler
-        assert(0);
         return false;
+    }
+
+    if (reg != NULL)
+    {
+        reg->set_from(NULL);
     }
 
     core::var<var>* old = r.from;
@@ -133,10 +155,16 @@ bool var::store(core::regv<var>& r)
 
     r.set_from(this);
 
-    value = r.value;
     reg = &r;
-    need_free = r.need_free;
-    r.need_free = false;
+    if (r.need_free == true)
+    {
+        value = r.value;
+        r.need_free = false;
+    }
+    else
+    {
+        set_val(type, r.value);
+    }
 
     return true;
 }
