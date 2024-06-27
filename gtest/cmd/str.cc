@@ -23,7 +23,7 @@ BLOCK   0   0
 
 SETC    4   4   asdf
 SETC    5   4   def
-SETC    6   4   qwer
+SETC    6   4   qwerzxcv
 TRAP    3   4
 
 STORE   5   4
@@ -35,6 +35,11 @@ TRAP    3   6
 BLOCK   0   1
 
 TRAP    2   7
+
+SETS    1   1   2
+SETS    2   1   3
+STR     7   1   6   1   2
+TRAP    4   8
 
 EXIT    0   0
 )";
@@ -55,16 +60,21 @@ TEST(cmd, str)
 
             CHECK_REG(key, 4, 4, N, TYPE_STRING,   "asdf",   -1, 0);
             CHECK_REG(key, 4, 5, N, TYPE_STRING,   "def",   -1, 0);
-            CHECK_REG(key, 4, 6, N, TYPE_STRING,   "qwer",   -1, 0);
+            CHECK_REG(key, 4, 6, N, TYPE_STRING,   "qwerzxcv",   -1, 0);
 
             CHECK_REG(key, 5, 4, N, TYPE_STRING,   "asdf",   -1, 0);
             CHECK_REG(key, 5, 5, Y, TYPE_STRING,   "def",   2, 0);
 
             CHECK_REG(key, 6, 5, N, TYPE_STRING,   "def",   -1, 0);
-            CHECK_REG(key, 6, 6, Y, TYPE_STRING,   "qwer",   2, 0);
+            CHECK_REG(key, 6, 6, Y, TYPE_STRING,   "qwerzxcv",   2, 0);
 
             CHECK_REG(key, 7, 5, N, TYPE_STRING,   "def",   -1, 0);
-            CHECK_REG(key, 7, 6, Y, TYPE_STRING,   "qwer",   1, 0);
+            CHECK_REG(key, 7, 6, Y, TYPE_STRING,   "qwerzxcv",   1, 0);
+
+            CHECK_REG(key, 8, 1, N, TYPE_SIGNED,   2,   -1, 0);
+            CHECK_REG(key, 8, 2, N, TYPE_SIGNED,   3,   -1, 0);
+            CHECK_REG(key, 8, 6, Y, TYPE_STRING,   "qwerzxcv",   1, 0);
+            CHECK_REG(key, 8, 7, N, TYPE_STRING,   "erz",   -1, 1);
             return match;
         },
         [](auto key, auto offset, auto info)
@@ -72,7 +82,7 @@ TEST(cmd, str)
             int match = 0;
             CHECK_VAR(key, 5, "asdf", 0, 1, 5,  TYPE_STRING, "def", 2, 0);
 
-            CHECK_VAR(key, 6, "asdf", 0, 1, 6,  TYPE_STRING, "qwer", 2, 0);
+            CHECK_VAR(key, 6, "asdf", 0, 1, 6,  TYPE_STRING, "qwerzxcv", 2, 0);
             return match;
         });
     ASSERT_EQ(0, t.go(txt));

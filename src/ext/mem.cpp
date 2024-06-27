@@ -230,7 +230,10 @@ bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
     cb(arg, NULL);
 
     auto m = (mem*)vm->ext;
-    m->dump(vm, cb, arg, &info);
+    if (m != NULL)
+    {
+        m->dump(vm, cb, arg, &info);
+    }
 
     cb(arg, (regvm_var_info*)(intptr_t)-1);
     return true;

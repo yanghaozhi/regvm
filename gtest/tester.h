@@ -5,6 +5,7 @@
 #include <mem_run.h>
 #include <debugger.h>
 
+#include "../ext/regext.h"
 
 
 #define CHECK_TYPE_SIGNED(val)      EXPECT_EQ(val, info->value.sint)
@@ -48,7 +49,7 @@ public:
     test_base()     {};
 
     int64_t go(char* txt);
-    int64_t go(char* txt, bool expect);
+    int64_t go(char* txt, bool expect, regvm_ex* ext);
 
 protected:
     int             key;

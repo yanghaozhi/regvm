@@ -77,7 +77,7 @@ TEST(code, calc)
             //CHECK_VAR(key, 3, "abc", 0, 0, -1, F, 123.0, TYPE_DOUBLE, 1, 0);
             return match;
         });
-    ASSERT_EQ(0, t.go(txt));
+    ASSERT_EQ(0, t.go(txt, true, NULL));
 }
 
 

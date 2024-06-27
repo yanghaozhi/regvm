@@ -306,16 +306,17 @@ bool vm_str_len(regvm* vm, int ret, reg::v& s, const extend_args& args)
     return vm->reg.id(ret).write(len, TYPE_SIGNED, true);
 }
 
-bool vm_str_substr(regvm* vm, int ret, reg::v& r, const extend_args& args)
+bool vm_str_substr(regvm* vm, int ret, reg::v& str, const extend_args& args)
 {
     auto& start = vm->reg.id(args.a2);
     auto& len = vm->reg.id(args.a3);
 
     const int l = (int64_t)len;
     char* p = (char*)malloc(l + 1);
-    memcpy(p, r.value.str + (int64_t)start, l);
+    memcpy(p, str.value.str + (int64_t)start, l);
     p[l] = '\0';
 
+    auto& r = vm->reg.id(ret);
     r.clear();
 
     r.need_free = true;

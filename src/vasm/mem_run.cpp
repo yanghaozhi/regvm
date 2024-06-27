@@ -46,7 +46,7 @@ bool mem_2_run::finish()
         printf("\n\n");
     }
 
-    auto vm = regvm_init(&var_ext);
+    auto vm = regvm_init(ext);
 
     if (dbg != NULL)
     {
