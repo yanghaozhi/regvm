@@ -4,25 +4,40 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <map>
+#include <deque>
+#include <string>
+
 #include <code.h>
+
+namespace ext
+{
+    class var;
+}
 
 
 namespace core
 {
 
+template <typename T> struct regv;
+template <typename T> struct var;
+
 union uvalue
 {
+    typedef std::deque<var<ext::var>*>               list_t;
+    typedef std::map<std::string, var<ext::var>*>    dict_t;
+
     int64_t         sint;
     uint64_t        uint;
     double          dbl;
     const char*     str;
+    list_t*         list_v;
+    dict_t*         dict_v;
 
     //double conv(int type, double v) const;
     //int64_t conv(int type, int64_t v) const;
     //uint64_t conv(int type, uint64_t v) const;
 };
-
-template <typename T> struct regv;
 
 template <typename T> class var
 {
@@ -85,9 +100,11 @@ template <typename T> struct regv
                 free((char*)value.str);
                 value.str = NULL;
                 break;
-            case TYPE_DICT:
-                break;
             case TYPE_LIST:
+                delete value.list_v;
+                break;
+            case TYPE_DICT:
+                delete value.dict_v;
                 break;
             default:
                 break;

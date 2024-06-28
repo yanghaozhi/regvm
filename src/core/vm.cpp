@@ -59,8 +59,7 @@ regvm::regvm(struct regvm_ex* ext) : reg()
 {
     if (ext == NULL)
     {
-        handlers.init = NULL;
-        handlers.exit = NULL;
+        memset(&handlers, 0, sizeof(handlers));
 
         handlers.vm_load = vm_load;
         handlers.vm_store = vm_store;

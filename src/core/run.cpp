@@ -99,10 +99,25 @@ bool vm_move(struct regvm* vm, const code_t code)
     return r.write(e.value.uint, e.type, true);
 }
 
-bool vm_clear(struct regvm* vm, const code_t code)
+bool vm_clear(struct regvm* vm, const code_t code, int offset)
 {
     auto& r = vm->reg.id(code.reg);
-    return r.write(0, code.ex, true);
+    if (r.write(0, code.ex, true) == false)
+    {
+        return false;
+    }
+    switch (code.ex)
+    {
+    case TYPE_LIST:
+        r.value.list_v = new uvalue::list_t();
+        break;
+    case TYPE_DICT:
+        r.value.dict_v = new uvalue::dict_t();
+        break;
+    default:
+        break;
+    }
+    return true;
 }
 
 bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
@@ -326,17 +341,57 @@ bool vm_str_substr(regvm* vm, int ret, reg::v& str, const extend_args& args)
     return true;
 }
 
-bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args)
+bool vm_str(regvm* vm, int ret, int op, reg::v& s, const extend_args& args)
 {
     switch (op)
     {
     case 0:
-        return vm_str_len(vm, ret, r, args);
+        return vm_str_len(vm, ret, s, args);
     case 1:
-        return vm_str_substr(vm, ret, r, args);
+        return vm_str_substr(vm, ret, s, args);
     default:
         return false;
     }
+}
+
+bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
+{
+    auto& r = vm->reg.id(ret);
+    switch (op)
+    {
+    case 0:
+        return r.write(l.value.list_v->size(), TYPE_SIGNED, true);
+    case 1:
+        {
+            //auto it = l.value.list_v->at((int64_t)vm->reg.id(args.a2));
+            //if (it == l.value.list_v->end())
+            //{
+            //    r.write(0, TYPE_NULL, true);
+            //}
+            //else
+            //{
+            //    //r.write(it->);
+            //}
+        }
+        break;
+    case 2:
+        {
+            //auto& v = vm->reg.id(args.a3);
+            //l.value.list_v->push_back(NULL);
+        }
+        //switch (args.a2)
+        //{
+        //}
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args)
+{
+    return false;
 }
 
 #undef UNSUPPORT_TYPE

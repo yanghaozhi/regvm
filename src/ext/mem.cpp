@@ -27,13 +27,13 @@ static bool mem_exit(regvm* vm)
 static bool mem_new(struct regvm* vm, code_t code, int offset, int64_t extra)
 {
     auto m = (mem*)vm->ext;
-    auto& r = vm->reg.id(code.reg);
-    auto v = m->get(r.value.str);
+    auto& n = vm->reg.id(code.reg);
+    auto v = m->get(n.value.str);
     if (v != NULL)
     {
         return (v->type == code.ex) ? true : false;
     }
-    v = m->add(code.ex, r.value.str);
+    v = m->add(code.ex, n.value.str);
     return (v != NULL) ? true : false;
 }
 
@@ -98,7 +98,6 @@ static bool mem_call(struct regvm* vm, code_t code, int offset, int64_t extra)
     auto m = (mem*)vm->ext;
     return m->call(extra);
 }
-
 
 mem::mem() : globals(0)
 {

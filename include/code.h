@@ -161,6 +161,31 @@ enum DATA_TYPE
 //          | 0 : len       | str       | N/A       | N/A       | N/A       |
 //          | 1 : substr    | str       | $start    | $len      | N/A       |
 //+---------+---------------+-----------------------+-----------------------+
+//| LIST    | CODE_LIST     | return value          | op code               |
+//| 字符串操作              | a1        | a2        | a3        | a4        |
+//          | 0 : len       | list      | N/A       | N/A       | N/A       |
+//          | 1 : at        | list      | $idx      | N/A       | N/A       |
+//          type 0 : back，1 : front
+//          | 2 : push      | list      | type      | $value    | N/A       |
+//          | 3 : pop       | list      | type      | N/A       | N/A       |
+//          | 4 : insert    | list      | $idx      | $value    | N/A       |
+//          | 5 : erase     | list      | $idx      | N/A       | N/A       |
+//          | 6 : set       | list      | $idx      | N/A       | N/A       |
+//          cmp 0 : greater, 1 : lesser
+//          | 7 : sort      | list      | cmp       | N/A       | N/A       |
+//+---------+---------------+-----------------------+-----------------------+
+//| DICT    | CODE_DICT     | return value          | op code               |
+//| 字符串操作              | a1        | a2        | a3        | a4        |
+//          | 0 : len       | dict      | N/A       | N/A       | N/A       |
+//          | 1 : set       | dict      | $key      | $value    | N/A       |
+//          | 2 : get       | dict      | $key      | N/A       | N/A       |
+//          | 3 : del       | dict      | $key      | N/A       | N/A       |
+//          | 4 : has       | dict      | $key      | N/A       | N/A       |
+//          type 0 : only keys, 1 : only values, 2 : keys and values
+//          output two lists, a3 store keys, a4 store values, 
+//          they are in same order
+//          | 5 : items     | dict      | type      | keys      | values    |
+//+---------+---------------+-----------------------+-----------------------+
 
 //+---------+---------------+-----------------------+-----------------------+
 //| EXIT    | CODE_EXIT     | reg                   | ex                    |
@@ -207,6 +232,8 @@ enum CODE_ID
 
     CODE_CMD    = 128,
     CODE_STR,
+    CODE_LIST,
+    CODE_DICT,
 
     CODE_EXIT   = 255,
 };

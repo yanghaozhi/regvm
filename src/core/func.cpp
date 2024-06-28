@@ -12,7 +12,7 @@ using namespace core;
 
 extern bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value);
 extern bool vm_move(struct regvm* vm, const code_t code);
-extern bool vm_clear(struct regvm* vm, const code_t code);
+extern bool vm_clear(struct regvm* vm, const code_t code, int offset);
 extern bool vm_conv(struct regvm* vm, const code_t code, int offset);
 extern bool vm_type(struct regvm* vm, const code_t code, int offset);
 extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
@@ -21,6 +21,8 @@ extern int vm_jump(struct regvm* vm, const code_t code, int offset);
 extern bool vm_cmd(regvm* vm, int ret, int op, const extend_args& args);
 
 extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
+extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
+extern bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 
 typedef bool (*vm_run_ex)(regvm* vm, int ret, int op, const extend_args& args);
 typedef bool (*vm_run_type)(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
@@ -77,6 +79,8 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 
         EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_cmd);
         EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_str, TYPE_STRING);
+        EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_list, TYPE_LIST);
+        EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_dict, TYPE_DICT);
 #undef EXTRA_RUN
 
 
@@ -89,7 +93,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CODE_RUN(LOAD, vm->handlers.vm_load, vm, *code, offset, -1);
         CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, vm->call_stack->id);
         CODE_RUN(MOVE, vm_move, vm, *code);
-        CODE_RUN(CLEAR, vm_clear, vm, *code);
+        CODE_RUN(CLEAR, vm_clear, vm, *code, offset);
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
         CODE_RUN(TYPE, vm_type, vm, *code, offset);
         CODE_RUN(CHG, vm_chg, vm, *code, offset);
