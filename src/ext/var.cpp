@@ -66,6 +66,11 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
+//bool var::set_val(core::regv<var>* reg)
+//{
+//    return true;
+//}
+
 bool var::set_val(int t, core::uvalue v)
 {
     if (type != t)
@@ -144,7 +149,7 @@ bool var::store(core::regv<var>& r)
         reg->set_from(NULL);
     }
 
-    core::var<var>* old = r.from;
+    core::var_type<var>* old = r.from;
     if (old != NULL)
     {
         //do NOT writeback

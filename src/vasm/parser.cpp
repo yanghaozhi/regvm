@@ -75,6 +75,8 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(JNL);
         SET_KEY(CMD);
         SET_KEY(STR);
+        SET_KEY(LIST);
+        SET_KEY(DICT);
         SET_KEY(EXIT);
 #undef SET_KEY
     }

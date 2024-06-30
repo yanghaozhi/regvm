@@ -19,6 +19,7 @@ union regvm_uvalue
     uint64_t            uint;
     double              dbl;
     const char*         str;
+    void*               ptr;
 };
 
 struct regvm_reg_info

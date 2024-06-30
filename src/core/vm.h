@@ -25,6 +25,8 @@ struct regvm_ex
     bool (*init)(regvm* vm);
     bool (*exit)(regvm* vm);
 
+    core::var* (*vm_var)(struct regvm* vm, int id);
+
     //vm_ext_handler_t    vm_set;
     vm_ext_handler_t    vm_new;
     vm_ext_handler_t    vm_store;

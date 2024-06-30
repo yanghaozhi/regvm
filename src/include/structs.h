@@ -19,13 +19,14 @@ namespace ext
 namespace core
 {
 
+struct var;
 template <typename T> struct regv;
-template <typename T> struct var;
+template <typename T> struct var_type;
 
 union uvalue
 {
-    typedef std::deque<var<ext::var>*>               list_t;
-    typedef std::map<std::string, var<ext::var>*>    dict_t;
+    typedef std::deque<var*>               list_t;
+    typedef std::map<std::string, var*>    dict_t;
 
     int64_t         sint;
     uint64_t        uint;
@@ -39,7 +40,7 @@ union uvalue
     //uint64_t conv(int type, uint64_t v) const;
 };
 
-template <typename T> class var
+struct var
 {
 protected:
     friend class error;
@@ -47,9 +48,13 @@ protected:
     int16_t         ref         = 1;
 
 public:
-    regv<T>*        reg         = NULL;
-
     uvalue          value;
+};
+
+template <typename T> class var_type : public var
+{
+public:
+    regv<T>*        reg         = NULL;
 
     inline bool set_val(int type, uvalue val)
     {
@@ -83,7 +88,7 @@ public:
 template <typename T> struct regv
 {
     uvalue          value;
-    var<T>*         from;
+    var_type<T>*    from;
     uint8_t         type;
     int8_t          idx;
     bool            need_free;
@@ -118,7 +123,7 @@ template <typename T> struct regv
 
     inline bool store() const
     {
-        core::var<T>* v = from;
+        core::var_type<T>* v = from;
         if (v == NULL)
         {
             return false;
@@ -135,7 +140,7 @@ template <typename T> struct regv
         return v->set_val(type, value);
     }
 
-    inline bool set_from(var<T>* v)
+    inline bool set_from(var_type<T>* v)
     {
         if (from != NULL)
         {
@@ -147,6 +152,14 @@ template <typename T> struct regv
         }
         from = v;
         return true;
+    }
+    inline bool set_val(var* val)
+    {
+#ifdef VAR_IMPL
+        return static_cast<T*>(val)->set_val(this);
+#else
+        assert(0);
+#endif
     }
 };
 

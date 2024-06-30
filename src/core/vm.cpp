@@ -5,6 +5,12 @@
 extern "C"
 {
 
+static core::var* vm_var(struct regvm* vm, int id)
+{
+    assert(0);
+    return NULL;
+}
+
 static bool vm_new(struct regvm* vm, const code_t code, int offset, int64_t value)
 {
     assert(0);
@@ -66,6 +72,7 @@ regvm::regvm(struct regvm_ex* ext) : reg()
         handlers.vm_new = vm_new;
         handlers.vm_block = vm_block;
         handlers.vm_call = vm_call;
+        handlers.vm_var = vm_var;
     }
     else
     {

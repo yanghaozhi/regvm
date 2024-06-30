@@ -363,21 +363,22 @@ bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
         return r.write(l.value.list_v->size(), TYPE_SIGNED, true);
     case 1:
         {
-            //auto it = l.value.list_v->at((int64_t)vm->reg.id(args.a2));
-            //if (it == l.value.list_v->end())
-            //{
-            //    r.write(0, TYPE_NULL, true);
-            //}
-            //else
-            //{
-            //    //r.write(it->);
-            //}
+            auto idx = (uint64_t)vm->reg.id(args.a2);
+            if (idx >= l.value.list_v->size())
+            {
+                r.write(0, TYPE_NULL, true);
+            }
+            else
+            {
+                auto v = l.value.list_v->at(idx);
+                r.set_val(v);
+            }
         }
         break;
     case 2:
         {
             //auto& v = vm->reg.id(args.a3);
-            //l.value.list_v->push_back(NULL);
+            l.value.list_v->push_back(vm->handlers.vm_var(vm, args.a3));
         }
         //switch (args.a2)
         //{

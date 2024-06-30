@@ -12,6 +12,7 @@
 #define CHECK_TYPE_UNSIGNED(val)    EXPECT_EQ(val, info->value.uint)
 #define CHECK_TYPE_DOUBLE(val)      EXPECT_DOUBLE_EQ(val, info->value.dbl)
 #define CHECK_TYPE_STRING(val)      EXPECT_STREQ(val, info->value.str)
+#define CHECK_TYPE_LIST(val)        EXPECT_NE(nullptr, info->value.ptr)
 
 #define CHECK_UV(K2, TYPE, VAL, REF, ATTR)                      \
     CHECK_##TYPE(VAL) << "at TRAP " << K2;                      \

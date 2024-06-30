@@ -24,6 +24,14 @@ static bool mem_exit(regvm* vm)
     return true;
 }
 
+static core::var* mem_var(struct regvm* vm, int id)
+{
+    auto& r = vm->reg.id(id);
+    auto v = var::create(r.type, "");
+    v->store(r);
+    return v;
+}
+
 static bool mem_new(struct regvm* vm, code_t code, int offset, int64_t extra)
 {
     auto m = (mem*)vm->ext;
@@ -220,7 +228,7 @@ extern "C"
 {
 #endif
 
-struct regvm_ex     var_ext = {mem_init, mem_exit, mem_new, mem_store, mem_load, mem_block, mem_call};
+struct regvm_ex     var_ext = {mem_init, mem_exit, mem_var, mem_new, mem_store, mem_load, mem_block, mem_call};
 
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
 {
