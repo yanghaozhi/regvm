@@ -27,10 +27,6 @@ public:
 
     var* get(const char* name) const;
 
-    bool block(int64_t frame, int ex);
-
-    bool call(int64_t func);
-
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
 #define CRTP_FUNC(name, ret, argc, ...)                                             \

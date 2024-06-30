@@ -111,9 +111,11 @@ bool vm_clear(struct regvm* vm, const code_t code, int offset)
     {
     case TYPE_LIST:
         r.value.list_v = new uvalue::list_t();
+        r.need_free = true;
         break;
     case TYPE_DICT:
         r.value.dict_v = new uvalue::dict_t();
+        r.need_free = true;
         break;
     default:
         break;
@@ -372,7 +374,7 @@ bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
             else
             {
                 auto v = l.value.list_v->at(idx);
-                static_cast<var_type<REGVM_IMPL::var_t>*>(v)->set_val(&r);
+                v->crtp<REGVM_IMPL>()->set_val(r);
                 //v->crtp()->set_val(&r);
                 //r.set_val(v);
             }

@@ -12,11 +12,6 @@
 
 #include "mlib.h"
 
-namespace ext
-{
-    class var;
-}
-
 
 namespace core
 {
@@ -41,6 +36,8 @@ union uvalue
     //int64_t conv(int type, int64_t v) const;
     //uint64_t conv(int type, uint64_t v) const;
 };
+
+extern void free_uvalue(int type, uvalue v);
 
 struct var
 {
@@ -78,8 +75,7 @@ public:
     }
 #endif
 
-    CRTP_FUNC(set_val,  bool, 2, int, uvalue);
-    CRTP_FUNC(set_val,  bool, 1, regv<T>*);
+    CRTP_FUNC(set_val,  bool, 1, regv<T>&);
     CRTP_FUNC(set_reg,  bool, 1, regv<T>*);
     CRTP_FUNC(release,  bool, 0);
 
@@ -124,7 +120,7 @@ template <typename T> struct regv
         return true;
     }
 
-    inline bool store() const
+    inline bool store()
     {
         core::var_type<T>* v = from;
         if (v == NULL)
@@ -132,15 +128,13 @@ template <typename T> struct regv
             return false;
         }
 
-        //if ((v->type != type) || (v->reg != idx))
         if (v->reg != this)
         {
             //ERROR(ERR_TYPE_MISMATCH, "store %d != %d", v->type, types[i]);
             return false;
         }
 
-        //v->value = value;
-        return v->set_val(type, value);
+        return v->set_val(*this);
     }
 
     inline bool set_from(var_type<T>* v)

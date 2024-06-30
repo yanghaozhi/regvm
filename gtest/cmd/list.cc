@@ -20,9 +20,9 @@ TRAP    1   2
 LIST    0   0   5
 TRAP    1   3
 
-#LIST    0   2   5   0   3
-#LIST    0   1   5   0
-#TRAP    1   4
+LIST    0   2   5   0   3
+LIST    0   1   5   0
+TRAP    1   4
 
 
 EXIT    0   0
@@ -38,9 +38,9 @@ TEST(cmd, list)
             CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,    321.123,    -1, 0);
             CHECK_REG(key, 0, 4, N, TYPE_STRING,    "abc",      -1, 0);
 
-            CHECK_REG(key, 1, 5, N, TYPE_LIST,      0,          -1, 0);
+            CHECK_REG(key, 1, 5, N, TYPE_LIST,      0,          -1, 1);
 
-            CHECK_REG(key, 2, 5, N, TYPE_LIST,      0,          -1, 0);
+            CHECK_REG(key, 2, 5, N, TYPE_LIST,      0,          -1, 1);
 
             CHECK_REG(key, 3, 0, N, TYPE_SIGNED,    1,          -1, 0);
 

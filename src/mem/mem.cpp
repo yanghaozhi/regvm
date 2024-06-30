@@ -94,26 +94,12 @@ bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
 
 bool regvm_mem::vm_block(code_t code, int offset, int64_t extra)
 {
-    return block(extra, code.ex);
-}
-
-bool regvm_mem::vm_call(code_t code, int offset, int64_t extra)
-{
-    return call(extra);
-}
-
-regvm_mem::regvm_mem() : globals(0)
-{
-}
-
-bool regvm_mem::block(int64_t frame, int ex)
-{
     if (frames.size() == 0)
     {
         return false;
     }
 
-    switch (ex)
+    switch (code.ex)
     {
     case 0:
         frames.back().enter_block();
@@ -124,6 +110,28 @@ bool regvm_mem::block(int64_t frame, int ex)
     }
 
     return true;
+}
+
+bool regvm_mem::vm_call(code_t code, int offset, int64_t extra)
+{
+    if ((extra > 0) || ((extra == 0) && (frames.empty() == true)))
+    {
+        frames.emplace_front(extra);
+    }
+    else
+    {
+        if (frames.front().frame != -extra)
+        {
+            assert(0);
+            return false;
+        }
+        frames.pop_front();
+    }
+    return true;
+}
+
+regvm_mem::regvm_mem() : globals(0)
+{
 }
 
 var* regvm_mem::add(const int type, const char* name)
@@ -146,24 +154,6 @@ var* regvm_mem::get(const char* name) const
         }
     }
     return globals.get(h, name, l);
-}
-
-bool regvm_mem::call(int64_t func)
-{
-    if ((func > 0) || ((func == 0) && (frames.empty() == true)))
-    {
-        frames.emplace_front(func);
-    }
-    else
-    {
-        if (frames.front().frame != -func)
-        {
-            assert(0);
-            return false;
-        }
-        frames.pop_front();
-    }
-    return true;
 }
 
 regvm_mem::context::context(int64_t f) : frame(f)

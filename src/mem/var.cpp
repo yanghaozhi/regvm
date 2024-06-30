@@ -25,14 +25,7 @@ var::~var()
     {
         reg->set_from(NULL);
     }
-    switch (type)
-    {
-    case TYPE_STRING:
-        free((void*)value.str);
-        break;
-    default:
-        break;
-    }
+    free_uvalue(type, value);
 }
 
 var* var::create(uint8_t t, const char* n)
@@ -66,29 +59,39 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
-bool var::set_val(core::regv<var>* reg)
+bool var::set_val(core::regv<var>& reg)
 {
-    return true;
-}
-
-bool var::set_val(int t, core::uvalue v)
-{
-    if (type != t)
+    if (type != reg.type)
     {
         return false;
     }
 
-    switch (t)
+    switch (type)
     {
-    case TYPE_STRING:
-        if (value.str != NULL)
-        {
-            free((void*)value.str);
-        }
-        value.str = strdup(v.str);
+#define AGGREGATE(T, V, CP, ...)                \
+    case T:                                     \
+        if (value.V != NULL)                    \
+        {                                       \
+            core::free_uvalue(type, value);     \
+        }                                       \
+        if (reg.need_free == true)              \
+        {                                       \
+            value.V = reg.value.V;              \
+            reg.need_free = false;              \
+        }                                       \
+        else                                    \
+        {                                       \
+            value.V = CP(__VA_ARGS__);          \
+        }                                       \
         break;
+
+        AGGREGATE(TYPE_STRING, str, strdup, reg.value.str);
+        AGGREGATE(TYPE_LIST, list_v, new core::uvalue::list_t, reg.value.list_v->begin(), reg.value.list_v->end());
+        AGGREGATE(TYPE_DICT, dict_v, new core::uvalue::dict_t, reg.value.dict_v->begin(), reg.value.dict_v->end());
+
+#undef AGGREGATE
     default:
-        value = v;
+        value = reg.value;
         break;
     }
     return true;
@@ -169,7 +172,7 @@ bool var::store(core::regv<var>& r)
     }
     else
     {
-        set_val(type, r.value);
+        set_val(r);
     }
 
     return true;

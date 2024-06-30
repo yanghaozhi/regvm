@@ -28,25 +28,12 @@ reg::~reg()
     {
         if (values[i].from != NULL)
         {
-            //values[i].from->release();
-            values[i].set_from(NULL);
+            values[i].from->release();
+            //values[i].set_from(NULL);
         }
         if(values[i].need_free == true)
         {
-            switch (values[i].type)
-            {
-            case TYPE_STRING:
-                free((void*)values[i].value.str);
-                break;
-            case TYPE_LIST:
-                delete values[i].value.list_v;
-                break;
-            case TYPE_DICT:
-                delete values[i].value.dict_v;
-                break;
-            default:
-                break;
-            }
+            free_uvalue(values[i].type, values[i].value);
         }
     }
 }
@@ -122,6 +109,28 @@ uint64_t reg::v::conv_u(int type) const
     default:
         assert(0);
         return -1;
+    }
+}
+
+void core::free_uvalue(int type, uvalue v)
+{
+    switch (type)
+    {
+    case TYPE_STRING:
+        free((void*)v.str);
+        break;
+    case TYPE_LIST:
+        for (auto& it : *v.list_v)
+        {
+            it->crtp<REGVM_IMPL>()->release();
+        }
+        delete v.list_v;
+        break;
+    case TYPE_DICT:
+        delete v.dict_v;
+        break;
+    default:
+        break;
     }
 }
 
