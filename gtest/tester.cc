@@ -1,15 +1,14 @@
 #include "tester.h"
 
 #include <gtest/gtest.h>
-#include "../ext/regext.h"
 
 
 int64_t test_base::go(char* txt)
 {
-    return go(txt, true, &var_ext);
+    return go(txt, true);
 }
 
-int64_t test_base::go(char* txt, bool expect, regvm_ex* ext)
+int64_t test_base::go(char* txt, bool expect)
 {
     vasm::mem_2_run vm(NULL);
 
@@ -23,7 +22,6 @@ int64_t test_base::go(char* txt, bool expect, regvm_ex* ext)
     vasm::mem_2_run::pass2 s2(vm);
     EXPECT_TRUE(s2.scan());
 
-    vm.ext = ext;
     EXPECT_TRUE(vm.finish() == expect);
 
     vm.set_dbg(NULL);

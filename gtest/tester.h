@@ -5,8 +5,6 @@
 #include <mem_run.h>
 #include <debugger.h>
 
-#include "../ext/regext.h"
-
 
 #define CHECK_TYPE_SIGNED(val)      EXPECT_EQ(val, info->value.sint)
 #define CHECK_TYPE_UNSIGNED(val)    EXPECT_EQ(val, info->value.uint)
@@ -50,7 +48,7 @@ public:
     test_base()     {};
 
     int64_t go(char* txt);
-    int64_t go(char* txt, bool expect, regvm_ex* ext);
+    int64_t go(char* txt, bool expect);
 
 protected:
     int             key;

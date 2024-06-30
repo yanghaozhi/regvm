@@ -4,8 +4,9 @@ OBJS += $(SRCS:.cc=.o)
 ROOT=$(CURDIR)/../
 NAME=gtester
 OUT=$(ROOT)/out
+EXT=mem
 
-DEPS= $(OUT)/libvasm.a $(OUT)/libext.a $(OUT)/libvasm.a $(OUT)/libcore.a /usr/lib/x86_64-linux-gnu/libgtest.a -lpthread
+DEPS= $(OUT)/libvasm.a $(OUT)/lib$(EXT).a $(OUT)/libvasm.a $(OUT)/libcore.a /usr/lib/x86_64-linux-gnu/libgtest.a -lpthread
 
 all: $(NAME)
 

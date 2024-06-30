@@ -11,13 +11,13 @@
 #include "frame.h"
 
 #ifdef DEBUG
-#define ERROR(e, c, o, fmt, ...)                                                \
+#define VM_ERROR(e, c, o, fmt, ...)                                             \
     vm->err.self.line = __LINE__;                                               \
     vm->err.self.file = __FILE__;                                               \
     vm->err.self.func = __func__;                                               \
     vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #else
-#define ERROR(e, c, o, fmt, ...)    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
+#define VM_ERROR(e, c, o, fmt, ...)    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #endif
 
 namespace core

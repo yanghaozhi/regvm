@@ -6,7 +6,9 @@ ROOT=$(CURDIR)/../../
 NAME=vasm
 OUT=$(ROOT)/out
 
-DEPS=$(OUT)/libcore.a $(OUT)/libext.a
+EXT=mem
+
+DEPS=$(OUT)/libcore.a $(OUT)/lib$(EXT).a
 
 all: $(NAME)
 
@@ -17,8 +19,8 @@ tt:
 	@echo $(LDFLAGS)
 
 
-INC=-I$(ROOT)/include -I$(ROOT)/src/include
-OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing
+INC=-I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/core -I$(ROOT)/src/$(EXT)
+OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=mem
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 GCOV=-fprofile-arcs -ftest-coverage

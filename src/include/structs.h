@@ -10,6 +10,8 @@
 
 #include <code.h>
 
+#include "mlib.h"
+
 namespace ext
 {
     class var;
@@ -49,40 +51,41 @@ protected:
 
 public:
     uvalue          value;
+
+    template <typename T>   var_type<typename T::var_t>* crtp()
+    {
+        return static_cast<var_type<typename T::var_t>*>(this);
+    }
 };
+
 
 template <typename T> class var_type : public var
 {
 public:
     regv<T>*        reg         = NULL;
 
-    inline bool set_val(int type, uvalue val)
-    {
-#ifdef VAR_IMPL
-        return static_cast<T*>(this)->set_val(type, val);
-#else
-        assert(0);
-#endif
+#ifdef REGVM_EXT
+#define CRTP_FUNC(name, ret, argc, ...)                                             \
+    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))             \
+    {                                                                               \
+        return static_cast<T*>(this)->name(MLIB_CALL_LIST(argc, __VA_ARGS__));      \
     }
-    inline void set_reg(regv<T>* reg)
-    {
-#ifdef VAR_IMPL
-        static_cast<T*>(this)->set_reg(reg);
 #else
-        assert(0);
-#endif
+#define CRTP_FUNC(name, ret, argc, ...)                                             \
+    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))             \
+    {                                                                               \
+        assert(0);                                                                  \
     }
+#endif
+
+    CRTP_FUNC(set_val,  bool, 2, int, uvalue);
+    CRTP_FUNC(set_val,  bool, 1, regv<T>*);
+    CRTP_FUNC(set_reg,  bool, 1, regv<T>*);
+    CRTP_FUNC(release,  bool, 0);
+
+#undef CRTP_FUNC
 
     inline void acquire(void)                   {++ref;};
-    inline bool release(void)
-    {
-#ifdef VAR_IMPL
-        return static_cast<T*>(this)->release();
-#else
-        assert(0);
-        return false;
-#endif
-    }
 };
 
 template <typename T> struct regv
@@ -152,14 +155,6 @@ template <typename T> struct regv
         }
         from = v;
         return true;
-    }
-    inline bool set_val(var* val)
-    {
-#ifdef VAR_IMPL
-        return static_cast<T*>(val)->set_val(this);
-#else
-        assert(0);
-#endif
     }
 };
 

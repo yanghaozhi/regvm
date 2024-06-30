@@ -11,9 +11,7 @@ extern "C"
 {
 #endif
 
-struct regvm_ex;
-
-struct regvm* regvm_init(struct regvm_ex* ext);
+struct regvm* regvm_init(void);
 
 bool regvm_exit(struct regvm* vm);
 

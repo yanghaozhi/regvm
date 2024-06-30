@@ -11,60 +11,57 @@
 
 using namespace ext;
 
-static bool mem_init(regvm* vm)
+bool regvm_mem::vm_init()
 {
-    auto p = new mem();
-    vm->ext = p;
     return true;
 }
 
-static bool mem_exit(regvm* vm)
+bool regvm_mem::vm_exit()
 {
-    delete (mem*)vm->ext;
+    frames.clear();
     return true;
 }
 
-static core::var* mem_var(struct regvm* vm, int id)
+core::var* regvm_mem::vm_var(int id)
 {
-    auto& r = vm->reg.id(id);
+    auto& r = reg.id(id);
     auto v = var::create(r.type, "");
     v->store(r);
     return v;
 }
 
-static bool mem_new(struct regvm* vm, code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_new(code_t code, int offset, int64_t extra)
 {
-    auto m = (mem*)vm->ext;
-    auto& n = vm->reg.id(code.reg);
-    auto v = m->get(n.value.str);
+    auto& n = reg.id(code.reg);
+    auto v = get(n.value.str);
     if (v != NULL)
     {
         return (v->type == code.ex) ? true : false;
     }
-    v = m->add(code.ex, n.value.str);
+    v = add(code.ex, n.value.str);
     return (v != NULL) ? true : false;
 }
 
-static bool mem_store(struct regvm* vm, code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
 {
-    auto& r = vm->reg.id(code.reg);
+    auto& r = reg.id(code.reg);
     if (code.ex == code.reg)
     {
         return r.store();
     }
     else
     {
-        auto& e = vm->reg.id(code.ex);
+        auto& e = reg.id(code.ex);
         if ((e.type & 0x07) != TYPE_STRING)
         {
-            ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-            vm->fatal = true;
+            auto vm = this;
+            VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
+            fatal = true;
             return false;
         }
         else
         {
-            auto m = (mem*)vm->ext;
-            auto v = m->get(e.value.str);
+            auto v = get(e.value.str);
             if (v != NULL)
             {
                 if (v->store(r) == true)
@@ -72,21 +69,21 @@ static bool mem_store(struct regvm* vm, code_t code, int offset, int64_t extra)
                     return true;
                 }
             }
-            return m->add(r.type, e.value.str)->store(r);
+            return add(r.type, e.value.str)->store(r);
         }
     }
     return true;
 }
 
-static bool mem_load(struct regvm* vm, code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
 {
-    auto m = (mem*)vm->ext;
-    auto& e = vm->reg.id(code.ex);
-    auto& r = vm->reg.id(code.reg);
-    auto v = m->get(e.value.str);
+    auto& e = reg.id(code.ex);
+    auto& r = reg.id(code.reg);
+    auto v = get(e.value.str);
     if (v == NULL)
     {
-        ERROR(ERR_INVALID_VAR, code, offset, "load var name : %s", e.value.str);
+        auto vm = this;
+        VM_ERROR(ERR_INVALID_VAR, code, offset, "load var name : %s", e.value.str);
         return false;
     }
     else
@@ -95,28 +92,21 @@ static bool mem_load(struct regvm* vm, code_t code, int offset, int64_t extra)
     }
 }
 
-static bool mem_block(struct regvm* vm, code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_block(code_t code, int offset, int64_t extra)
 {
-    auto m = (mem*)vm->ext;
-    return m->block(extra, code.ex);
+    return block(extra, code.ex);
 }
 
-static bool mem_call(struct regvm* vm, code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_call(code_t code, int offset, int64_t extra)
 {
-    auto m = (mem*)vm->ext;
-    return m->call(extra);
+    return call(extra);
 }
 
-mem::mem() : globals(0)
+regvm_mem::regvm_mem() : globals(0)
 {
 }
 
-mem::~mem()
-{
-    frames.clear();
-}
-
-bool mem::block(int64_t frame, int ex)
+bool regvm_mem::block(int64_t frame, int ex)
 {
     if (frames.size() == 0)
     {
@@ -136,14 +126,14 @@ bool mem::block(int64_t frame, int ex)
     return true;
 }
 
-var* mem::add(const int type, const char* name)
+var* regvm_mem::add(const int type, const char* name)
 {
     auto v = var::create(type, name);
     frames.front().scopes.front().add(v);
     return (v->release() == true) ? v : NULL;
 }
 
-var* mem::get(const char* name) const
+var* regvm_mem::get(const char* name) const
 {
     const int l = strlen(name);
     uint32_t h = var::calc_hash(name, l);
@@ -158,7 +148,7 @@ var* mem::get(const char* name) const
     return globals.get(h, name, l);
 }
 
-bool mem::call(int64_t func)
+bool regvm_mem::call(int64_t func)
 {
     if ((func > 0) || ((func == 0) && (frames.empty() == true)))
     {
@@ -176,12 +166,12 @@ bool mem::call(int64_t func)
     return true;
 }
 
-mem::context::context(int64_t f) : frame(f)
+regvm_mem::context::context(int64_t f) : frame(f)
 {
     scopes.emplace_front(0);
 }
 
-mem::context::~context()
+regvm_mem::context::~context()
 {
     if (scopes.size() > 1)
     {
@@ -190,17 +180,17 @@ mem::context::~context()
     }
 }
 
-void mem::context::enter_block()
+void regvm_mem::context::enter_block()
 {
     scopes.emplace_front(scopes.size());
 }
 
-void mem::context::leave_block()
+void regvm_mem::context::leave_block()
 {
     scopes.pop_front();
 }
 
-void mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
+void regvm_mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
 {
     for (auto& f : frames)
     {
@@ -228,15 +218,13 @@ extern "C"
 {
 #endif
 
-struct regvm_ex     var_ext = {mem_init, mem_exit, mem_var, mem_new, mem_store, mem_load, mem_block, mem_call};
-
 bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
 {
     regvm_var_info info;
     memset(&info, 0, sizeof(info));
     cb(arg, NULL);
 
-    auto m = (mem*)vm->ext;
+    auto m = static_cast<regvm_mem*>(vm);
     if (m != NULL)
     {
         m->dump(vm, cb, arg, &info);

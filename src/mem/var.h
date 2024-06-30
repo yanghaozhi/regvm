@@ -31,9 +31,9 @@ public:
     static var* create(uint8_t type, const char* name);
     static uint32_t calc_hash(const char* name, const int len);
 
-    //bool set_val(core::regv<var>* reg);
+    bool set_val(core::regv<var>* reg);
     bool set_val(int type, core::uvalue val);
-    void set_reg(core::regv<var>* reg);
+    bool set_reg(core::regv<var>* reg);
     bool release(void);
 
     core::regv<var>* neighbor(core::regv<var>* r, int id);

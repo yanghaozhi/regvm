@@ -5,10 +5,11 @@
 #include <string.h>
 
 #include "vm.h"
+#include "ext.h"
 #include "reg.h"
 #include "func.h"
 
-#define UNSUPPORT_TYPE(op, t, c, o) ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+#define UNSUPPORT_TYPE(op, t, c, o) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
 
@@ -72,20 +73,20 @@ bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value)
         //auto it = vm->strs.find(value);
         //if (it == vm->strs.end())
         //{
-        //    ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+        //    VM_ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
         //    return false;
         //}
         //value = (intptr_t)it->second;
         auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
         if (it.func == NULL)
         {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+            VM_ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
             return false;
         }
         value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
         if (value == 0)
         {
-            ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
+            VM_ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
             return false;
         }
     }
@@ -371,14 +372,16 @@ bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
             else
             {
                 auto v = l.value.list_v->at(idx);
-                r.set_val(v);
+                static_cast<var_type<REGVM_IMPL::var_t>*>(v)->set_val(&r);
+                //v->crtp()->set_val(&r);
+                //r.set_val(v);
             }
         }
         break;
     case 2:
         {
             //auto& v = vm->reg.id(args.a3);
-            l.value.list_v->push_back(vm->handlers.vm_var(vm, args.a3));
+            l.value.list_v->push_back(CRTP_CALL(vm_var, args.a3));
         }
         //switch (args.a2)
         //{

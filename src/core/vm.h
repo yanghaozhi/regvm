@@ -10,30 +10,11 @@
 //#include "scope.h"
 #include "frame.h"
 
-#include "structs.h"
+//#include "structs.h"
+#include "mlib.h"
 
 #include <map>
 
-
-
-typedef bool (*vm_ext_handler_t)(struct regvm* vm, const code_t code, int offset, int64_t value);
-
-struct regvm;
-
-struct regvm_ex
-{
-    bool (*init)(regvm* vm);
-    bool (*exit)(regvm* vm);
-
-    core::var* (*vm_var)(struct regvm* vm, int id);
-
-    //vm_ext_handler_t    vm_set;
-    vm_ext_handler_t    vm_new;
-    vm_ext_handler_t    vm_store;
-    vm_ext_handler_t    vm_load;
-    vm_ext_handler_t    vm_block;       //value 0 enter, 1 leave
-    vm_ext_handler_t    vm_call;        //value is function id, > 0 call, < 0 return
-};
 
 struct regvm
 {
@@ -45,18 +26,15 @@ struct regvm
     //scope           globals;
     core::error     err;
     core::ivt       idt;
-    regvm_ex        handlers;
-    void*           ext         = NULL; //for ext
 
     std::map<int32_t, core::func>   funcs;
     std::map<int64_t, const char*>  strs;
 
-    regvm(struct regvm_ex* ext);
-    ~regvm();
+    regvm();
+    virtual ~regvm();
 
     bool run(const code_t* start, int count);
     bool call(int64_t id, const code_t code, int offset);
     bool call(core::reg::v& reg, const code_t code, int offset);
-    //bool ret(void);
 };
 

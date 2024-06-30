@@ -5,8 +5,9 @@
 #include <string.h>
 
 #include "vm.h"
+#include "ext.h"
 
-#define UNSUPPORT_TYPE(op, t, c, o) ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+#define UNSUPPORT_TYPE(op, t, c, o) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
 
@@ -33,7 +34,7 @@ bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra,
     auto& r = vm->reg.id(args.a1);
     if ((type >= 0) && (r.type != type))
     {
-        ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", r.type, type);
+        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", r.type, type);
         return false;
     }
     return func(vm, code.reg, code.ex, r, args);
@@ -52,7 +53,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 {
     *next = 1;
 
-#define STEP_ERROR(e, fmt, ...) ERROR(e, *code, offset, fmt, ##__VA_ARGS__);
+#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, *code, offset, fmt, ##__VA_ARGS__);
 #define CALL(f, ...)                                                    \
     if (f(__VA_ARGS__) == false)                                        \
     {                                                                   \
@@ -88,10 +89,10 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     case CODE_##id:                         \
         CALL(func, ##__VA_ARGS__);          \
         break;
-        CODE_RUN(STORE, vm->handlers.vm_store, vm, *code, offset, -1);
-        CODE_RUN(NEW, vm->handlers.vm_store, vm, *code, offset, -1);
-        CODE_RUN(LOAD, vm->handlers.vm_load, vm, *code, offset, -1);
-        CODE_RUN(BLOCK, vm->handlers.vm_block, vm, *code, offset, vm->call_stack->id);
+        CODE_RUN(STORE, CRTP_CALL, vm_store, *code, offset, -1);
+        CODE_RUN(NEW, CRTP_CALL, vm_new, *code, offset, -1);
+        CODE_RUN(LOAD, CRTP_CALL, vm_load, *code, offset, -1);
+        CODE_RUN(BLOCK, CRTP_CALL, vm_block, *code, offset, vm->call_stack->id);
         CODE_RUN(MOVE, vm_move, vm, *code);
         CODE_RUN(CLEAR, vm_clear, vm, *code, offset);
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
@@ -212,7 +213,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         }
         break;
     default:
-        ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
+        VM_ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
         return false;
     };

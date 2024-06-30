@@ -37,7 +37,7 @@ TEST(error, chg)
             int match = 0;
             return match;
         });
-    EXPECT_EQ(-1, t.go(txt, false, &var_ext));
+    EXPECT_EQ(-1, t.go(txt, false));
 }
 
 

@@ -7,6 +7,10 @@
 #include "structs.h"
 #include "error.h"
 
+#ifdef REGVM_EXT
+#include "regvm_ext.h"
+#endif
+
 using namespace core;
 
 reg::reg()
@@ -25,8 +29,6 @@ reg::~reg()
         if (values[i].from != NULL)
         {
             //values[i].from->release();
-            //
-            //values[i].from->reg = NULL;
             values[i].set_from(NULL);
         }
         if(values[i].need_free == true)
@@ -62,32 +64,6 @@ bool reg::v::write(uint64_t v, int t, bool c)
 
     return true;
 }
-
-//template <typename T> bool core::regv<T>::clear()
-//{
-//    store();
-//
-//    if ((from == NULL) && (need_free == true))
-//    {
-//        switch (type)
-//        {
-//        case TYPE_STRING:
-//            free((char*)value.str);
-//            value.str = NULL;
-//            break;
-//        case TYPE_DICT:
-//            break;
-//        case TYPE_LIST:
-//            break;
-//        default:
-//            break;
-//        }
-//    }
-//
-//    set_from(NULL);
-//
-//    return true;
-//}
 
 double reg::v::conv_d(int type) const
 {

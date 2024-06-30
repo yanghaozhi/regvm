@@ -7,6 +7,7 @@
 #include "structs.h"
 
 #include "vm.h"
+#include "ext.h"
 
 using namespace core;
 
@@ -19,9 +20,9 @@ frame::frame(frame& cur, func* f, const code_t c, int o) :
 
     vm->call_stack = this;
 
-    if (vm->handlers.vm_call(vm, code, offset, id) == false)
+    if (CRTP_CALL(vm_call, code, offset, id) == false)
     {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 }
@@ -32,18 +33,18 @@ frame::frame(regvm* v, func* f, const code_t c, int o) :
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    if (vm->handlers.vm_call(vm, code, offset, id) == false)
+    if (CRTP_CALL(vm_call, code, offset, id) == false)
     {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 }
 
 frame::~frame()
 {
-    if (vm->handlers.vm_call(vm, code, offset, -id) == false)
+    if (CRTP_CALL(vm_call, code, offset, -id) == false)
     {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 

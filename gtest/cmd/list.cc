@@ -20,9 +20,9 @@ TRAP    1   2
 LIST    0   0   5
 TRAP    1   3
 
-LIST    0   2   5   0   3
-LIST    0   1   5   0
-TRAP    1   4
+#LIST    0   2   5   0   3
+#LIST    0   1   5   0
+#TRAP    1   4
 
 
 EXIT    0   0

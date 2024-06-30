@@ -4,8 +4,6 @@
 #include <debug.h>
 #include <irq.h>
 
-#include "../ext/regext.h"
-
 using namespace vasm;
 
 mem_2_run::mem_2_run(const char*) : buf(NULL), dbg(NULL)
@@ -46,7 +44,7 @@ bool mem_2_run::finish()
         printf("\n\n");
     }
 
-    auto vm = regvm_init(ext);
+    auto vm = regvm_init();
 
     if (dbg != NULL)
     {

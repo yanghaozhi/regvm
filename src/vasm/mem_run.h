@@ -16,8 +16,6 @@ public:
     mem_2_run(const char*);
     virtual ~mem_2_run();
 
-    regvm_ex*       ext = NULL;
-
     void set_dbg(debugger* d);
 
     struct pass1 : public strs::pass1

@@ -66,10 +66,10 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
-//bool var::set_val(core::regv<var>* reg)
-//{
-//    return true;
-//}
+bool var::set_val(core::regv<var>* reg)
+{
+    return true;
+}
 
 bool var::set_val(int t, core::uvalue v)
 {
@@ -94,9 +94,9 @@ bool var::set_val(int t, core::uvalue v)
     return true;
 }
 
-void var::set_reg(core::regv<var>* new_reg)
+bool var::set_reg(core::regv<var>* new_reg)
 {
-    if (new_reg == reg) return;
+    if (new_reg == reg) return true;
 
     if (reg == NULL)
     {
@@ -111,11 +111,12 @@ void var::set_reg(core::regv<var>* new_reg)
         {
             if (release() == false)
             {
-                return;
+                return false;
             }
         }
     }
     reg = new_reg;
+    return true;
 }
 
 bool var::release(void)

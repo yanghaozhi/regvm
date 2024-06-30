@@ -2,8 +2,10 @@ SRCS = $(wildcard ./*.cpp)
 OBJS += $(patsubst %.cpp, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
+EXT=mem
+
 ROOT=$(CURDIR)/../../
-NAME=ext
+NAME=$(EXT)
 OUT=$(ROOT)/out
 
 DEPS= 
@@ -18,8 +20,8 @@ tt:
 	@echo $(OBJS)
 
 
-INC=-I$(ROOT)/include -I$(ROOT)/src/include
-OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DDEBUG
+INC=-I./ -I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/core
+OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DDEBUG -DREGVM_EXT=mem
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 GCOV=-fprofile-arcs -ftest-coverage

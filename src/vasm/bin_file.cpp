@@ -7,7 +7,7 @@
 #include <debug.h>
 #include <irq.h>
 
-#include "../ext/regext.h"
+#include <regvm_ext.h>
 
 
 using namespace vasm;
@@ -34,7 +34,7 @@ bool bin_file::open(const char* name)
     code_t* start = (code_t*)&id[2];
     int size = st.st_size - (((char*)start) - data);
 
-    auto vm = regvm_init(&var_ext);
+    auto vm = regvm_init();
 
     //regvm_irq_set(vm, IRQ_TRAP, debug_trap, NULL);
     regvm_irq_set(vm, IRQ_STR_RELOCATE, str_relocate, this);

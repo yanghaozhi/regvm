@@ -2,82 +2,29 @@
 
 #include <code.h>
 
+#include "ext.h"
+
 extern "C"
 {
 
-static core::var* vm_var(struct regvm* vm, int id)
+struct regvm* regvm_init(void)
 {
-    assert(0);
-    return NULL;
-}
-
-static bool vm_new(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-static bool vm_store(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-static bool vm_load(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-static bool vm_block(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    return true;
-}
-
-static bool vm_call(struct regvm* vm, const code_t code, int offset, int64_t value)
-{
-    return true;
-}
-
-struct regvm* regvm_init(struct regvm_ex* ext)
-{
-    auto vm = new regvm(ext);
-    if (vm->handlers.init != NULL)
-    {
-        vm->handlers.init(vm);
-    }
+    auto vm = new REGVM_IMPL();
+    CRTP_CALL(vm_init);
     return vm;
 }
 
 bool regvm_exit(struct regvm* vm)
 {
-    if (vm->handlers.exit != NULL)
-    {
-        vm->handlers.exit(vm);
-    }
+    CRTP_CALL(vm_exit);
     delete vm;
     return true;
 }
 
 }
 
-regvm::regvm(struct regvm_ex* ext) : reg()
+regvm::regvm() : reg()
 {
-    if (ext == NULL)
-    {
-        memset(&handlers, 0, sizeof(handlers));
-
-        handlers.vm_load = vm_load;
-        handlers.vm_store = vm_store;
-        handlers.vm_new = vm_new;
-        handlers.vm_block = vm_block;
-        handlers.vm_call = vm_call;
-        handlers.vm_var = vm_var;
-    }
-    else
-    {
-        handlers = *ext;
-    }
 }
 
 regvm::~regvm()
@@ -97,7 +44,7 @@ bool regvm::run(const code_t* start, int count)
     if (r.second == false)
     {
         auto vm = this;
-        ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
+        VM_ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
         return false;
     }
     core::frame f(this, &r.first->second, code_t{0, 0, 0}, 0);
@@ -123,7 +70,7 @@ bool regvm::call(int64_t id, const code_t code, int offset)
     auto it = funcs.find(id);
     if (it == funcs.end())
     {
-        ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         return false;
     }
 
@@ -131,18 +78,39 @@ bool regvm::call(int64_t id, const code_t code, int offset)
     return f.run();
 }
 
-//bool regvm::ret(void)
-//{
-//    if (call_stack->up == NULL)
-//    {
-//        return false;
-//    }
-//
-//    auto cur = call_stack;
-//    cur->up->down = NULL;
-//
-//    delete cur;
-//
-//    return true;
-//}
 
+#ifndef REGVM_EXT
+core::var* regvm_core::vm_var(struct regvm* vm, int id)
+{
+    assert(0);
+    return NULL;
+}
+
+bool regvm_core::vm_new(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    assert(0);
+    return true;
+}
+
+bool regvm_core::vm_store(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    assert(0);
+    return true;
+}
+
+bool regvm_core::vm_load(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    assert(0);
+    return true;
+}
+
+bool regvm_core::vm_block(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    return true;
+}
+
+bool regvm_core::vm_call(struct regvm* vm, const code_t code, int offset, int64_t value)
+{
+    return true;
+}
+#endif
