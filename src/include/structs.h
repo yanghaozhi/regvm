@@ -18,7 +18,7 @@ namespace core
 
 struct var;
 template <typename T> struct regv;
-template <typename T> struct var_type;
+template <typename T> struct var_crtp;
 
 union uvalue
 {
@@ -29,6 +29,7 @@ union uvalue
     uint64_t        uint;
     double          dbl;
     const char*     str;
+    void*           ptr;
     list_t*         list_v;
     dict_t*         dict_v;
 
@@ -44,53 +45,55 @@ struct var
 protected:
     friend class error;
 
-    int16_t         ref         = 1;
+    mutable int16_t ref         = 1;
 
 public:
     uvalue          value;
 
-    template <typename T>   var_type<typename T::var_t>* crtp()
+    template <typename T> var_crtp<typename T::var_t>* crtp()
     {
-        return static_cast<var_type<typename T::var_t>*>(this);
+        return static_cast<var_crtp<typename T::var_t>*>(this);
     }
 };
 
 
-template <typename T> class var_type : public var
+template <typename T> class var_crtp : public var
 {
 public:
-    regv<T>*        reg         = NULL;
+    mutable regv<T>*    reg     = NULL;
 
+#define NOTHING
 #ifdef REGVM_EXT
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
-    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))             \
+#define CRTP_FUNC(name, ext, ret, argc, ...)                                        \
+    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) ext         \
     {                                                                               \
-        return static_cast<T*>(this)->name(MLIB_CALL_LIST(argc, __VA_ARGS__));      \
+        return static_cast<ext T*>(this)->name(MLIB_CALL_LIST(argc, __VA_ARGS__));  \
     }
 #else
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
-    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))             \
+    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) ext         \
     {                                                                               \
         assert(0);                                                                  \
     }
 #endif
 
-    CRTP_FUNC(set_val,  bool, 1, regv<T>&);
-    CRTP_FUNC(set_reg,  bool, 1, regv<T>*);
-    CRTP_FUNC(release,  bool, 0);
+    CRTP_FUNC(set_val,  NOTHING, bool, 1, const regv<T>&);
+    CRTP_FUNC(set_reg,  const, bool, 1, const regv<T>*);
+    CRTP_FUNC(release,  NOTHING, bool, 0);
 
 #undef CRTP_FUNC
+#undef NOTHING
 
     inline void acquire(void)                   {++ref;};
 };
 
 template <typename T> struct regv
 {
-    uvalue          value;
-    var_type<T>*    from;
-    uint8_t         type;
-    int8_t          idx;
-    bool            need_free;
+    uvalue                  value;
+    mutable var_crtp<T>*    from;
+    uint8_t                 type;
+    int8_t                  idx;
+    mutable bool            need_free;
 
     inline bool clear()
     {
@@ -98,21 +101,8 @@ template <typename T> struct regv
 
         if (need_free == true)
         {
-            switch (type)
-            {
-            case TYPE_STRING:
-                free((char*)value.str);
-                value.str = NULL;
-                break;
-            case TYPE_LIST:
-                delete value.list_v;
-                break;
-            case TYPE_DICT:
-                delete value.dict_v;
-                break;
-            default:
-                break;
-            }
+            free_uvalue(type, value);
+            value.ptr = NULL;
         }
 
         set_from(NULL);
@@ -120,9 +110,9 @@ template <typename T> struct regv
         return true;
     }
 
-    inline bool store()
+    inline bool store() const
     {
-        core::var_type<T>* v = from;
+        core::var_crtp<T>* v = from;
         if (v == NULL)
         {
             return false;
@@ -137,7 +127,31 @@ template <typename T> struct regv
         return v->set_val(*this);
     }
 
-    inline bool set_from(var_type<T>* v)
+    inline bool load(const var_crtp<T>* v)
+    {
+        if (v->reg == this)
+        {
+            value = v->value;
+            return true;
+        }
+
+        clear();
+
+        if (v->reg != NULL)
+        {
+            //auto o = neighbor(&r, reg->idx);
+            v->reg->clear();
+        }
+
+        type = static_cast<const T*>(v)->type;
+        value = v->value;
+        set_from(v);
+        need_free = false;
+
+        return true;
+    }
+
+    inline bool set_from(const var_crtp<T>* v) const
     {
         if (from != NULL)
         {
@@ -147,7 +161,7 @@ template <typename T> struct regv
         {
             v->set_reg(this);
         }
-        from = v;
+        from = const_cast<decltype(from)>(v);
         return true;
     }
 };

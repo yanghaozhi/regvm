@@ -374,7 +374,8 @@ bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
             else
             {
                 auto v = l.value.list_v->at(idx);
-                v->crtp<REGVM_IMPL>()->set_val(r);
+                r.load(v->crtp<REGVM_IMPL>());
+                //v->crtp<REGVM_IMPL>()->set_val(r);
                 //v->crtp()->set_val(&r);
                 //r.set_val(v);
             }

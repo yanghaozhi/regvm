@@ -18,11 +18,13 @@ LIST    0   2   5   0   1
 TRAP    1   2
 
 LIST    0   0   5
-TRAP    1   3
+SETS    6   1   0
+TRAP    2   3
 
 LIST    0   2   5   0   3
-LIST    0   1   5   0
+LIST    0   1   5   6
 TRAP    1   4
+
 
 
 EXIT    0   0
@@ -43,8 +45,9 @@ TEST(cmd, list)
             CHECK_REG(key, 2, 5, N, TYPE_LIST,      0,          -1, 1);
 
             CHECK_REG(key, 3, 0, N, TYPE_SIGNED,    1,          -1, 0);
+            CHECK_REG(key, 3, 6, N, TYPE_SIGNED,    0,        -1, 0);
 
-            CHECK_REG(key, 4, 0, N, TYPE_SIGNED,    123,        -1, 0);
+            CHECK_REG(key, 4, 0, Y, TYPE_SIGNED,    123,        2, 0);
             return match;
         },
         [](auto key, auto offset, auto info)

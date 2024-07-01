@@ -26,7 +26,7 @@ core::var* regvm_mem::vm_var(int id)
 {
     auto& r = reg.id(id);
     auto v = var::create(r.type, "");
-    v->store(r);
+    v->store_from(r);
     return v;
 }
 
@@ -64,12 +64,12 @@ bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
             auto v = get(e.value.str);
             if (v != NULL)
             {
-                if (v->store(r) == true)
+                if (v->store_from(r) == true)
                 {
                     return true;
                 }
             }
-            return add(r.type, e.value.str)->store(r);
+            return add(r.type, e.value.str)->store_from(r);
         }
     }
     return true;
@@ -88,7 +88,7 @@ bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
     }
     else
     {
-        return v->load(r);
+        return r.load(v);
     }
 }
 

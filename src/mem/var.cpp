@@ -59,7 +59,7 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
-bool var::set_val(core::regv<var>& reg)
+bool var::set_val(const core::regv<var>& reg)
 {
     if (type != reg.type)
     {
@@ -97,7 +97,7 @@ bool var::set_val(core::regv<var>& reg)
     return true;
 }
 
-bool var::set_reg(core::regv<var>* new_reg)
+bool var::set_reg(const core::regv<var>* new_reg) const
 {
     if (new_reg == reg) return true;
 
@@ -118,11 +118,11 @@ bool var::set_reg(core::regv<var>* new_reg)
             }
         }
     }
-    reg = new_reg;
+    reg = const_cast<decltype(reg)>(new_reg);
     return true;
 }
 
-bool var::release(void)
+bool var::release(void) const
 {
     if (--ref > 0)
     {
@@ -133,13 +133,13 @@ bool var::release(void)
     {
         //delete this;
         this->~var();
-        free(this);
+        free((void*)this);
     }
 
     return false;
 }
 
-bool var::store(core::regv<var>& r)
+bool var::store_from(core::regv<var>& r)
 {
     if (reg == &r) return r.store();
 
@@ -153,7 +153,7 @@ bool var::store(core::regv<var>& r)
         reg->set_from(NULL);
     }
 
-    core::var_type<var>* old = r.from;
+    auto old = r.from;
     if (old != NULL)
     {
         //do NOT writeback
@@ -176,35 +176,5 @@ bool var::store(core::regv<var>& r)
     }
 
     return true;
-}
-
-bool var::load(core::regv<var>& r)
-{
-    if (reg == &r)
-    {
-        r.type = type;
-        r.value = value;
-        return true;
-    }
-
-    r.clear();
-
-    if (reg != NULL)
-    {
-        auto o = neighbor(&r, reg->idx);
-        o->clear();
-    }
-
-    r.type = type;
-    r.value = value;
-    r.set_from(this);
-    r.need_free = false;
-
-    return true;
-}
-
-core::regv<var>* var::neighbor(core::regv<var>* r, int id)
-{
-    return r + (id - r->idx);
 }
 

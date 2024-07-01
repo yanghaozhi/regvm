@@ -117,7 +117,7 @@ void core::free_uvalue(int type, uvalue v)
     switch (type)
     {
     case TYPE_STRING:
-        free((void*)v.str);
+        free(v.ptr);
         break;
     case TYPE_LIST:
         for (auto& it : *v.list_v)
