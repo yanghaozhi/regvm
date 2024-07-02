@@ -70,7 +70,7 @@ public:
         return static_cast<ext T*>(this)->name(MLIB_CALL_LIST(argc, __VA_ARGS__));  \
     }
 #else
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
+#define CRTP_FUNC(name, ext, ret, argc, ...)                                        \
     inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) ext         \
     {                                                                               \
         assert(0);                                                                  \

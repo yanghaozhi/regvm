@@ -2,15 +2,25 @@
 
 #include <gtest/gtest.h>
 
+#include "structs.h"
+
+
 #include <mem_run.h>
 #include <debugger.h>
 
+
+template <typename T> int check_size(void* ptr)
+{
+    T* p = (T*)ptr;
+    return p->size();
+}
 
 #define CHECK_TYPE_SIGNED(val)      EXPECT_EQ(val, info->value.sint)
 #define CHECK_TYPE_UNSIGNED(val)    EXPECT_EQ(val, info->value.uint)
 #define CHECK_TYPE_DOUBLE(val)      EXPECT_DOUBLE_EQ(val, info->value.dbl)
 #define CHECK_TYPE_STRING(val)      EXPECT_STREQ(val, info->value.str)
-#define CHECK_TYPE_LIST(val)        EXPECT_NE(nullptr, info->value.ptr)
+#define CHECK_TYPE_LIST(val)        EXPECT_EQ(val, check_size<core::uvalue::list_t>(info->value.ptr))
+#define CHECK_TYPE_DICT(val)        EXPECT_EQ(val, check_size<core::uvalue::dict_t>(info->value.ptr))
 
 #define CHECK_UV(K2, TYPE, VAL, REF, ATTR)                      \
     CHECK_##TYPE(VAL) << "at TRAP " << K2;                      \
@@ -39,7 +49,6 @@
         CHECK_UV(K2, __VA_ARGS__);                              \
         EXPECT_EQ(REG, info->reg) << "at TRAP " << K2;          \
     }
-
 
 
 class test_base : public vasm::debugger

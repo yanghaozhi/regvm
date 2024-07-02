@@ -42,10 +42,10 @@ TEST(cmd, list)
 
             CHECK_REG(key, 1, 5, N, TYPE_LIST,      0,          -1, 1);
 
-            CHECK_REG(key, 2, 5, N, TYPE_LIST,      0,          -1, 1);
+            CHECK_REG(key, 2, 5, N, TYPE_LIST,      1,          -1, 1);
 
             CHECK_REG(key, 3, 0, N, TYPE_SIGNED,    1,          -1, 0);
-            CHECK_REG(key, 3, 6, N, TYPE_SIGNED,    0,        -1, 0);
+            CHECK_REG(key, 3, 6, N, TYPE_SIGNED,    0,          -1, 0);
 
             CHECK_REG(key, 4, 0, Y, TYPE_SIGNED,    123,        2, 0);
             return match;
