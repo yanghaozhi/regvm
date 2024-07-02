@@ -279,9 +279,9 @@ void vm_cmd_echo_var(const reg::v& v)
     }
 }
 
-bool vm_cmd_echo(regvm* vm, int ret, const extend_args& args)
+int vm_cmd_echo(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
-    switch (args.a1)
+    switch (v.idx)
     {
     case 3:
         vm_cmd_echo_var(vm->reg.id(args.a2));
@@ -301,105 +301,237 @@ bool vm_cmd_echo(regvm* vm, int ret, const extend_args& args)
     case 0:
         break;
     default:
-        return false;
+        return __LINE__;
     }
     printf("\n");
-    return true;
+    return 0;
 }
 
-bool vm_cmd(regvm* vm, int ret, int op, const extend_args& args)
+int vm_str_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
-    switch (op)
-    {
-    case 0:
-        return vm_cmd_echo(vm, ret, args);
-    default:
-        return false;
-    }
+    int len = strlen(v.value.str);
+    r.write(len, TYPE_SIGNED, true);
+    return 0;
 }
 
-bool vm_str_len(regvm* vm, int ret, reg::v& s, const extend_args& args)
-{
-    int len = strlen(s.value.str);
-    return vm->reg.id(ret).write(len, TYPE_SIGNED, true);
-}
-
-bool vm_str_substr(regvm* vm, int ret, reg::v& str, const extend_args& args)
+int vm_str_substr(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
     auto& start = vm->reg.id(args.a2);
     auto& len = vm->reg.id(args.a3);
 
     const int l = (int64_t)len;
     char* p = (char*)malloc(l + 1);
-    memcpy(p, str.value.str + (int64_t)start, l);
+    memcpy(p, v.value.str + (int64_t)start, l);
     p[l] = '\0';
 
-    auto& r = vm->reg.id(ret);
     r.clear();
 
     r.need_free = true;
     r.value.str = p;
     r.type = TYPE_STRING;
 
-    return true;
+    return 0;
 }
 
-bool vm_str(regvm* vm, int ret, int op, reg::v& s, const extend_args& args)
+int vm_list_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
-    switch (op)
+    r.write(v.value.list_v->size(), TYPE_SIGNED, true);
+    return 0;
+}
+
+int vm_list_at(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    auto idx = (uint64_t)vm->reg.id(args.a2);
+    if (idx >= v.value.list_v->size())
+    {
+        r.write(0, TYPE_NULL, true);
+    }
+    else
+    {
+        r.load(v.value.list_v->at(idx)->crtp<REGVM_IMPL>());
+    }
+    return 0;
+}
+
+int vm_list_push(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    switch (args.a2)
     {
     case 0:
-        return vm_str_len(vm, ret, s, args);
+        v.value.list_v->push_back(CRTP_CALL(vm_var, args.a3));
+        break;
     case 1:
-        return vm_str_substr(vm, ret, s, args);
+        v.value.list_v->push_front(CRTP_CALL(vm_var, args.a3));
+        break;
     default:
-        return false;
+        return __LINE__;
     }
+    r.write(1, TYPE_SIGNED, true);
+    return 0;
 }
 
-bool vm_list(regvm* vm, int ret, int op, reg::v& l, const extend_args& args)
+int vm_list_pop(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
-    auto& r = vm->reg.id(ret);
-    switch (op)
+    if (v.value.list_v->empty() == true)
+    {
+        r.write(0, TYPE_NULL, true);
+        return 0;
+    }
+
+    switch (args.a2)
     {
     case 0:
-        return r.write(l.value.list_v->size(), TYPE_SIGNED, true);
-    case 1:
-        {
-            auto idx = (uint64_t)vm->reg.id(args.a2);
-            if (idx >= l.value.list_v->size())
-            {
-                r.write(0, TYPE_NULL, true);
-            }
-            else
-            {
-                auto v = l.value.list_v->at(idx);
-                r.load(v->crtp<REGVM_IMPL>());
-                //v->crtp<REGVM_IMPL>()->set_val(r);
-                //v->crtp()->set_val(&r);
-                //r.set_val(v);
-            }
-        }
+        r.load(v.value.list_v->back()->crtp<REGVM_IMPL>());
+        v.value.list_v->pop_back();
         break;
-    case 2:
-        {
-            //auto& v = vm->reg.id(args.a3);
-            l.value.list_v->push_back(CRTP_CALL(vm_var, args.a3));
-        }
-        //switch (args.a2)
-        //{
-        //}
+    case 1:
+        r.load(v.value.list_v->front()->crtp<REGVM_IMPL>());
+        v.value.list_v->pop_front();
         break;
     default:
-        return false;
+        return __LINE__;
     }
-    return true;
+    return 0;
 }
 
-bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args)
+int vm_list_insert(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
-    return false;
+    auto idx = (uint64_t)vm->reg.id(args.a2);
+    if (idx >= v.value.list_v->size())
+    {
+        r.write(-1, TYPE_SIGNED, true);
+    }
+    else
+    {
+        v.value.list_v->emplace(v.value.list_v->begin() + idx, CRTP_CALL(vm_var, args.a3));
+        r.write(0, TYPE_SIGNED, true);
+    }
+    return 0;
 }
+
+int vm_list_erase(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    auto idx = (uint64_t)vm->reg.id(args.a2);
+    if (idx >= v.value.list_v->size())
+    {
+        r.write(0, TYPE_NULL, true);
+    }
+    else
+    {
+        r.load(v.value.list_v->at(idx)->crtp<REGVM_IMPL>());
+        v.value.list_v->erase(v.value.list_v->begin() + idx);
+    }
+    return 0;
+}
+
+int vm_list_set(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    auto idx = (uint64_t)vm->reg.id(args.a2);
+    bool result = false;
+    if (idx < v.value.list_v->size())
+    {
+        result = v.value.list_v->at(idx)->crtp<REGVM_IMPL>()->set_val(vm->reg.id(args.a3));
+    }
+    r.write((result == true) ? 0 : -1, TYPE_SIGNED, true);
+    return 0;
+}
+
+#define CHECK_DICT(var)                     \
+    auto var = vm->reg.id(args.a2);         \
+    if (var.type != TYPE_STRING)            \
+    {                                       \
+        return __LINE__;                    \
+    }
+
+int vm_dict_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
+    return 0;
+}
+
+int vm_dict_set(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    CHECK_DICT(k);
+
+    auto it = v.value.dict_v->find(k.value.str);
+    if (it == v.value.dict_v->end())
+    {
+        v.value.dict_v->emplace(k.value.str, CRTP_CALL(vm_var, args.a3));
+    }
+    else
+    {
+        it->second->crtp<REGVM_IMPL>()->set_val(vm->reg.id(args.a3));
+    }
+    r.write(0, TYPE_SIGNED, true);
+    return 0;
+}
+
+int vm_dict_get(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    CHECK_DICT(k);
+
+    auto it = v.value.dict_v->find(k.value.str);
+    if (it == v.value.dict_v->end())
+    {
+        r.write(0, TYPE_NULL, true);
+    }
+    else
+    {
+        r.load(it->second->crtp<REGVM_IMPL>());
+    }
+    return 0;
+}
+
+int vm_dict_del(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    CHECK_DICT(k);
+
+    auto rr = v.value.dict_v->erase(k.value.str);
+    r.write(rr - 1, TYPE_SIGNED, true);
+    return 0;
+}
+
+int vm_dict_has(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    CHECK_DICT(k);
+
+    auto it = v.value.dict_v->find(k.value.str);
+    r.write((it != v.value.dict_v->end()) ? 0 : -1, TYPE_SIGNED, true);
+    return 0;
+}
+
+#undef CHECK_DICT
+
+vm_sub_op_t  cmd_ops[16]    =
+{
+    vm_cmd_echo,
+};
+
+vm_sub_op_t  str_ops[16]    =
+{
+    vm_str_len,
+    vm_str_substr,
+};
+
+vm_sub_op_t  list_ops[16]   =
+{
+    vm_list_len,
+    vm_list_at,
+    vm_list_push,
+    vm_list_pop,
+    vm_list_insert,
+    vm_list_erase,
+    vm_list_set,
+};
+
+vm_sub_op_t  dict_ops[16]   =
+{
+    vm_dict_len,
+    vm_dict_set,
+    vm_dict_get,
+    vm_dict_del,
+    vm_dict_has,
+};
 
 #undef UNSUPPORT_TYPE
 

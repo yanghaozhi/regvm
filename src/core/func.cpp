@@ -11,6 +11,14 @@
 
 using namespace core;
 
+
+
+extern vm_sub_op_t  cmd_ops[16];
+extern vm_sub_op_t  str_ops[16];
+extern vm_sub_op_t  list_ops[16];
+extern vm_sub_op_t  dict_ops[16];
+
+
 extern bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value);
 extern bool vm_move(struct regvm* vm, const code_t code);
 extern bool vm_clear(struct regvm* vm, const code_t code, int offset);
@@ -19,31 +27,36 @@ extern bool vm_type(struct regvm* vm, const code_t code, int offset);
 extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
 extern int vm_jump(struct regvm* vm, const code_t code, int offset);
 
-extern bool vm_cmd(regvm* vm, int ret, int op, const extend_args& args);
-
 extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 
-typedef bool (*vm_run_ex)(regvm* vm, int ret, int op, const extend_args& args);
-typedef bool (*vm_run_type)(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 
-bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, vm_run_type func, int type)
+bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, int type, vm_sub_op_t* ops)
 {
     extend_args args = {*extra};
-    auto& r = vm->reg.id(args.a1);
-    if ((type >= 0) && (r.type != type))
+    auto& v = vm->reg.id(args.a1);
+    if ((type >= 0) && (v.type != type))
     {
-        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", r.type, type);
+        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", v.type, type);
         return false;
     }
-    return func(vm, code.reg, code.ex, r, args);
-}
 
-bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, vm_run_ex func)
-{
-    extend_args args = {*extra};
-    return func(vm, code.reg, code.ex, args);
+    auto& r = vm->reg.id(code.reg);
+    vm_sub_op_t f = ops[code.ex];
+    if (f == NULL)
+    {
+        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT op type : %d of %d", code.ex, type);
+        return false;
+    }
+
+    int errline = f(vm, r, v, args);
+    if (errline > 0)
+    {
+        VM_ERROR(ERR_RUNTIME, code, offset, "run sub op ERROR : %d - %d at %d", code.ex, type, errline);
+        return false;
+    }
+    return true;
 }
 
 #define NULL_CALL() true
@@ -78,10 +91,10 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
         EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
 
-        EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_cmd);
-        EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_str, TYPE_STRING);
-        EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_list, TYPE_LIST);
-        EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], vm_dict, TYPE_DICT);
+        EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], -1, cmd_ops);
+        EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_STRING, str_ops);
+        EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_LIST, list_ops);
+        EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_DICT, dict_ops);
 #undef EXTRA_RUN
 
 

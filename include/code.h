@@ -170,7 +170,7 @@ enum DATA_TYPE
 //          | 3 : pop       | list      | type      | N/A       | N/A       |
 //          | 4 : insert    | list      | $idx      | $value    | N/A       |
 //          | 5 : erase     | list      | $idx      | N/A       | N/A       |
-//          | 6 : set       | list      | $idx      | N/A       | N/A       |
+//          | 6 : set       | list      | $idx      | $value    | N/A       |
 //          cmp 0 : greater, 1 : lesser
 //          | 7 : sort      | list      | cmp       | N/A       | N/A       |
 //+---------+---------------+-----------------------+-----------------------+

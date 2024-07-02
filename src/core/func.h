@@ -7,6 +7,8 @@
 #include <irq.h>
 #include <code.h>
 
+#include "reg.h"
+
 namespace core
 {
 
@@ -21,6 +23,8 @@ union extend_args
         uint16_t    a4 : 4;
     };
 };
+
+typedef int (*vm_sub_op_t)(regvm* vm, reg::v& r, reg::v& v, const extend_args& args);
 
 class func
 {
