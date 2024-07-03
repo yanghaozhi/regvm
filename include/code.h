@@ -183,7 +183,8 @@ enum DATA_TYPE
 //          | 4 : has       | dict      | $key      | N/A       | N/A       |
 //          type 0 : only keys, 1 : only values, 2 : keys and values
 //          output two lists, a3 store keys, a4 store values, 
-//          they are in same order
+//          they are in same order, means dict[$keys[i]] == $values[i]
+//          return len of dict, also the len of keys / values
 //          | 5 : items     | dict      | type      | keys      | values    |
 //+---------+---------------+-----------------------+-----------------------+
 

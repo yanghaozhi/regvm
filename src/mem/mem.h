@@ -35,6 +35,7 @@ public:
     CRTP_FUNC(vm_init,  bool, 0);
     CRTP_FUNC(vm_exit,  bool, 0);
     CRTP_FUNC(vm_var,   core::var*, 1, int);
+    CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
 
     CRTP_FUNC(vm_new,   bool, 3, const code_t, int, int64_t);
     CRTP_FUNC(vm_store, bool, 3, const code_t, int, int64_t);

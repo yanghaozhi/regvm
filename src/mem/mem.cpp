@@ -30,6 +30,11 @@ core::var* regvm_mem::vm_var(int id)
     return v;
 }
 
+core::var* regvm_mem::vm_var(int type, const char* name)
+{
+    return var::create(type, name); 
+}
+
 bool regvm_mem::vm_new(code_t code, int offset, int64_t extra)
 {
     auto& n = reg.id(code.reg);

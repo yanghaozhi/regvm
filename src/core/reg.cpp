@@ -127,6 +127,10 @@ void core::free_uvalue(int type, uvalue v)
         delete v.list_v;
         break;
     case TYPE_DICT:
+        for (auto& it : *v.dict_v)
+        {
+            it.second->crtp<REGVM_IMPL>()->release();
+        }
         delete v.dict_v;
         break;
     default:
@@ -134,3 +138,8 @@ void core::free_uvalue(int type, uvalue v)
     }
 }
 
+const char* core::var::operator = (const char* v)
+{
+    value.str = strdup(v);
+    return v;
+}

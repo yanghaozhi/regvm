@@ -399,12 +399,12 @@ int vm_list_insert(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
     auto idx = (uint64_t)vm->reg.id(args.a2);
     if (idx >= v.value.list_v->size())
     {
-        r.write(-1, TYPE_SIGNED, true);
+        r.write(0, TYPE_SIGNED, true);
     }
     else
     {
         v.value.list_v->emplace(v.value.list_v->begin() + idx, CRTP_CALL(vm_var, args.a3));
-        r.write(0, TYPE_SIGNED, true);
+        r.write(1, TYPE_SIGNED, true);
     }
     return 0;
 }
@@ -414,12 +414,14 @@ int vm_list_erase(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
     auto idx = (uint64_t)vm->reg.id(args.a2);
     if (idx >= v.value.list_v->size())
     {
-        r.write(0, TYPE_NULL, true);
+        r.write(0, TYPE_SIGNED, true);
     }
     else
     {
-        r.load(v.value.list_v->at(idx)->crtp<REGVM_IMPL>());
-        v.value.list_v->erase(v.value.list_v->begin() + idx);
+        r.write(1, TYPE_SIGNED, true);
+        auto it = v.value.list_v->begin() + idx;
+        (*it)->crtp<REGVM_IMPL>()->release();
+        v.value.list_v->erase(it);
     }
     return 0;
 }
@@ -432,7 +434,7 @@ int vm_list_set(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
     {
         result = v.value.list_v->at(idx)->crtp<REGVM_IMPL>()->set_val(vm->reg.id(args.a3));
     }
-    r.write((result == true) ? 0 : -1, TYPE_SIGNED, true);
+    r.write((result == true) ? 1 : 0, TYPE_SIGNED, true);
     return 0;
 }
 
@@ -486,8 +488,17 @@ int vm_dict_del(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
     CHECK_DICT(k);
 
-    auto rr = v.value.dict_v->erase(k.value.str);
-    r.write(rr - 1, TYPE_SIGNED, true);
+    auto it = v.value.dict_v->find(k.value.str);
+    bool rr = false;
+    if (it != v.value.dict_v->end())
+    {
+        it->second->crtp<REGVM_IMPL>()->release();
+        v.value.dict_v->erase(it);
+        rr = true;
+    }
+
+    r.write(rr, TYPE_SIGNED, true);
+
     return 0;
 }
 
@@ -496,7 +507,65 @@ int vm_dict_has(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
     CHECK_DICT(k);
 
     auto it = v.value.dict_v->find(k.value.str);
-    r.write((it != v.value.dict_v->end()) ? 0 : -1, TYPE_SIGNED, true);
+    r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED, true);
+    return 0;
+}
+
+int vm_dict_items(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+{
+    r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
+
+    if (v.value.dict_v->empty() == true)
+    {
+        return 0;
+    }
+
+    core::uvalue::list_t* keys = NULL;
+    core::uvalue::list_t* values = NULL;
+
+#define INIT_LIST(arg, var)                             \
+    {                                                   \
+        auto& rr = vm->reg.id(arg);                     \
+        rr.clear();                                     \
+        rr.need_free = true;                            \
+        rr.type = TYPE_LIST;                            \
+        var = new core::uvalue::list_t();               \
+        rr.value.list_v = var;                          \
+    }
+
+    switch (args.a2)
+    {
+    case 0:
+        INIT_LIST(args.a3, keys);
+        break;
+    case 1:
+        INIT_LIST(args.a4, values);
+        break;
+    case 2:
+        INIT_LIST(args.a3, keys);
+        INIT_LIST(args.a4, values);
+        break;
+    default:
+        return __LINE__;
+    }
+
+#undef INIT_LIST
+
+    for (auto& it : *v.value.dict_v)
+    {
+        if (keys != NULL)
+        {
+            auto k = CRTP_CALL(vm_var, TYPE_STRING, "");
+            *k = it.first.c_str();
+            keys->push_back(k);
+        }
+        if (values != NULL)
+        {
+            it.second->acquire();
+            values->push_back(it.second);
+        }
+    }
+
     return 0;
 }
 
@@ -531,6 +600,7 @@ vm_sub_op_t  dict_ops[16]   =
     vm_dict_get,
     vm_dict_del,
     vm_dict_has,
+    vm_dict_items,
 };
 
 #undef UNSUPPORT_TYPE

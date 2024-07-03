@@ -80,36 +80,42 @@ bool regvm::call(int64_t id, const code_t code, int offset)
 
 
 #ifndef REGVM_EXT
-core::var* regvm_core::vm_var(struct regvm* vm, int id)
+core::var* regvm_core::vm_var(int id)
 {
     assert(0);
     return NULL;
 }
 
-bool regvm_core::vm_new(struct regvm* vm, const code_t code, int offset, int64_t value)
+core::var* regvm_core::vm_var(int type, const char* name)
+{
+    assert(0);
+    return NULL;
+}
+
+bool regvm_core::vm_new(const code_t code, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_store(struct regvm* vm, const code_t code, int offset, int64_t value)
+bool regvm_core::vm_store(const code_t code, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_load(struct regvm* vm, const code_t code, int offset, int64_t value)
+bool regvm_core::vm_load(const code_t code, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_block(struct regvm* vm, const code_t code, int offset, int64_t value)
+bool regvm_core::vm_block(const code_t code, int offset, int64_t value)
 {
     return true;
 }
 
-bool regvm_core::vm_call(struct regvm* vm, const code_t code, int offset, int64_t value)
+bool regvm_core::vm_call(const code_t code, int offset, int64_t value)
 {
     return true;
 }

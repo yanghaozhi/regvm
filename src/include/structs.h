@@ -54,6 +54,10 @@ public:
     {
         return static_cast<var_crtp<typename T::var_t>*>(this);
     }
+
+    const char* operator = (const char* v);
+
+    inline void acquire(void)                   {++ref;};
 };
 
 
@@ -84,7 +88,6 @@ public:
 #undef CRTP_FUNC
 #undef NOTHING
 
-    inline void acquire(void)                   {++ref;};
 };
 
 template <typename T> struct regv
