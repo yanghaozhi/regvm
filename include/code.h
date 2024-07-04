@@ -61,7 +61,10 @@ enum DATA_TYPE
 //  把数据回写变量中
 //      如果ex == reg，则把reg的值回写到原始加载的变量中
 //      如果ex != reg，则新变量名存于ex内
-//      type==4是局部变量，type==0x0C是全局变量enum CODE_ID
+//+---------+---------------+-----------------------+-----------------------+
+//| GLOBAL  | CODE_STORE    | reg                   | reg stores var name   |
+//  把数据写入全局变量中
+//      变量名存于ex内
 //+---------+---------------+-----------------------+-----------------------+
 //| NEW     | CODE_NEW      | reg                   | type                  |
 //  在当前scope中创建新的变量，变量名位于$reg内，ex则为变量类型
@@ -205,6 +208,7 @@ enum CODE_ID
     CODE_CLEAR,
     CODE_LOAD,
     CODE_STORE,
+    CODE_GLOBAL,
     CODE_NEW,
     CODE_BLOCK,
     CODE_CALL,

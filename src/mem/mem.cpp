@@ -38,12 +38,12 @@ core::var* regvm_mem::vm_var(int type, const char* name)
 bool regvm_mem::vm_new(code_t code, int offset, int64_t extra)
 {
     auto& n = reg.id(code.reg);
-    auto v = get(n.value.str);
+    auto v = get(n.value.str, false);
     if (v != NULL)
     {
         return (v->type == code.ex) ? true : false;
     }
-    v = add(code.ex, n.value.str);
+    v = add(n.value.str, code.ex, false);
     return (v != NULL) ? true : false;
 }
 
@@ -57,7 +57,7 @@ bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
     else
     {
         auto& e = reg.id(code.ex);
-        if ((e.type & 0x07) != TYPE_STRING)
+        if (e.type != TYPE_STRING)
         {
             auto vm = this;
             VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
@@ -66,7 +66,8 @@ bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
         }
         else
         {
-            auto v = get(e.value.str);
+            bool global = (extra == 0) ? false : true;
+            auto v = get(e.value.str, global);
             if (v != NULL)
             {
                 if (v->store_from(r) == true)
@@ -74,7 +75,7 @@ bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
                     return true;
                 }
             }
-            return add(r.type, e.value.str)->store_from(r);
+            return add(e.value.str, r.type, global)->store_from(r);
         }
     }
     return true;
@@ -84,7 +85,7 @@ bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
 {
     auto& e = reg.id(code.ex);
     auto& r = reg.id(code.reg);
-    auto v = get(e.value.str);
+    auto v = get(e.value.str, false);
     if (v == NULL)
     {
         auto vm = this;
@@ -139,23 +140,33 @@ regvm_mem::regvm_mem() : globals(0)
 {
 }
 
-var* regvm_mem::add(const int type, const char* name)
+var* regvm_mem::add(const char* name, const int type, bool global)
 {
     auto v = var::create(type, name);
-    frames.front().scopes.front().add(v);
+    if (global == false)
+    {
+        frames.front().scopes.front().add(v);
+    }
+    else
+    {
+        globals.add(v);
+    }
     return (v->release() == true) ? v : NULL;
 }
 
-var* regvm_mem::get(const char* name) const
+var* regvm_mem::get(const char* name, bool global) const
 {
     const int l = strlen(name);
     uint32_t h = var::calc_hash(name, l);
-    for (const auto& it : frames.front().scopes)
+    if (global == false)
     {
-        auto v = it.get(h, name, l);
-        if (v != NULL)
+        for (const auto& it : frames.front().scopes)
         {
-            return v;
+            auto v = it.get(h, name, l);
+            if (v != NULL)
+            {
+                return v;
+            }
         }
     }
     return globals.get(h, name, l);

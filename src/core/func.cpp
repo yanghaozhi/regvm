@@ -102,7 +102,8 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     case CODE_##id:                         \
         CALL(func, ##__VA_ARGS__);          \
         break;
-        CODE_RUN(STORE, CRTP_CALL, vm_store, *code, offset, -1);
+        CODE_RUN(STORE, CRTP_CALL, vm_store, *code, offset, 0);
+        CODE_RUN(GLOBAL, CRTP_CALL, vm_store, *code, offset, -1);
         CODE_RUN(NEW, CRTP_CALL, vm_new, *code, offset, -1);
         CODE_RUN(LOAD, CRTP_CALL, vm_load, *code, offset, -1);
         CODE_RUN(BLOCK, CRTP_CALL, vm_block, *code, offset, vm->call_stack->id);

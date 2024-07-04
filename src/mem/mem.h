@@ -23,9 +23,11 @@ public:
 
     regvm_mem();
 
-    var* add(const int type, const char* name);
+    bool store();
 
-    var* get(const char* name) const;
+    var* add(const char* name, const int type, bool global);
+
+    var* get(const char* name, bool global) const;
 
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
