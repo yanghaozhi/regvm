@@ -74,6 +74,12 @@ INC     0   1
 LIST    8   1   5   0
 TRAP    3   9
 
+# $6 = $5.pop_back()
+LIST    6   3   5   0
+# $7 = $5.pop_front()
+LIST    7   3   5   1
+TRAP    3   10
+
 EXIT    0   0
 )";
 
@@ -116,6 +122,10 @@ TEST(cmd, list)
             CHECK_REG(key, 9, 6, Y, TYPE_UNSIGNED,  321,        2, 0);
             CHECK_REG(key, 9, 7, Y, TYPE_STRING,    "abc",      2, 0);
             CHECK_REG(key, 9, 8, Y, TYPE_DOUBLE,    321.123,    2, 0);
+
+            CHECK_REG(key, 10, 5, N, TYPE_LIST,     1,    -1, 1);
+            CHECK_REG(key, 10, 6, Y, TYPE_DOUBLE,   321.123,   1, 0);
+            CHECK_REG(key, 10, 7, Y, TYPE_UNSIGNED, 321,      1, 0);
             return match;
         },
         [](auto key, auto offset, auto info)

@@ -68,21 +68,24 @@ bool var::set_val(const core::regv<var>& reg)
 
     switch (type)
     {
-#define AGGREGATE(T, V, CP, ...)                \
-    case T:                                     \
-        if (value.V != NULL)                    \
-        {                                       \
-            core::free_uvalue(type, value);     \
-        }                                       \
-        if (reg.need_free == true)              \
-        {                                       \
-            value.V = reg.value.V;              \
-            reg.need_free = false;              \
-        }                                       \
-        else                                    \
-        {                                       \
-            value.V = CP(__VA_ARGS__);          \
-        }                                       \
+#define AGGREGATE(T, V, CP, ...)                    \
+    case T:                                         \
+        if (value.V != reg.value.V)                 \
+        {                                           \
+            if (value.V != NULL)                    \
+            {                                       \
+                core::free_uvalue(type, value);     \
+            }                                       \
+            if (reg.need_free == true)              \
+            {                                       \
+                value.V = reg.value.V;              \
+                reg.need_free = false;              \
+            }                                       \
+            else                                    \
+            {                                       \
+                value.V = CP(__VA_ARGS__);          \
+            }                                       \
+        }                                           \
         break;
 
         AGGREGATE(TYPE_STRING, str, strdup, reg.value.str);

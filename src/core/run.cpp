@@ -382,10 +382,12 @@ int vm_list_pop(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
     {
     case 0:
         r.load(v.value.list_v->back()->crtp<REGVM_IMPL>());
+        v.value.list_v->back()->crtp<REGVM_IMPL>()->release();
         v.value.list_v->pop_back();
         break;
     case 1:
         r.load(v.value.list_v->front()->crtp<REGVM_IMPL>());
+        v.value.list_v->front()->crtp<REGVM_IMPL>()->release();
         v.value.list_v->pop_front();
         break;
     default:

@@ -43,6 +43,9 @@ TRAP    3   6
 DICT    0   3   7   4
 TRAP    2   7
 
+DICT    0   0   7
+TRAP    1   8
+
 EXIT    0   0
 )";
 
@@ -77,6 +80,8 @@ TEST(cmd, dict)
 
             CHECK_REG(key, 7, 7, N, TYPE_DICT,      2,          -1, 1);
             CHECK_REG(key, 7, 0, N, TYPE_SIGNED,    1,          -1, 0);
+
+            CHECK_REG(key, 8, 0, N, TYPE_SIGNED,    2,          -1, 0);
             return match;
         },
         [](auto key, auto offset, auto info)
