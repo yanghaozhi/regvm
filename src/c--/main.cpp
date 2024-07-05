@@ -20,15 +20,12 @@
 enum DATA_T { UNKNOWN, STR, SINT, UINT, DOUBLE };
 
 //支持的标记类别(供词法分析器next解析成对应的标记)
-enum TOKEN_T { Unknown, Num, Str, Fun, Sys, Glo, Loc, Id, Char, Else, Enum, If, Int, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak};
+enum TOKEN_T { Num = 128,   //避免和ascii字符冲突
+    Str, Fun, Sys, Glo, Loc, Id, Char, Else, Enum, If, Int, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak};
 
 
 struct symbol
 {
-    //symbol(const char* n, int l) : name(n, l)   {};
-
-    //const std::string name;
-
     union
     {
         int64_t             sint;
@@ -38,8 +35,10 @@ struct symbol
         void*               ptr;
     }   value;
 
-    DATA_T      data_type   = UNKNOWN;
-    TOKEN_T     token_type  = Unknown;
+    int         len;
+    uint64_t    hash;
+    DATA_T      data_type;
+    int         token_type;
 
     //int token       = 0;
     //int cls         = 0;
@@ -52,17 +51,16 @@ struct symbol
 class symtab
 {
 public:
-    symbol* add(const char* name, int len, uint64_t h)
+    bool add(symbol& sym)
     {
-        char buf[len + 1];
-        strncpy(buf, name, len);
-        buf[len] = '\0';
-        printf("add symbol : %llu - %d @ %s\n", (unsigned long long)h, len, buf);
-        return NULL;
+        auto r = symbols.emplace(std::string(sym.value.str, sym.len), sym);
+        printf("add symbol : %s\n", r.first->first.c_str());
+        return r.second;
     };
 
 private:
     //std::multimap<uint64_t, symbol> symbols;
+    std::unordered_map<std::string, symbol> symbols;
 };
 
 
@@ -85,9 +83,10 @@ inline uint64_t whole_token(const char* pos, const char** end)
     return h;
 }
 
-const char* find_token(const char* src, symtab* symbols, symbol* sym, int& lineno)
+const char* find_token(const char* src, symbol* sym, int& lineno)
 {
     const char* next = src;
+    memset(sym, 0, sizeof(symbol));
     //char* begin_pos;
     //int hash;
     //while ((token = *pos++) != 0)
@@ -110,12 +109,15 @@ const char* find_token(const char* src, symtab* symbols, symbol* sym, int& linen
         case '_':   //解析合法的变量名
             {
                 const char* end = NULL;
-                auto h = whole_token(next - 1, &end);
-                //token.name = std::string(next - 1, end);
-                symbols->add(next - 1, end - next + 1, h);
+                sym->hash = whole_token(next - 1, &end);
+                sym->len = end - next + 1;
+                sym->value.str = next - 1;
+                sym->token_type = Id;
+                ////token.name = std::string(next - 1, end);
+                //symbols->add(next - 1, end - next + 1, h, sym);
                 return end;
             }
-        case '1' ... '9':   //解析数字(十六进制,八进制)
+        case '0':   //解析数字(十六进制,八进制)
             switch (*next)
             {
             case 'x':
@@ -127,20 +129,25 @@ const char* find_token(const char* src, symtab* symbols, symbol* sym, int& linen
                 break;
             };
             [[fallthrough]];
-        case '0':   //十进制
+        case '1' ... '9':   //十进制
             {
                 char* end = NULL;
                 sym->value.uint = strtoull(next - 1, &end, base);
                 sym->data_type = UINT;
+                sym->token_type = Num;
                 return end;
             }
-        case '"':
-        case '\'':  //字符串
+        case '\'':  //字符
+            sym->token_type = Num;
+            sym->value.uint = token;
+            break;
+        case '"':  //字符串
             //TODO : 暂不支持转义字符
             {
                 auto end = strchr(next, token);
                 sym->value.str = strndup(next - 1, end - next + 1);
                 sym->data_type = STR;
+                sym->token_type = token;
                 return end + 1;
             }
         case '/':   //TODO : 不支持多行注释
@@ -188,6 +195,7 @@ const char* find_token(const char* src, symtab* symbols, symbol* sym, int& linen
         case ']': 
         case ',': 
         case ':':
+            sym->token_type = token;
             return next;
         default:
             break;
@@ -195,6 +203,35 @@ const char* find_token(const char* src, symtab* symbols, symbol* sym, int& linen
     }
     return next;
 }
+
+//语法分析部分
+int grammar(const char* src, symtab* symbols)
+{
+    symbol sym;
+    int lineno = 0;
+
+    src = find_token(src, &sym, lineno);
+    if (src != NULL)
+    {
+        printf("%d - %s\n", sym.token_type, src);
+    }
+
+    while(sym.token_type != 0)
+    {
+        //src = find_token(src, &st, &sym, lineno);
+        //if (src != NULL)
+        //{
+        //    printf("%s\n", src);
+        //}
+        src = find_token(src, &sym, lineno);
+        printf("%d - %lu\n", sym.token_type, sym.value.uint);
+    }
+    printf("---------\n%s\n%d\n", src, sym.len);
+
+    return 0;
+}
+
+
 
 static char t1[] = R"(
 char else enum if int return sizeof while void main
@@ -221,23 +258,26 @@ int main(int argc, char** argv)
     const char* src = t1;
     while (*src != '\0')
     {
-        src = find_token(src, &st, &sym, lineno);
-        if (src != NULL)
+        src = find_token(src, &sym, lineno);
+        if (sym.len > 0)
         {
-            printf("%s\n", src);
+                ////token.name = std::string(next - 1, end);
+            st.add(sym);
+            //printf("%s\n", src);
         }
     }
 
-    src = t2;
-    while (*src != '\0')
-    {
-        src = find_token(src, &st, &sym, lineno);
-        if (src != NULL)
-        {
-            printf("%s\n", src);
-        }
-    }
+    //src = t2;
+    //while (*src != '\0')
+    //{
+    //    src = find_token(src, &st, &sym, lineno);
+    //    if (src != NULL)
+    //    {
+    //        printf("%s\n", src);
+    //    }
+    //}
 
+    grammar(t2, &st);
     ////std::array<int, 4> dk = {'0', 'A', '_', 'a'};
     ////std::array<int, 4> dk = {'a', '_', 'A', '0'};
     //int dk[] = {'a', '_', 'A', '0'};
