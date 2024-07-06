@@ -11,58 +11,163 @@
 
 #include <algorithm>
 #include <string>
-#include <array>
+#include <vector>
 #include <map>
 #include <unordered_set>
 #include <unordered_map>
 
-//数据类型
-enum DATA_T { UNKNOWN, STR, SINT, UINT, DOUBLE };
+#include <code.h>
+
 
 //支持的标记类别(供词法分析器next解析成对应的标记)
-enum TOKEN_T { Num = 128,   //避免和ascii字符冲突
-    Str, Fun, Sys, Glo, Loc, Id, Char, Else, Enum, If, Int, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak};
+enum TOKEN_T { Num = 256,   //避免和ascii字符冲突
+    Str, Fun, Sys, Glo, Loc, Id, Else, Enum, If, Int, Double, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak};
 
+
+union uv
+{
+    int64_t     sint;
+    uint64_t    uint;
+    double      dbl;
+};
+
+struct code
+{
+    code(const char* n, int i, int r, int e) :
+        id(i), reg(r), ex(e), name(n)
+    {};
+    code(const char* n, int i, int r, const std::string& v) :
+        id(i), reg(r), ex(TYPE_STRING), name(n), str(v)
+    {};
+    code(const char* n, int i, int r, int e, uv v) :
+        id(i), reg(r), ex(e), name(n), val(v)
+    {
+        switch (ex)
+        {
+        case TYPE_SIGNED:
+            if (-32768 <= v.sint && v.sint <= 32767)
+            {
+                id = CODE_SETS;
+                name = "SETS";
+            }
+            else if (-2147483648 <= v.sint && v.sint <= 2147483647)
+            {
+                id = CODE_SETI;
+                name = "SETI";
+            }
+            else
+            {
+                id = CODE_SETL;
+                name = "SETL";
+            }
+            break;
+        case TYPE_UNSIGNED:
+            if (v.uint <= 0xFFFF)
+            {
+                id = CODE_SETS;
+                name = "SETS";
+            }
+            else if (v.uint <= 0xFFFFFFFF)
+            {
+                id = CODE_SETI;
+                name = "SETI";
+            }
+            else
+            {
+                id = CODE_SETL;
+                name = "SETL";
+            }
+            break;
+        case TYPE_DOUBLE:
+            id = CODE_SETL;
+            name = "SETL";
+            break;
+        default:
+            break;
+        }
+    };
+    int                 id;
+    int                 reg;
+    int                 ex;
+    const char*         name;
+    uv                  val;
+    std::string         str;
+};
+
+#define INST(c, r, e, ...)   codes.emplace_back(#c, CODE_##c, r, e, ##__VA_ARGS__);
 
 struct symbol
 {
-    union
+    struct
     {
-        int64_t             sint;
-        uint64_t            uint;
-        double              dbl;
-        const char*         str;
-        void*               ptr;
-    }   value;
+        uv              value;
+        DATA_TYPE       data_type;
+        int             token;
+    }                   info;
 
-    int         len;
-    uint64_t    hash;
-    DATA_T      data_type;
-    int         token_type;
-
-    //int token       = 0;
-    //int cls         = 0;
-    //int type        = 0;
-    //int tmp_cls     = 0;
-    //int tmp_type    = 0;
-    //int tmp_value   = 0;
+    std::string         name;
 };
 
-class symtab
+std::unordered_map<std::string, int> keywords;   //  name : TOKEN_T
+
+struct var
+{
+    DATA_TYPE           type;
+    uv                  init;
+    std::string         name;
+};
+
+struct func
+{
+    DATA_TYPE           ret;
+    std::vector<var>    args;
+};
+
+std::unordered_map<std::string, func> funcs;
+
+class sel_reg
 {
 public:
-    bool add(symbol& sym)
+    sel_reg()
     {
-        auto r = symbols.emplace(std::string(sym.value.str, sym.len), sym);
-        printf("add symbol : %s\n", r.first->first.c_str());
-        return r.second;
-    };
-
+        for (int i = 0; i < (int)sizeof(regs); i++)
+        {
+            regs[i] = i;
+        }
+    }
+    inline int get(void)   {return used(0);}
+    int get(const char* name)
+    {
+        auto it = names.find(name);
+        if (it != names.end())
+        {
+            int8_t* p = (int8_t*)memchr(regs, it->second, sizeof(regs));
+            return used(p - regs);
+        }
+        else
+        {
+            int v = used(0);
+            names.emplace(name, v);
+            return v;
+        }
+    }
+    void clear(const char* name)    {names.erase(name);};
 private:
-    //std::multimap<uint64_t, symbol> symbols;
-    std::unordered_map<std::string, symbol> symbols;
-};
+    int used(int id)
+    {
+        int v = regs[id];
+        if (id != sizeof(regs) - 1)
+        {
+            memmove(regs + id, regs + id + 1, sizeof(regs) - id - 1);
+            regs[sizeof(regs) - 1] = v;
+        }
+        return v;
+    }
 
+    int8_t      regs[16];
+    std::unordered_map<std::string, int>    names;
+};
+sel_reg         regs;
 
 //struct keyword
 //{
@@ -71,6 +176,140 @@ private:
 //};
 //const keyword TOKEN_CHAR[] = {{'a', 26}, {'_', 1}, {'A', 26}, {'0', 10}};
 //const keyword NUMBER_CHAR[] = {{'a', 26}, {'_', 1}, {'A', 26}, {'0', 10}};
+
+const char* next_token(const char* src, int& lineno, symbol* sym);
+
+//语法分析部分
+const char* parse_func(const std::string& name, DATA_TYPE ret, const char* src, int& lineno)
+{
+    auto r = funcs.emplace(name, func{});
+    if (r.second == false)
+    {
+        return NULL;
+    }
+    r.first->second.ret = ret;
+
+    symbol sym;
+    src = next_token(src, lineno, &sym);
+    while (sym.info.token != ')')
+    {
+    }
+    return src;
+}
+
+const char* expression(std::vector<code>& codes, const char* src, int reg, DATA_TYPE type, int& lineno)
+{
+    symbol sym;
+    src = next_token(src, lineno, &sym);
+    switch (sym.info.token)
+    {
+    case Num:
+        INST(SETS, reg, type, sym.info.value);
+        break;
+    default:
+        break;
+    }
+    return src;
+}
+
+const char* declaration(std::vector<code>& codes, const char* src, DATA_TYPE type, int& lineno)
+{
+    //int data_type = SINT;
+    //switch (sym.info.token)
+    //{
+    //case Int:
+    //    data_type = SINT;
+    //    break;
+    //default:
+    //    break;
+    //}
+    symbol sym;
+    //获取变量名
+    src = next_token(src, lineno, &sym);
+    if (sym.info.token != Id)
+    {
+        fprintf(stderr, "%d : bad variable declaration of %s !!!\n", lineno, sym.name.c_str());
+        return NULL;
+    }
+    auto name = sym.name;
+
+    src = next_token(src, lineno, &sym);
+    switch (sym.info.token)
+    {
+    case '(':
+        //TODO 函数
+        return NULL;
+    case ';':
+        INST(CLEAR, regs.get(), type);
+        break;
+    case Assign:
+        {
+            int reg = regs.get();
+            src = expression(codes, src, reg, type, lineno);
+            int n = regs.get();
+            codes.emplace_back("SETC",  CODE_SETL,  n, name);
+            INST(STORE, reg, n);
+        }
+        break;
+    default:
+        return NULL;
+    }
+    return src;
+}
+
+const char* statement(std::vector<code>& codes, const char* src, symbol& sym, int& lineno)
+{
+
+    //return false;
+    return NULL;
+}
+
+
+bool grammar(std::vector<code>& codes, const char* src)
+{
+    printf("%s\n", src);
+
+    symbol sym;
+    int lineno = 0;
+
+    while ((src != NULL) && (*src != '\0'))
+    {
+        src = next_token(src, lineno, &sym);
+
+        auto it = keywords.find(sym.name);
+        if (it != keywords.end())
+        {
+            //处理类型
+            switch (it->second)
+            {
+            case Int:
+                src = declaration(codes, src, TYPE_SIGNED, lineno);
+                break;
+            case Double:
+                src = declaration(codes, src, TYPE_DOUBLE, lineno);
+                break;
+                //case Char:
+                //    src = next_token(src, &sym, lineno);
+                //    break;
+                //case Enum:  //TODO
+                //    break;
+            default:
+                src = statement(codes, src, sym, lineno);
+                break;
+            }
+        }
+        else
+        {
+            //TODO : 正常赋值/函数调用语句
+            //src = next_token(src, lineno, &sym);
+            //continue;
+        }
+    }
+
+    return (src != NULL) ? true : false;
+}
+
+
 
 inline uint64_t whole_token(const char* pos, const char** end)
 {
@@ -83,10 +322,11 @@ inline uint64_t whole_token(const char* pos, const char** end)
     return h;
 }
 
-const char* find_token(const char* src, symbol* sym, int& lineno)
+const char* next_token(const char* src, int& lineno, symbol* sym)
 {
     const char* next = src;
-    memset(sym, 0, sizeof(symbol));
+    memset(&sym->info, 0, sizeof(sym->info));
+    sym->name = "";
     //char* begin_pos;
     //int hash;
     //while ((token = *pos++) != 0)
@@ -109,12 +349,9 @@ const char* find_token(const char* src, symbol* sym, int& lineno)
         case '_':   //解析合法的变量名
             {
                 const char* end = NULL;
-                sym->hash = whole_token(next - 1, &end);
-                sym->len = end - next + 1;
-                sym->value.str = next - 1;
-                sym->token_type = Id;
-                ////token.name = std::string(next - 1, end);
-                //symbols->add(next - 1, end - next + 1, h, sym);
+                whole_token(next - 1, &end);
+                sym->info.token = Id;
+                sym->name = std::string(next - 1, end - next + 1);
                 return end;
             }
         case '0':   //解析数字(十六进制,八进制)
@@ -132,22 +369,22 @@ const char* find_token(const char* src, symbol* sym, int& lineno)
         case '1' ... '9':   //十进制
             {
                 char* end = NULL;
-                sym->value.uint = strtoull(next - 1, &end, base);
-                sym->data_type = UINT;
-                sym->token_type = Num;
+                sym->info.value.uint = strtoull(next - 1, &end, base);
+                sym->info.data_type = TYPE_UNSIGNED;
+                sym->info.token = Num;
                 return end;
             }
         case '\'':  //字符
-            sym->token_type = Num;
-            sym->value.uint = token;
+            sym->info.token = Num;
+            sym->info.value.uint = token;
             break;
         case '"':  //字符串
             //TODO : 暂不支持转义字符
             {
                 auto end = strchr(next, token);
-                sym->value.str = strndup(next - 1, end - next + 1);
-                sym->data_type = STR;
-                sym->token_type = token;
+                sym->info.data_type = TYPE_STRING;
+                sym->info.token = token;
+                sym->name = std::string(next - 1, end - next + 1);
                 return end + 1;
             }
         case '/':   //TODO : 不支持多行注释
@@ -158,31 +395,30 @@ const char* find_token(const char* src, symbol* sym, int& lineno)
             }
             else
             {
-                sym->token_type = Div;
+                sym->info.token = Div;
                 return next;
             }
         case '=':
             if(*next != '=')
             {
-                sym->token_type = Assign;
+                sym->info.token = Assign;
                 return next;
             }
             else
             {
-                sym->token_type = Eq;
+                sym->info.token = Eq;
                 return next + 1;
             }
         case '+':
             switch (*next)
             {
             case '+':
-                sym->token_type = Inc;
+                sym->info.token = Inc;
                 return next + 1;
-                break;
             case '=':   //TODO +=
                 break;
             default:
-                sym->token_type = Add;
+                sym->info.token = Add;
                 return next;
             }
             break;
@@ -195,7 +431,7 @@ const char* find_token(const char* src, symbol* sym, int& lineno)
         case ']': 
         case ',': 
         case ':':
-            sym->token_type = token;
+            sym->info.token = token;
             return next;
         default:
             break;
@@ -204,39 +440,14 @@ const char* find_token(const char* src, symbol* sym, int& lineno)
     return next;
 }
 
-//语法分析部分
-int grammar(const char* src, symtab* symbols)
-{
-    symbol sym;
-    int lineno = 0;
-
-    src = find_token(src, &sym, lineno);
-    if (src != NULL)
-    {
-        printf("%d - %s\n", sym.token_type, src);
-    }
-
-    while(sym.token_type != 0)
-    {
-        //src = find_token(src, &st, &sym, lineno);
-        //if (src != NULL)
-        //{
-        //    printf("%s\n", src);
-        //}
-        src = find_token(src, &sym, lineno);
-        printf("%d - %lu\n", sym.token_type, sym.value.uint);
-    }
-    printf("---------\n%s\n%d\n", src, sym.len);
-
-    return 0;
-}
-
-
-
 static char t1[] = R"(
-char else enum if int return sizeof while void main
+int a;
+double b = 12.5;
+int c = a * b;
 )";
 
+
+[[maybe_unused]]		
 static char t2[] = R"(
 #include <stdio.h>
 int main()
@@ -251,53 +462,29 @@ int main()
 
 int main(int argc, char** argv)
 {
-    symtab st;
-    symbol sym;
-    int lineno = 0;
+    keywords.emplace("else", Else);
+    keywords.emplace("if", If);
+    keywords.emplace("int", Int);
+    keywords.emplace("double", Double);
+    keywords.emplace("return", Return);
+    keywords.emplace("sizeof", Sizeof);
+    keywords.emplace("while", While);
 
-    const char* src = t1;
-    while (*src != '\0')
+    std::vector<code> codes;
+    auto r = grammar(codes, t1);
+    printf("grammar : %d\n", r);
+    if (r == true)
     {
-        src = find_token(src, &sym, lineno);
-        if (sym.len > 0)
+        for (auto& it : codes)
         {
-                ////token.name = std::string(next - 1, end);
-            st.add(sym);
-            //printf("%s\n", src);
+            printf("%s\t%d\t%d\n", it.name, it.reg, it.ex);
         }
     }
 
-    //src = t2;
-    //while (*src != '\0')
-    //{
-    //    src = find_token(src, &st, &sym, lineno);
-    //    if (src != NULL)
-    //    {
-    //        printf("%s\n", src);
-    //    }
-    //}
+    //auto r = grammar(t2);
+    //printf("grammar : %d\n", r);
 
-    grammar(t2, &st);
-    ////std::array<int, 4> dk = {'0', 'A', '_', 'a'};
-    ////std::array<int, 4> dk = {'a', '_', 'A', '0'};
-    //int dk[] = {'a', '_', 'A', '0'};
 
-    //struct keyword
-    //{
-    //    int k;
-    //    int l;
-    //};
-    //keyword ks[] = {{'a', 26}, {'_', 1}, {'A', 26}, {'0', 10}};
-
-    ////keywords ks = {4, {'a', '_', 'A', '0'}, {26, 1, 26, 10}};
-
-    //const char* t = "abc2q1 GJ-571";
-    //while (*t != '\0')
-    //{
-    //    keyword* r = std::lower_bound(ks, ks + 4, *t, std::greater<int>());
-    //    printf("%c - %p %p %c\n", *t, r, dk + 4, *r);
-    //    t++;
-    //}
     return 0;
 }
 
