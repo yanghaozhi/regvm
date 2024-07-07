@@ -57,7 +57,7 @@ const char* parser::statement(const char* src)
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
-            fprintf(stderr, "%d : no parser op want token %s !!!\n", lineno, std::string(tok.name).c_str());
+            fprintf(stderr, "%d : no parser op want token %c : %s !!!\n", lineno, (char)tok.info.type, std::string(tok.name).c_str());
             return NULL;
         }
         cur = it->second;
@@ -103,31 +103,136 @@ bool parser::add(op* func, ...)
     return true;
 }
 
-const char* parser::expression(const char* src, int reg, DATA_TYPE type)
+int parser::operator_level(int op) const
 {
-    token tok[3];
-    src = next_token(src, tok[0]);
-    src = next_token(src, tok[1]);
-    if (tok[1].info.type == ';')
+    //ref : https://zh.cppreference.com/w/cpp/language/operator_precedence
+    switch (op)
     {
-        switch (tok[0].info.type)
+    case Add:
+    case Sub:
+        return 6;
+    case Mul:
+    case Div:
+        return 5;
+    case Shl:
+    case Shr:
+        return 7;
+    //case Xor:
+    //    return 12;
+    //case Or:
+    //    return 13;
+    default:
+        return -1;
+    }
+}
+
+int parser::token_2_reg(const token& tok)
+{
+    int reg = regs.get();
+    switch (tok.info.type)
+    {
+    case Num:
+        INST(SETS, reg, tok.info.data_type, tok.info.value);
+        break;
+    case Id:
         {
-        case Num:
-            INST(SETS, reg, type, tok[0].info.value);
-            break;
-        case Id:
-            {
-                int n = regs.get();
-                INST(SETC, n, tok[0].name);
-                INST(LOAD, reg, n);
-            }
-            break;
-        default:
-            fprintf(stderr, "%d : invalid expression %d - %s !!!\n", lineno, tok[0].info.type, std::string(tok[0].name).c_str());
+            int n = regs.get();
+            INST(SETC, n, tok.name);
+            INST(LOAD, reg, n);
+        }
+        break;
+    default:
+        fprintf(stderr, "%d : invalid expression %d - %s !!!\n", lineno, tok.info.type, std::string(tok.name).c_str());
+        return -1;
+    }
+    return reg;
+}
+
+const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
+{
+    token tok[2];
+    src = next_token(src, tok[0]);
+    switch (tok[0].info.type)
+    {
+    case '(':
+        src = expression(src, pri, fin, reg);
+        if ((src == NULL) || (reg < 0))
+        {
             return NULL;
         }
-        return src;
+        break;
+    case Num:
+    case Id:
+        break;
+    default:
+        fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, tok[0].info.type, (char)tok[0].info.type, std::string(tok[0].name).c_str());
+        return NULL;
     }
+
+    do
+    {
+        src = next_token(src, tok[1]);
+        int cur_pri = operator_level(tok[1].info.type);
+        switch (tok[1].info.type)
+        {
+        case ';':
+            fin = true;
+            [[fallthrough]];
+        case ')':
+            reg = token_2_reg(tok[0]);
+            printf("$%d = %ld\n", reg, tok[0].info.value.sint);
+            return (reg >= 0) ? src : NULL;
+        default:
+            if ((pri >= 0) && (cur_pri > pri))
+            {
+                reg = token_2_reg(tok[0]);
+                printf("$%d = %ld\n", reg, tok[0].info.value.sint);
+                return (reg >= 0) ? src - 1 : NULL;
+            }
+            break;
+        }
+
+        int n = -1;
+        src = expression(src, cur_pri, fin, n);
+        if ((src == NULL) || (n < 0))
+        {
+            return NULL;
+        }
+
+        if (reg < 0)
+        {
+            reg = token_2_reg(tok[0]);
+            if (reg < 0)
+            {
+                return NULL;
+            }
+            printf("$%d = %ld %c $%d\n", reg, tok[0].info.value.sint, (char)tok[1].info.value.uint, n);
+        }
+        else
+        {
+            printf("$%d = $%d %c $%d\n", reg, reg, (char)tok[1].info.value.uint, n);
+        }
+
+        switch (tok[1].info.type)
+        {
+        case Add:
+            INST(ADD, reg, n);
+            break;
+        case Sub:
+            INST(SUB, reg, n);
+            break;
+        case Mul:
+            INST(MUL, reg, n);
+            break;
+        case Div:
+            INST(DIV, reg, n);
+            break;
+        default:
+            fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
+            return NULL;
+        }
+    } while (0);//while (fin != true);
+
     return src;
 }
 
@@ -168,6 +273,7 @@ const char* parser::next_token(const char* src, token& tok)
     {
         const char* end = NULL;
         int token = *next++;
+        tok.info.value.uint = token;
         switch (token)
         {
         case ' ':
@@ -180,7 +286,6 @@ const char* parser::next_token(const char* src, token& tok)
             break;
         case '\'':  //字符
             tok.info.type = Num;
-            tok.info.value.uint = token;
             break;
         case '"':  //字符串
             //TODO : 暂不支持转义字符
@@ -257,10 +362,9 @@ const char* parser::next_token(const char* src, token& tok)
                 tok.info.type = Add;
                 return next;
             }
-            break;
         case '*':
             tok.info.type = Mul;
-            break;
+            return next;
         case '/':   //TODO : 不支持多行注释
             if (*next == '/')
             {

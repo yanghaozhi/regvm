@@ -61,10 +61,14 @@ bool grammar(std::vector<inst>& insts, const char* src)
 
 [[maybe_unused]]
 static char t1[] = R"(
-int a;
-double b = 12.34;
-int c = -64898;
-double d = b;
+//int a;
+//double b = 12.34;
+//int c = -64898;
+//double d = b;
+//int e = 2 + 6 - 5;
+int f = 2 + (6 - 5) + 9;
+int g = 1 + 2 * 3;
+int h = 10 * 20 - 30;
 )";
 
 

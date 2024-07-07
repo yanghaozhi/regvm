@@ -29,7 +29,7 @@ public:
 
     bool add(op* func, ...);
 
-    const char* expression(const char* src, int reg, DATA_TYPE type);
+    const char* expression(const char* src, int pri, bool& fin, int& reg);
 
 private:
     int depth      = 0;
@@ -42,5 +42,8 @@ private:
 
     trie_tree*                                  parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
+
+    int token_2_reg(const token& tok);
+    int operator_level(int op) const;
 };
 

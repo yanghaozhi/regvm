@@ -1,5 +1,6 @@
 #include "statements.h"
 
+#include <stdio.h>
 
 template <typename T> const char* var_crtp<T>::go(parser* p, const char* src, const token* toks, int count)
 {
@@ -43,8 +44,10 @@ decl_var_init::decl_var_init(parser* p)
 
 const char* decl_var_init::go2(parser* p, const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
-    int v = regs.get();
-    src = p->expression(src, v, type);
+    int v = -1;
+    bool fin = false;
+    printf("-------------------\n");
+    src = p->expression(src, -1, fin, v);
     int n = regs.get();
     auto& insts = p->insts;
     insts.emplace_back("SETC", CODE_SETL, n, name);
