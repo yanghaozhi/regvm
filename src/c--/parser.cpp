@@ -166,7 +166,6 @@ const char* parser::next_token(const char* src, token& tok)
 
     while (*next != 0)
     {
-        int base = 10;
         const char* end = NULL;
         int token = *next++;
         switch (token)
@@ -201,23 +200,32 @@ const char* parser::next_token(const char* src, token& tok)
                 return end;
             }
         case '0':   //解析数字(十六进制,八进制)
-            switch (*next)
             {
-            case 'x':
-            case 'X':
-                base = 16;
-                break;
-            case '.':
+                int base = 10;
+                switch (*next)
+                {
+                case 'x':
+                case 'X':
+                    base = 16;
+                    break;
+                case '.':
+                    tok.info.type = Num;
+                    return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_DOUBLE, strtod);
+                default:
+                    base = 8;
+                    break;
+                };
                 tok.info.type = Num;
-                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_DOUBLE, strtod);
-            default:
-                base = 8;
-                break;
-            };
-            [[fallthrough]];
+                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_UNSIGNED, strtoull, base);
+            }
         case '1' ... '9':   //十进制
             tok.info.type = Num;
-            return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_UNSIGNED, strtoull, base);
+            src = whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_UNSIGNED, strtoull, 10);
+            if (tok.info.value.uint < 0x7FFFFFFFFFFFFFFF)
+            {
+                tok.info.data_type = TYPE_SIGNED;
+            }
+            return src;
         case '-':
             switch (*next)
             {
