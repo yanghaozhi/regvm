@@ -7,6 +7,12 @@
 
 #define INST(c, r, e, ...)   insts.emplace_back(#c, CODE_##c, r, e, ##__VA_ARGS__);
 
+enum EXTRA_CODE
+{
+    CODE_SETC    = 256,
+    CODE_SETD,
+};
+
 struct inst
 {
     inst(const char* n, int i, int r, int e);

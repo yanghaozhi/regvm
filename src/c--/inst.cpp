@@ -10,19 +10,13 @@
 
 sel_reg         regs;
 
-enum INTERNAL_CODE
-{
-    SETC    = 256,
-    SETD,
-};
-
 inst::inst(const char* n, int i, int r, int e) :
     id(i), reg(r), ex(e), name(n)
 {
 }
 
 inst::inst(const char* n, int i, int r, const std::string_view& v) :
-    id(SETC), reg(r), ex(TYPE_STRING), name("SETC"), str(v)
+    id(CODE_SETC), reg(r), ex(TYPE_STRING), name("SETC"), str(v)
 {
 }
 
@@ -88,7 +82,7 @@ void inst::print_txt(FILE* fp)
     fprintf(fp, "%s\t%d\t%d", name, reg, ex);
     switch (id)
     {
-    case SETC:
+    case CODE_SETC:
         fprintf(fp, "\t%s\n", std::string(str).c_str());
         break;
     case CODE_SETS:
@@ -110,7 +104,7 @@ void inst::print_txt(FILE* fp)
             break;
         }
         break;
-    case SETD:
+    case CODE_SETD:
         fprintf(fp, "\t%f\n", val.dbl);
         break;
     default:

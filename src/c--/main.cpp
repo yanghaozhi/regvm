@@ -64,6 +64,7 @@ static char t1[] = R"(
 int a;
 double b = 12.34;
 int c = -64898;
+double d = b;
 )";
 
 

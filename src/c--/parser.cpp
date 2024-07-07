@@ -17,7 +17,6 @@ parser::parser() : parser_list(new trie_tree())
     keywords.emplace("int", Int);
     keywords.emplace("double", Double);
     keywords.emplace("return", Return);
-    keywords.emplace("sizeof", Sizeof);
     keywords.emplace("while", While);
 }
 
@@ -106,18 +105,29 @@ bool parser::add(op* func, ...)
 
 const char* parser::expression(const char* src, int reg, DATA_TYPE type)
 {
-    token tok;
-    src = next_token(src, tok);
-    switch (tok.info.type)
+    token tok[3];
+    src = next_token(src, tok[0]);
+    src = next_token(src, tok[1]);
+    if (tok[1].info.type == ';')
     {
-    case Num:
-        INST(SETS, reg, type, tok.info.value);
-        break;
-    default:
-        break;
+        switch (tok[0].info.type)
+        {
+        case Num:
+            INST(SETS, reg, type, tok[0].info.value);
+            break;
+        case Id:
+            {
+                int n = regs.get();
+                INST(SETC, n, tok[0].name);
+                INST(LOAD, reg, n);
+            }
+            break;
+        default:
+            fprintf(stderr, "%d : invalid expression %d - %s !!!\n", lineno, tok[0].info.type, std::string(tok[0].name).c_str());
+            return NULL;
+        }
+        return src;
     }
-    //TODO
-    src = next_token(src, tok);
     return src;
 }
 
@@ -153,9 +163,7 @@ const char* parser::next_token(const char* src, token& tok)
     const char* next = src;
     memset(&tok.info, 0, sizeof(tok.info));
     tok.name = "";
-    //char* begin_pos;
-    //int hash;
-    //while ((token = *pos++) != 0)
+
     while (*next != 0)
     {
         int base = 10;
@@ -171,6 +179,17 @@ const char* parser::next_token(const char* src, token& tok)
         case '\n':
             lineno += 1;
             break;
+        case '\'':  //字符
+            tok.info.type = Num;
+            tok.info.value.uint = token;
+            break;
+        case '"':  //字符串
+            //TODO : 暂不支持转义字符
+            end = strchr(next, token);
+            tok.info.data_type = TYPE_STRING;
+            tok.info.type = token;
+            tok.name = std::string_view(next - 1, end - next + 1);
+            return end + 1;
         case 'a' ... 'z':
         case 'A' ... 'Z':
         case '_':   //解析合法的变量名
@@ -205,7 +224,9 @@ const char* parser::next_token(const char* src, token& tok)
             case '-':
                 tok.info.type = Dec;
                 return next + 1;
-            case '=':   //TODO -=
+            case '=':
+                tok.info.type = SubE;
+                return next + 1;
                 break;
             case '0' ... '9':
                 tok.info.type = Num;
@@ -221,24 +242,17 @@ const char* parser::next_token(const char* src, token& tok)
             case '+':
                 tok.info.type = Inc;
                 return next + 1;
-            case '=':   //TODO +=
-                break;
+            case '=':
+                tok.info.type = AddE;
+                return next + 1;
             default:
                 tok.info.type = Add;
                 return next;
             }
             break;
-        case '\'':  //字符
-            tok.info.type = Num;
-            tok.info.value.uint = token;
+        case '*':
+            tok.info.type = Mul;
             break;
-        case '"':  //字符串
-            //TODO : 暂不支持转义字符
-            end = strchr(next, token);
-            tok.info.data_type = TYPE_STRING;
-            tok.info.type = token;
-            tok.name = std::string_view(next - 1, end - next + 1);
-            return end + 1;
         case '/':   //TODO : 不支持多行注释
             if (*next == '/')
             {

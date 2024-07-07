@@ -5,7 +5,7 @@
 
 //支持的标记类别(供词法分析器next解析成对应的标记)
 enum TOKEN_T { Num = 256,   //避免和ascii字符冲突
-    Str, Fun, Sys, Glo, Loc, Id, Else, Enum, If, Int, Double, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak};
+    Str, Fun, Sys, Glo, Loc, Id, Else, Enum, If, Int, Double, Return, Sizeof, While, Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, AddE, Sub, SubE, Mul, Div, Mod, Inc, Dec, Brak};
 
 
 union uv
