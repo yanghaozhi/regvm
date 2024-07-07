@@ -9,10 +9,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
+#include <string_view>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -36,7 +36,7 @@ struct code
     code(const char* n, int i, int r, int e) :
         id(i), reg(r), ex(e), name(n)
     {};
-    code(const char* n, int i, int r, const std::string& v) :
+    code(const char* n, int i, int r, const std::string_view& v) :
         id(i), reg(r), ex(TYPE_STRING), name(n), str(v)
     {};
     code(const char* n, int i, int r, int e, uv v) :
@@ -91,12 +91,12 @@ struct code
     int                 ex;
     const char*         name;
     uv                  val;
-    std::string         str;
+    std::string_view    str;
 };
 
 #define INST(c, r, e, ...)   codes.emplace_back(#c, CODE_##c, r, e, ##__VA_ARGS__);
 
-struct symbol
+struct token
 {
     struct
     {
@@ -105,16 +105,16 @@ struct symbol
         int             token;
     }                   info;
 
-    std::string         name;
+    std::string_view    name;
 };
 
-std::unordered_map<std::string, int> keywords;   //  name : TOKEN_T
+std::unordered_map<std::string_view, int> keywords;   //  name : TOKEN_T
 
 struct var
 {
     DATA_TYPE           type;
     uv                  init;
-    std::string         name;
+    std::string_view    name;
 };
 
 struct func
@@ -123,7 +123,7 @@ struct func
     std::vector<var>    args;
 };
 
-std::unordered_map<std::string, func> funcs;
+std::unordered_map<std::string_view, func> funcs;
 
 class sel_reg
 {
@@ -165,7 +165,7 @@ private:
     }
 
     int8_t      regs[16];
-    std::unordered_map<std::string, int>    names;
+    std::unordered_map<std::string_view, int>    names;
 };
 sel_reg         regs;
 
@@ -177,10 +177,10 @@ sel_reg         regs;
 //const keyword TOKEN_CHAR[] = {{'a', 26}, {'_', 1}, {'A', 26}, {'0', 10}};
 //const keyword NUMBER_CHAR[] = {{'a', 26}, {'_', 1}, {'A', 26}, {'0', 10}};
 
-const char* next_token(const char* src, int& lineno, symbol* sym);
+const char* next_token(const char* src, int& lineno, token* tok);
 
 //语法分析部分
-const char* parse_func(const std::string& name, DATA_TYPE ret, const char* src, int& lineno)
+const char* parse_func(const std::string_view& name, DATA_TYPE ret, const char* src, int& lineno)
 {
     auto r = funcs.emplace(name, func{});
     if (r.second == false)
@@ -189,9 +189,9 @@ const char* parse_func(const std::string& name, DATA_TYPE ret, const char* src, 
     }
     r.first->second.ret = ret;
 
-    symbol sym;
-    src = next_token(src, lineno, &sym);
-    while (sym.info.token != ')')
+    token tok;
+    src = next_token(src, lineno, &tok);
+    while (tok.info.token != ')')
     {
     }
     return src;
@@ -199,12 +199,12 @@ const char* parse_func(const std::string& name, DATA_TYPE ret, const char* src, 
 
 const char* expression(std::vector<code>& codes, const char* src, int reg, DATA_TYPE type, int& lineno)
 {
-    symbol sym;
-    src = next_token(src, lineno, &sym);
-    switch (sym.info.token)
+    token tok;
+    src = next_token(src, lineno, &tok);
+    switch (tok.info.token)
     {
     case Num:
-        INST(SETS, reg, type, sym.info.value);
+        INST(SETS, reg, type, tok.info.value);
         break;
     default:
         break;
@@ -215,7 +215,7 @@ const char* expression(std::vector<code>& codes, const char* src, int reg, DATA_
 const char* declaration(std::vector<code>& codes, const char* src, DATA_TYPE type, int& lineno)
 {
     //int data_type = SINT;
-    //switch (sym.info.token)
+    //switch (tok.info.token)
     //{
     //case Int:
     //    data_type = SINT;
@@ -223,18 +223,18 @@ const char* declaration(std::vector<code>& codes, const char* src, DATA_TYPE typ
     //default:
     //    break;
     //}
-    symbol sym;
+    token tok;
     //获取变量名
-    src = next_token(src, lineno, &sym);
-    if (sym.info.token != Id)
+    src = next_token(src, lineno, &tok);
+    if (tok.info.token != Id)
     {
-        fprintf(stderr, "%d : bad variable declaration of %s !!!\n", lineno, sym.name.c_str());
+        fprintf(stderr, "%d : bad variable declaration of %s !!!\n", lineno, std::string(tok.name).c_str());
         return NULL;
     }
-    auto name = sym.name;
+    auto name = tok.name;
 
-    src = next_token(src, lineno, &sym);
-    switch (sym.info.token)
+    src = next_token(src, lineno, &tok);
+    switch (tok.info.token)
     {
     case '(':
         //TODO 函数
@@ -257,9 +257,8 @@ const char* declaration(std::vector<code>& codes, const char* src, DATA_TYPE typ
     return src;
 }
 
-const char* statement(std::vector<code>& codes, const char* src, symbol& sym, int& lineno)
+const char* statement(std::vector<code>& codes, const char* src, token& tok, int& lineno)
 {
-
     //return false;
     return NULL;
 }
@@ -269,14 +268,14 @@ bool grammar(std::vector<code>& codes, const char* src)
 {
     printf("%s\n", src);
 
-    symbol sym;
+    token tok;
     int lineno = 0;
 
     while ((src != NULL) && (*src != '\0'))
     {
-        src = next_token(src, lineno, &sym);
+        src = next_token(src, lineno, &tok);
 
-        auto it = keywords.find(sym.name);
+        auto it = keywords.find(tok.name);
         if (it != keywords.end())
         {
             //处理类型
@@ -289,19 +288,19 @@ bool grammar(std::vector<code>& codes, const char* src)
                 src = declaration(codes, src, TYPE_DOUBLE, lineno);
                 break;
                 //case Char:
-                //    src = next_token(src, &sym, lineno);
+                //    src = next_token(src, &tok, lineno);
                 //    break;
                 //case Enum:  //TODO
                 //    break;
             default:
-                src = statement(codes, src, sym, lineno);
+                src = statement(codes, src, tok, lineno);
                 break;
             }
         }
         else
         {
             //TODO : 正常赋值/函数调用语句
-            //src = next_token(src, lineno, &sym);
+            //src = next_token(src, lineno, &tok);
             //continue;
         }
     }
@@ -322,11 +321,11 @@ inline uint64_t whole_token(const char* pos, const char** end)
     return h;
 }
 
-const char* next_token(const char* src, int& lineno, symbol* sym)
+const char* next_token(const char* src, int& lineno, token* tok)
 {
     const char* next = src;
-    memset(&sym->info, 0, sizeof(sym->info));
-    sym->name = "";
+    memset(&tok->info, 0, sizeof(tok->info));
+    tok->name = "";
     //char* begin_pos;
     //int hash;
     //while ((token = *pos++) != 0)
@@ -350,8 +349,8 @@ const char* next_token(const char* src, int& lineno, symbol* sym)
             {
                 const char* end = NULL;
                 whole_token(next - 1, &end);
-                sym->info.token = Id;
-                sym->name = std::string(next - 1, end - next + 1);
+                tok->info.token = Id;
+                tok->name = std::string_view(next - 1, end - next + 1);
                 return end;
             }
         case '0':   //解析数字(十六进制,八进制)
@@ -369,22 +368,22 @@ const char* next_token(const char* src, int& lineno, symbol* sym)
         case '1' ... '9':   //十进制
             {
                 char* end = NULL;
-                sym->info.value.uint = strtoull(next - 1, &end, base);
-                sym->info.data_type = TYPE_UNSIGNED;
-                sym->info.token = Num;
+                tok->info.value.uint = strtoull(next - 1, &end, base);
+                tok->info.data_type = TYPE_UNSIGNED;
+                tok->info.token = Num;
                 return end;
             }
         case '\'':  //字符
-            sym->info.token = Num;
-            sym->info.value.uint = token;
+            tok->info.token = Num;
+            tok->info.value.uint = token;
             break;
         case '"':  //字符串
             //TODO : 暂不支持转义字符
             {
                 auto end = strchr(next, token);
-                sym->info.data_type = TYPE_STRING;
-                sym->info.token = token;
-                sym->name = std::string(next - 1, end - next + 1);
+                tok->info.data_type = TYPE_STRING;
+                tok->info.token = token;
+                tok->name = std::string_view(next - 1, end - next + 1);
                 return end + 1;
             }
         case '/':   //TODO : 不支持多行注释
@@ -395,30 +394,30 @@ const char* next_token(const char* src, int& lineno, symbol* sym)
             }
             else
             {
-                sym->info.token = Div;
+                tok->info.token = Div;
                 return next;
             }
         case '=':
             if(*next != '=')
             {
-                sym->info.token = Assign;
+                tok->info.token = Assign;
                 return next;
             }
             else
             {
-                sym->info.token = Eq;
+                tok->info.token = Eq;
                 return next + 1;
             }
         case '+':
             switch (*next)
             {
             case '+':
-                sym->info.token = Inc;
+                tok->info.token = Inc;
                 return next + 1;
             case '=':   //TODO +=
                 break;
             default:
-                sym->info.token = Add;
+                tok->info.token = Add;
                 return next;
             }
             break;
@@ -431,7 +430,7 @@ const char* next_token(const char* src, int& lineno, symbol* sym)
         case ']': 
         case ',': 
         case ':':
-            sym->info.token = token;
+            tok->info.token = token;
             return next;
         default:
             break;
