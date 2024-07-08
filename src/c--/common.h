@@ -22,10 +22,11 @@ struct token
         uv              value;
         DATA_TYPE       data_type;
         int             type;
-        char            orig;
+        int             orig;
     }                   info;
 
     std::string_view    name;
+    int                 reg = -1;
 };
 
 const char* next_token(const char* src, int& lineno, token& tok);

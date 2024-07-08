@@ -46,7 +46,7 @@ const char* decl_var_init::go2(parser* p, const char* src, const token* toks, in
 {
     int v = -1;
     printf("-------------------\n");
-    src = p->expression(src, -1, v);
+    src = p->expression(src, v);
     int n = regs.get();
     auto& insts = p->insts;
     insts.emplace_back("SETC", CODE_SETL, n, name);

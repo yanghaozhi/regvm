@@ -127,8 +127,7 @@ int sel_reg::get(const char* name)
     auto it = names.find(name);
     if (it != names.end())
     {
-        int8_t* p = (int8_t*)memchr(regs, it->second, sizeof(regs));
-        return used(p - regs);
+        return active(it->second);
     }
     else
     {
@@ -136,6 +135,17 @@ int sel_reg::get(const char* name)
         names.emplace(name, v);
         return v;
     }
+}
+
+int sel_reg::tmp(void)
+{
+    return regs[0];
+}
+
+int sel_reg::active(int reg_id)
+{
+    int8_t* p = (int8_t*)memchr(regs, reg_id, sizeof(regs));
+    return used(p - regs);
 }
 
 int sel_reg::used(int id)

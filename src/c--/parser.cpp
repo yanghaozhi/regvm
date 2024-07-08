@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include <deque>
 #include <string>
 #include <typeinfo>
 
@@ -128,6 +129,11 @@ int parser::operator_level(int op) const
 
 int parser::token_2_reg(const token& tok)
 {
+    if (tok.reg >= 0)
+    {
+        return tok.reg;
+    }
+
     int reg = regs.get();
     switch (tok.info.type)
     {
@@ -136,7 +142,7 @@ int parser::token_2_reg(const token& tok)
         break;
     case Id:
         {
-            int n = regs.get();
+            int n = regs.tmp();
             INST(SETC, n, tok.name);
             INST(LOAD, reg, n);
         }
@@ -148,95 +154,93 @@ int parser::token_2_reg(const token& tok)
     return reg;
 }
 
-const char* parser::expression(const char* src, const int prev_level, int& reg)
+template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, const int stop, const int level)
 {
-    token tok[2];
-    src = next_token(src, tok[0]);
-    switch (tok[0].info.type)
-    {
-    case '(':
-        src = expression(src, -1, reg);
-        if ((src == NULL) || (reg < 0))
-        {
-            return NULL;
-        }
-        break;
-    case Num:
-    case Id:
-        break;
-    default:
-        fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, tok[0].info.type, (char)tok[0].info.type, std::string(tok[0].name).c_str());
-        return NULL;
-    }
-
+    int op = -1;
+    int l = -1;
     do
     {
-        src = next_token(src, tok[1]);
-        int level = operator_level(tok[1].info.type);
-        if ((prev_level >= 0) && (prev_level < level))
+        op = ops.back();
+        ops.pop_back();
+        int r = token_2_reg(toks.back());
+        toks.pop_back();
+        l = token_2_reg(toks.back());
+        toks.pop_back();
+
+        switch (op)
         {
-            return src - 1;
+        case Add:
+            INST(ADD, l, r);
+            break;
+        case Sub:
+            INST(SUB, l, r);
+            break;
+        case Mul:
+            INST(MUL, l, r);
+            break;
+        case Div:
+            INST(DIV, l, r);
+            break;
+        default:
+            //fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
+            return -1;
         }
-        switch (tok[1].info.type)
+    } while ((ops.size() > 0) && ((stop < 0) || (stop != op) || (level == operator_level(ops.back()))));
+    return l;
+}
+
+const char* parser::expression(const char* src, int& reg)
+{
+    std::deque<token>   toks;
+    std::deque<int>     ops;
+
+    while ((src != NULL) && (*src != '\0'))
+    {
+        auto& v = toks.emplace_back();
+        src = next_token(src, v);
+        switch (v.info.type)
+        {
+        case '(':
+            ops.emplace_back(v.info.type);
+            break;
+        case Num:
+        case Id:
+            break;
+        default:
+            fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
+            return NULL;
+        }
+
+        token op;
+        src = next_token(src, op);
+        ops.emplace_back(op.info.type);
+        //int level = operator_level(op.info.type);
+        int r = -1;
+        switch (op.info.type)
         {
         case ';':
-            reg = token_2_reg(tok[0]);
-            printf("$%d = %ld\n", reg, tok[0].info.value.sint);
-            return (reg >= 0) ? src - 1 : NULL;
+            r = pop_and_calc(toks, ops, -1, -1);
+            break;
         case ')':
-            reg = token_2_reg(tok[0]);
-            printf("$%d = %ld\n", reg, tok[0].info.value.sint);
-            return (reg >= 0) ? src : NULL;
+            r = pop_and_calc(toks, ops, '(', -1);
+            break;
         default:
-            if ((prev_level >= 0) && (level > prev_level))
+            if (operator_level(op.info.type) > operator_level(ops.back()))
             {
-                reg = token_2_reg(tok[0]);
-                printf("$%d = %ld\n", reg, tok[0].info.value.sint);
-                return (reg >= 0) ? src - 1 : NULL;
+                r = pop_and_calc(toks, ops, -1, operator_level(ops.back()));
             }
             break;
         }
-
-        int n = -1;
-        src = expression(src, level, n);
-        if ((src == NULL) || (n < 0))
+        if (r >= 0)
         {
-            return NULL;
-        }
-
-        if (reg < 0)
-        {
-            reg = token_2_reg(tok[0]);
-            if (reg < 0)
-            {
-                return NULL;
-            }
-            printf("$%d = %ld %c $%d\n", reg, tok[0].info.value.sint, (char)tok[1].info.orig, n);
+            auto& vv = toks.emplace_back();
+            vv.reg = r;
         }
         else
         {
-            printf("$%d = $%d %c $%d\n", reg, reg, (char)tok[1].info.orig, n);
+            reg = r;
         }
-
-        switch (tok[1].info.type)
-        {
-        case Add:
-            INST(ADD, reg, n);
-            break;
-        case Sub:
-            INST(SUB, reg, n);
-            break;
-        case Mul:
-            INST(MUL, reg, n);
-            break;
-        case Div:
-            INST(DIV, reg, n);
-            break;
-        default:
-            fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
-            return NULL;
-        }
-    } while (0);
+    }
 
     return src;
 }

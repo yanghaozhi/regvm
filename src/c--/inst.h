@@ -37,9 +37,15 @@ class sel_reg
 {
 public:
     sel_reg();
+
     int get(const char* name);
     inline int get(void)   {return used(0);}
+    int active(int reg_id);
+
+    int tmp(void);  //just use in next inst, so NOT NEED to active
+
     void clear(const char* name)    {names.erase(name);};
+
 private:
     int used(int id);
 
