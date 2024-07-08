@@ -155,11 +155,12 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
     switch (tok[0].info.type)
     {
     case '(':
-        src = expression(src, pri, fin, reg);
+        src = expression(src, -1, fin, reg);
         if ((src == NULL) || (reg < 0))
         {
             return NULL;
         }
+        pri = -1;
         break;
     case Num:
     case Id:
@@ -169,10 +170,15 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
         return NULL;
     }
 
+    bool edge = false;
     do
     {
         src = next_token(src, tok[1]);
         int cur_pri = operator_level(tok[1].info.type);
+        if (pri != cur_pri)
+        {
+            edge = true;
+        }
         switch (tok[1].info.type)
         {
         case ';':
@@ -211,6 +217,7 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
         else
         {
             printf("$%d = $%d %c $%d\n", reg, reg, (char)tok[1].info.value.uint, n);
+            edge = true;
         }
 
         switch (tok[1].info.type)
@@ -231,7 +238,7 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
             fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
             return NULL;
         }
-    } while (0);//while (fin != true);
+    } while ((fin != true) && (edge == true));
 
     return src;
 }
