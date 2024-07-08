@@ -148,19 +148,18 @@ int parser::token_2_reg(const token& tok)
     return reg;
 }
 
-const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
+const char* parser::expression(const char* src, const int prev_level, int& reg)
 {
     token tok[2];
     src = next_token(src, tok[0]);
     switch (tok[0].info.type)
     {
     case '(':
-        src = expression(src, -1, fin, reg);
+        src = expression(src, -1, reg);
         if ((src == NULL) || (reg < 0))
         {
             return NULL;
         }
-        pri = -1;
         break;
     case Num:
     case Id:
@@ -170,26 +169,26 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
         return NULL;
     }
 
-    bool edge = false;
     do
     {
         src = next_token(src, tok[1]);
-        int cur_pri = operator_level(tok[1].info.type);
-        if (pri != cur_pri)
+        int level = operator_level(tok[1].info.type);
+        if ((prev_level >= 0) && (prev_level < level))
         {
-            edge = true;
+            return src - 1;
         }
         switch (tok[1].info.type)
         {
         case ';':
-            fin = true;
-            [[fallthrough]];
+            reg = token_2_reg(tok[0]);
+            printf("$%d = %ld\n", reg, tok[0].info.value.sint);
+            return (reg >= 0) ? src - 1 : NULL;
         case ')':
             reg = token_2_reg(tok[0]);
             printf("$%d = %ld\n", reg, tok[0].info.value.sint);
             return (reg >= 0) ? src : NULL;
         default:
-            if ((pri >= 0) && (cur_pri > pri))
+            if ((prev_level >= 0) && (level > prev_level))
             {
                 reg = token_2_reg(tok[0]);
                 printf("$%d = %ld\n", reg, tok[0].info.value.sint);
@@ -199,7 +198,7 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
         }
 
         int n = -1;
-        src = expression(src, cur_pri, fin, n);
+        src = expression(src, level, n);
         if ((src == NULL) || (n < 0))
         {
             return NULL;
@@ -212,12 +211,11 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
             {
                 return NULL;
             }
-            printf("$%d = %ld %c $%d\n", reg, tok[0].info.value.sint, (char)tok[1].info.value.uint, n);
+            printf("$%d = %ld %c $%d\n", reg, tok[0].info.value.sint, (char)tok[1].info.orig, n);
         }
         else
         {
-            printf("$%d = $%d %c $%d\n", reg, reg, (char)tok[1].info.value.uint, n);
-            edge = true;
+            printf("$%d = $%d %c $%d\n", reg, reg, (char)tok[1].info.orig, n);
         }
 
         switch (tok[1].info.type)
@@ -238,7 +236,7 @@ const char* parser::expression(const char* src, int pri, bool& fin, int& reg)
             fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
             return NULL;
         }
-    } while ((fin != true) && (edge == true));
+    } while (0);
 
     return src;
 }
@@ -280,7 +278,7 @@ const char* parser::next_token(const char* src, token& tok)
     {
         const char* end = NULL;
         int token = *next++;
-        tok.info.value.uint = token;
+        tok.info.orig = token;
         switch (token)
         {
         case ' ':

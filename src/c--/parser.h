@@ -29,7 +29,7 @@ public:
 
     bool add(op* func, ...);
 
-    const char* expression(const char* src, int pri, bool& fin, int& reg);
+    const char* expression(const char* src, const int prev_level, int& reg);
 
 private:
     int depth      = 0;
