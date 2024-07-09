@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include <deque>
 #include <string>
@@ -154,16 +155,26 @@ int parser::token_2_reg(const token& tok)
     return reg;
 }
 
-template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, const int stop, const int level)
+template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, const int level)
 {
     int op = -1;
     int l = -1;
+    if (ops.size() == 0)
+    {
+        return -1;
+    }
+    if (ops.size() != toks.size() - 1)
+    {
+        assert(0);
+        return -1;
+    }
+
+    int r = token_2_reg(toks.back());
+    toks.pop_back();
     do
     {
         op = ops.back();
         ops.pop_back();
-        int r = token_2_reg(toks.back());
-        toks.pop_back();
         l = token_2_reg(toks.back());
         toks.pop_back();
 
@@ -185,7 +196,8 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, cons
             //fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
             return -1;
         }
-    } while ((ops.size() > 0) && ((stop < 0) || (stop != op) || (level == operator_level(ops.back()))));
+        r = l;
+    } while ((ops.size() > 0) && ((level < 0) || (level == operator_level(ops.back()))));
     return l;
 }
 
@@ -201,7 +213,7 @@ const char* parser::expression(const char* src, int& reg)
         switch (v.info.type)
         {
         case '(':
-            ops.emplace_back(v.info.type);
+            src = expression(src, v.reg);
             break;
         case Num:
         case Id:
@@ -213,21 +225,18 @@ const char* parser::expression(const char* src, int& reg)
 
         token op;
         src = next_token(src, op);
-        ops.emplace_back(op.info.type);
-        //int level = operator_level(op.info.type);
         int r = -1;
         switch (op.info.type)
         {
         case ';':
-            r = pop_and_calc(toks, ops, -1, -1);
-            break;
         case ')':
-            r = pop_and_calc(toks, ops, '(', -1);
-            break;
+            reg = pop_and_calc(toks, ops, -1);
+            return src;
         default:
+            ops.emplace_back(op.info.type);
             if (operator_level(op.info.type) > operator_level(ops.back()))
             {
-                r = pop_and_calc(toks, ops, -1, operator_level(ops.back()));
+                r = pop_and_calc(toks, ops, operator_level(ops.back()));
             }
             break;
         }
@@ -278,7 +287,7 @@ const char* parser::next_token(const char* src, token& tok)
     memset(&tok.info, 0, sizeof(tok.info));
     tok.name = "";
 
-    while (*next != 0)
+    while ((next != NULL) && (*next != 0))
     {
         const char* end = NULL;
         int token = *next++;
@@ -354,7 +363,7 @@ const char* parser::next_token(const char* src, token& tok)
                 tok.info.type = Num;
                 return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_SIGNED, strtoll, 10);
             default:
-                tok.info.type = Add;
+                tok.info.type = Sub;
                 return next;
             }
             break;
