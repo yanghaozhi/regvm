@@ -155,11 +155,9 @@ int parser::token_2_reg(const token& tok)
     return reg;
 }
 
-template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, const int level)
+template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
 {
-    int op = -1;
-    int l = -1;
-    if (ops.size() == 0)
+    if (toks.size() == 0)
     {
         return -1;
     }
@@ -171,6 +169,14 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, cons
 
     int r = token_2_reg(toks.back());
     toks.pop_back();
+    if (ops.size() == 0)
+    {
+        return r;
+    }
+
+    int op = -1;
+    int l = -1;
+    const int level = operator_level(ops.back());
     do
     {
         op = ops.back();
@@ -197,7 +203,7 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops, cons
             return -1;
         }
         r = l;
-    } while ((ops.size() > 0) && ((level < 0) || (level == operator_level(ops.back()))));
+    } while ((ops.size() > 0) && (level == operator_level(ops.back())));
     return l;
 }
 
@@ -230,13 +236,22 @@ const char* parser::expression(const char* src, int& reg)
         {
         case ';':
         case ')':
-            reg = pop_and_calc(toks, ops, -1);
+            reg = pop_and_calc(toks, ops);
             return src;
         default:
-            ops.emplace_back(op.info.type);
-            if (operator_level(op.info.type) > operator_level(ops.back()))
             {
-                r = pop_and_calc(toks, ops, operator_level(ops.back()));
+                if (ops.size() > 0)
+                {
+                    int cur = operator_level(op.info.type);
+                    int prev = operator_level(ops.back());
+                    if (cur > prev)
+                    {
+                        int r = pop_and_calc(toks, ops);
+                        auto& vv = toks.emplace_back();
+                        vv.reg = r;
+                    }
+                }
+                ops.emplace_back(op.info.type);
             }
             break;
         }
@@ -349,37 +364,28 @@ const char* parser::next_token(const char* src, token& tok)
                 tok.info.data_type = TYPE_SIGNED;
             }
             return src;
-        case '-':
-            switch (*next)
-            {
-            case '-':
-                tok.info.type = Dec;
-                return next + 1;
-            case '=':
-                tok.info.type = SubE;
-                return next + 1;
-                break;
-            case '0' ... '9':
-                tok.info.type = Num;
-                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_SIGNED, strtoll, 10);
-            default:
-                tok.info.type = Sub;
-                return next;
-            }
+#define ADD_SUB(TOK, TYPE, DEF, DUP, EQ)                    \
+        case TOK:                                           \
+            switch (*next)                                  \
+            {                                               \
+            case TOK:                                       \
+                tok.info.type = DUP;                        \
+                return next + 1;                            \
+            case '=':                                       \
+                tok.info.type = EQ;                         \
+                return next + 1;                            \
+                break;                                      \
+            case '0' ... '9':                               \
+                tok.info.type = Num;                        \
+                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE, strtoll, 10);   \
+            default:                                        \
+                tok.info.type = DEF;                        \
+                return next;                                \
+            }                                               \
             break;
-        case '+':
-            switch (*next)
-            {
-            case '+':
-                tok.info.type = Inc;
-                return next + 1;
-            case '=':
-                tok.info.type = AddE;
-                return next + 1;
-            default:
-                tok.info.type = Add;
-                return next;
-            }
+            ADD_SUB('+', TYPE_SIGNED, Add, Inc, AddE);
+            ADD_SUB('-', TYPE_SIGNED, Sub, Dec, SubE);
+#undef ADD_SUB
         case '*':
             tok.info.type = Mul;
             return next;
