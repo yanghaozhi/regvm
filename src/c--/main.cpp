@@ -1,14 +1,12 @@
-/*
- * This module is rewrite from c4 project :https://github.com/rswier/c4
- *
- */
-
-
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #include <map>
 #include <list>
@@ -22,6 +20,9 @@
 #include "common.h"
 #include "parser.h"
 #include "statements.h"
+
+#include <code.h>
+#include <regvm.h>
 
 
 struct var
@@ -86,24 +87,109 @@ int main()
 }
 )";
 
+const char* HELP = R"(tester for vcc
+USAGE tester [file] [-r]
+options:
+    [file]          source file
+    -r              run code file
+    -p              print inst only
+    -o              output to file
+)";
+
 
 int main(int argc, char** argv)
 {
     std::vector<inst> insts;
-    auto r = grammar(insts, t1);
-    printf("grammar : %d\n", r);
-    if (r == true)
+
+    const char* src = t1;
+    int fd = -1;
+    struct stat st;
+    if (argc > 1)
     {
-        for (auto& it : insts)
+        fd = ::open(argv[1], O_RDONLY);
+        fstat(fd, &st);
+        src = (const char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    }
+
+    auto r = grammar(insts, src);
+    printf("parse : %d\n", r);
+    if (r == false)
+    {
+        return 1;
+    }
+
+
+    void (inst::*op)(FILE*);
+    const char* opts = "rps";
+    int opt = 0;
+    FILE* fp = stdout;
+    char* codes = NULL;
+    size_t bytes = 0;
+    while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
+    {
+        switch (opt)
         {
-            //it.print(stdout);
-            it.print_txt(stdout);
+        case 'r':
+            op = &inst::print_bin;
+            fp = open_memstream(&codes, &bytes);
+            break;
+        case 'p':
+            op = &inst::print;
+            break;
+        case 's':
+            op = &inst::print_txt;
+            break;
+        default:
+            break;
         }
     }
 
+    for (auto& it : insts)
+    {
+        //it.print(stdout);
+        inst* t = &it;
+        (t->*op)(fp);
+    }
+
+    if (fp != stdout)
+    {
+        fclose(fp);
+    }
+
+    if (codes != NULL)
+    {
+        const int line = 16;
+        int j = 0;
+        const unsigned char* p = (const unsigned char*)codes;
+        for (int i = 0; i < (int)bytes; i++)
+        {
+            if (j++ >= line)
+            {
+                printf("\n");
+                j = 1;
+            }
+            printf("%02X ", p[i]);
+        }
+        printf("\n\n");
+
+
+        auto vm = regvm_init();
+
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 1, &exit);
+
+        regvm_exit(vm);
+
+        printf("run : %d\n", r);
+    }
     //auto r = grammar(t2);
     //printf("grammar : %d\n", r);
 
+    if (fd >= 0)
+    {
+        munmap((void*)src, st.st_size);
+        close(fd);
+    }
 
     return 0;
 }

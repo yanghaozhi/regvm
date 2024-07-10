@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -27,12 +28,14 @@ struct inst
     void print_bin(FILE* fp);
     void print_txt(FILE* fp);
 
+    int                 bytes;
+
     int                 id;
     int                 reg;
     int                 ex;
     const char*         name;
     uv                  val;
-    std::string_view    str;
+    std::string         str;
 
     int8_t              args[4];
 };

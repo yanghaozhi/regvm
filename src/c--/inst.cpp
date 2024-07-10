@@ -11,23 +11,23 @@
 sel_reg         regs;
 
 inst::inst(const char* n, int i, int r, int e) :
-    id(i), reg(r), ex(e), name(n)
+    bytes(2), id(i), reg(r), ex(e), name(n)
 {
 }
 
 inst::inst(const char* n, int i, int r, const std::string_view& v) :
-    id(CODE_SETC), reg(r), ex(TYPE_STRING), name("SETC"), str(v)
+    bytes(10), id(CODE_SETC), reg(r), ex(TYPE_STRING), name("SETC"), str(v)
 {
 }
 
 inst::inst(const char* n, int i, int r, int e, int8_t* a) :
-    id(i), reg(r), ex(e), name(n)
+    bytes(4), id(i), reg(r), ex(e), name(n)
 {
     memcpy(args, a, sizeof(args));
 }
 
 inst::inst(const char* n, int i, int r, int e, uv v) :
-    id(i), reg(r), ex(e), name(n), val(v)
+    bytes(2), id(i), reg(r), ex(e), name(n), val(v)
 {
     switch (ex)
     {
@@ -36,16 +36,19 @@ inst::inst(const char* n, int i, int r, int e, uv v) :
         {
             id = CODE_SETS;
             name = "SETS";
+            bytes += 2;
         }
         else if (-2147483648 <= v.sint && v.sint <= 2147483647)
         {
             id = CODE_SETI;
             name = "SETI";
+            bytes += 4;
         }
         else
         {
             id = CODE_SETL;
             name = "SETL";
+            bytes += 8;
         }
         break;
     case TYPE_UNSIGNED:
@@ -53,21 +56,25 @@ inst::inst(const char* n, int i, int r, int e, uv v) :
         {
             id = CODE_SETS;
             name = "SETS";
+            bytes += 2;
         }
         else if (v.uint <= 0xFFFFFFFF)
         {
             id = CODE_SETI;
             name = "SETI";
+            bytes += 4;
         }
         else
         {
             id = CODE_SETL;
             name = "SETL";
+            bytes += 8;
         }
         break;
     case TYPE_DOUBLE:
         id = CODE_SETL;
         name = "SETL";
+        bytes += 8;
         break;
     default:
         break;
@@ -81,6 +88,59 @@ void inst::print(FILE* fp)
 
 void inst::print_bin(FILE* fp)
 {
+    switch (id)
+    {
+    case CODE_SETC:
+        id = CODE_SETL;
+        val.uint = (uintptr_t)str.c_str();
+        break;
+    case CODE_SETD:
+        id = CODE_SETL;
+        break;
+    default:
+        break;
+    }
+
+    code_t c;
+    c.id = id;
+    c.ex = ex;
+    c.reg = reg;
+
+    fwrite(&c, sizeof(code_t), 1, fp);
+
+    switch (id)
+    {
+    case CODE_SETS:
+        fwrite(&val.uint, 2, 1, fp);
+        break;
+    case CODE_SETI:
+        fwrite(&val.uint, 4, 1, fp);
+        break;
+    case CODE_SETL:
+        fwrite(&val.uint, 8, 1, fp);
+        break;
+    default:
+        if (id >= 128)
+        {
+            union extend_args
+            {
+                uint16_t        v;
+                struct
+                {
+                    uint16_t    a1 : 4;
+                    uint16_t    a2 : 4;
+                    uint16_t    a3 : 4;
+                    uint16_t    a4 : 4;
+                };
+            }   ea;
+            ea.a1 = args[0];
+            ea.a2 = args[1];
+            ea.a3 = args[2];
+            ea.a4 = args[3];
+            fwrite(&ea.v, sizeof(ea.v), 1, fp);
+        }
+        break;
+    }
 }
 
 void inst::print_txt(FILE* fp)
