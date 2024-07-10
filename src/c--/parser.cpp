@@ -207,6 +207,58 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
     return l;
 }
 
+const char* parser::call_func(const char* src, const token& name, int& count, int8_t* rets)
+{
+    if (name.info.type != Id)
+    {
+        fprintf(stderr, "%d : invalid function name %d - %s !!!\n", lineno, name.info.type, std::string(name.name).c_str());
+        return NULL;
+    }
+    //TODO : need to check func name valid !!!
+    if (name.name == "echo")
+    {
+        int8_t args[4] = {0};
+        int argc = 1;
+        while ((argc < 4) && (src != NULL) && (*src != '\0'))
+        {
+            const char* p = src;
+            token tok[2];
+            src = next_token(src, tok[0]);
+            src = next_token(src, tok[1]);
+            switch (tok[1].info.type)
+            {
+            case ',':
+                args[argc] = token_2_reg(tok[0]);
+                if (args[argc] < 0)
+                {
+                    return NULL;
+                }
+                break;
+            case ')':
+                args[argc] = token_2_reg(tok[0]);
+                if (args[argc] < 0)
+                {
+                    return NULL;
+                }
+                args[0] = argc;
+                rets[0] = regs.get();
+                INST(CMD, rets[0], 0, args);
+                count = 1;
+                return src;
+            default:
+                {
+                    int r = -1;
+                    src = expression(p, r);
+                    args[argc] = r;
+                }
+                break;
+            }
+            argc += 1;
+        }
+    }
+    return src;
+}
+
 const char* parser::expression(const char* src, int& reg)
 {
     std::deque<token>   toks;
@@ -224,6 +276,10 @@ const char* parser::expression(const char* src, int& reg)
         case Num:
         case Id:
             break;
+        case ';':
+            toks.pop_back();
+            reg = pop_and_calc(toks, ops);
+            return src;
         default:
             fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
             return NULL;
@@ -235,9 +291,19 @@ const char* parser::expression(const char* src, int& reg)
         switch (op.info.type)
         {
         case ';':
+        case ',':
         case ')':
             reg = pop_and_calc(toks, ops);
             return src;
+        case '(':   //函数调用
+            {
+                int count = 17;
+                int8_t rets[17];
+                memset(rets, 0xFF, sizeof(rets));
+                src = call_func(src, toks.back(), count, rets);
+                toks.back().reg = rets[0];
+            }
+            break;
         default:
             {
                 if (ops.size() > 0)

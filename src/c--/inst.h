@@ -21,6 +21,8 @@ struct inst
 
     inst(const char* n, int i, int r, int e, uv v);
 
+    inst(const char* n, int i, int r, int e, int8_t* args);
+
     void print(FILE* fp);
     void print_bin(FILE* fp);
     void print_txt(FILE* fp);
@@ -31,6 +33,8 @@ struct inst
     const char*         name;
     uv                  val;
     std::string_view    str;
+
+    int8_t              args[4];
 };
 
 class sel_reg

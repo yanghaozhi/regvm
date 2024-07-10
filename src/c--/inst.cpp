@@ -20,6 +20,12 @@ inst::inst(const char* n, int i, int r, const std::string_view& v) :
 {
 }
 
+inst::inst(const char* n, int i, int r, int e, int8_t* a) :
+    id(i), reg(r), ex(e), name(n)
+{
+    memcpy(args, a, sizeof(args));
+}
+
 inst::inst(const char* n, int i, int r, int e, uv v) :
     id(i), reg(r), ex(e), name(n), val(v)
 {
@@ -108,6 +114,13 @@ void inst::print_txt(FILE* fp)
         fprintf(fp, "\t%f\n", val.dbl);
         break;
     default:
+        if (id >= 128)
+        {
+            for (auto v : args)
+            {
+                fprintf(fp, "\t%d", v);
+            }
+        }
         fprintf(fp, "\n");
         break;
     }
