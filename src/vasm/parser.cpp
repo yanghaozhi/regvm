@@ -1,6 +1,8 @@
 #include "parser.h"
 
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 
 #include <code.h>
@@ -187,19 +189,19 @@ bool parser::pass::scan(void)
             case 0x43544553:    //SETC
                 if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
                 {
-                    ERROR("\e[31m --- setc ERROR : {}\e[0m\n", buf);
+                    LOGE("--- setc ERROR : %s", buf);
                     return false;
                 }
                 break;
             default:
-                ERROR("\e[31m --- 0x{:x} : {} - {} \e[0m\n", id.v, id.s, (int)buf[0]);
+                LOGE("--- 0x%llx : %s - %d", (unsigned long long)id.v, id.s, (int)buf[0]);
                 continue;
             }
         }
 
         if (line(&inst.code, sizeof(inst), buf) == false)
         {
-            ERROR("\e[31m --- scan ERROR : {}\e[0m\n", buf);
+            LOGE("--- scan ERROR : %s", buf);
             return false;
         }
     };

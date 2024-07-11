@@ -9,7 +9,9 @@
 #include <string>
 #include <typeinfo>
 
+#include <log.h>
 #include <code.h>
+
 
 
 parser::parser() : parser_list(new trie_tree())
@@ -57,7 +59,7 @@ const char* parser::statement(const char* src)
             continue;
         }
 
-        printf("%d\n", tok.info.type);
+        LOGD("%d", tok.info.type);
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
@@ -75,15 +77,13 @@ bool parser::add(op* func, ...)
 {
     trie_tree* cur = parser_list;
 
-    printf("add %s ", typeid(func).name());
+    LOGT("add %s ", typeid(func).name());
     va_list ap;
     va_start(ap, func);
     int t = -1;
     int d = 0;
     while ((t = va_arg(ap, int)) >= 0)
     {
-        printf("%d ", t);
-
         auto it = cur->next.find(t);
         if (it != cur->next.end())
         {
@@ -97,7 +97,6 @@ bool parser::add(op* func, ...)
     }
     va_end(ap);
 
-    printf("\n");
     cur->func = func;
     if (d > depth)
     {
@@ -319,6 +318,13 @@ const char* parser::comma(const char* src, std::vector<int>& rets)
         const char* p = src;
         token tok[2];
         src = next_token(src, tok[0]);
+        switch (tok[0].info.type)
+        {
+        case ';':
+            return src;
+        default:
+            break;
+        }
         src = next_token(src, tok[1]);
         int reg = -1;
         switch (tok[1].info.type)

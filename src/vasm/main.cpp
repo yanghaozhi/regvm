@@ -73,7 +73,6 @@ int main(int argc, char** argv)
     OP* op = NULL;
     const char* opts = "c:rsbhv";
     int opt = 0;
-    logging::set_level(logging::INFO);
     while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
     {
         switch (opt)
@@ -97,7 +96,6 @@ int main(int argc, char** argv)
             //o = new bin();
             break;
         case 'v':
-            logging::set_level(0);
             break;
         case 'h':
             printf("%s\n", HELP);

@@ -40,7 +40,7 @@ void labels::pass1::comment(const char* line)
         r.first->second.label = label;
         r.first->second.line = cur_line;
 
-        DEBUG("find label : {} - {} - {}", code_size, cur_line, label);
+        LOGD("find label : %lld - %lld - %s", (long long)code_size, (long long)cur_line, label.c_str());
     }
 }
 
@@ -58,11 +58,11 @@ bool labels::pass1::setc(code_t& code, intptr_t* next, const char* str)
 
 bool labels::pass1::line(const code_t* code, int max_bytes, const char* orig)
 {
-    DEBUG("{} - {} - {}", code->id, code->reg, code->ex);
+    LOGD("%d - %d - %d", code->id, code->reg, code->ex);
     int bytes = regvm_code_len(*code) << 1;
     if (bytes > max_bytes)
     {
-        ERROR("not enough bytes of code {}, want {}, got {}", code->id, bytes, max_bytes);
+        LOGE("not enough bytes of code %d, want %d, got %d", code->id, bytes, max_bytes);
         return false;
     }
     code_size += bytes;
@@ -104,18 +104,18 @@ bool labels::pass2::setc(code_t& code, intptr_t* next, const char* str)
         auto it = data.label_ids.find(label);
         if (it == data.label_ids.end())
         {
-            ERROR("Can not find id of label : {}", label);
+            LOGE("Can not find id of label : %s", label.c_str());
             return false;
         }
         int64_t id = it->second;
         auto it2 = data.label_infos.find(id);
         if (it2 == data.label_infos.end())
         {
-            ERROR("Can not find label info of label : {} - {}", id, label);
+            LOGE("Can not find label info of label : %lld - %s", (long long)id, label.c_str());
             return false;
         }
         *(uint64_t*)next= (uint64_t)it2->second.pos;
-        DEBUG("write {} as {} ", it2->second.pos, label);
+        LOGD("write %lld as %s ", (long long)it2->second.pos, label.c_str());
         return true;
     }
     return false;

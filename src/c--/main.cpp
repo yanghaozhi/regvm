@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "statements.h"
 
+#include <log.h>
 #include <code.h>
 #include <regvm.h>
 
@@ -43,7 +44,7 @@ std::unordered_map<std::string_view, func> funcs;
 
 bool grammar(std::vector<inst>& insts, const char* src)
 {
-    printf("%s\n", src);
+    LOGT("%s", src);
 
     parser par;
     decl_var_only       dvo(&par);
@@ -113,7 +114,7 @@ int main(int argc, char** argv)
     }
 
     auto r = grammar(insts, src);
-    printf("parse : %d\n", r);
+    LOGD("parse : %d", r);
     if (r == false)
     {
         return 1;

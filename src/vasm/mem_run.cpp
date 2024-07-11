@@ -3,6 +3,7 @@
 #include <regvm.h>
 #include <debug.h>
 #include <irq.h>
+#include <log.h>
 
 using namespace vasm;
 
@@ -29,8 +30,8 @@ bool mem_2_run::finish()
     const int line = 16;
     int j = 0;
     const unsigned char* p = (const unsigned char*)buf;
-    INFO("total {} bytes of codes", code_bytes);
-    if (spdlog::default_logger()->should_log(spdlog::level::debug) == true)
+    LOGI("total %lld bytes of codes", (long long)code_bytes);
+    if (LOG_ACTIVE <= LOG_DEBUG)
     {
         for (int i = 0; i < code_bytes; i++)
         {
@@ -53,7 +54,7 @@ bool mem_2_run::finish()
 
     int64_t exit = 0;
     bool r = regvm_exec(vm, codes, code_bytes >> 1, (dbg != NULL) ? &dbg->exit : &exit);
-    INFO("run result : {} and exit code : {}", r, (dbg != NULL) ? dbg->exit : exit);
+    LOGI("run result : %d and exit code : %lld", r, (long long)((dbg != NULL) ? dbg->exit : exit));
 
     regvm_exit(vm);
     return r;

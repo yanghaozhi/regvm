@@ -1,7 +1,10 @@
 #include "bin_file.h"
 
-#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <regvm.h>
 #include <debug.h>
@@ -41,7 +44,7 @@ bool bin_file::open(const char* name)
 
     int64_t exit = 0;
     bool r = regvm_exec(vm, start, size >> 1, &exit);
-    INFO("run result : {} and exit code : {}", r, exit);
+    LOGI("run result : %d and exit code : %lld", r, (long long)exit);
 
     regvm_exit(vm);
 
