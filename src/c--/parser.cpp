@@ -240,23 +240,26 @@ const char* parser::expression(const char* src, int& reg)
 
     while ((src != NULL) && (*src != '\0'))
     {
-        auto& v = toks.emplace_back();
-        src = next_token(src, v);
-        switch (v.info.type)
+        if (toks.size() == ops.size())
         {
-        case '(':
-            src = expression(src, v.reg);
-            break;
-        case Num:
-        case Id:
-            break;
-        case ';':
-            toks.pop_back();
-            reg = pop_and_calc(toks, ops);
-            return src;
-        default:
-            fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
-            return NULL;
+            auto& v = toks.emplace_back();
+            src = next_token(src, v);
+            switch (v.info.type)
+            {
+            case '(':
+                src = expression(src, v.reg);
+                break;
+            case Num:
+            case Id:
+                break;
+            case ';':
+                toks.pop_back();
+                reg = pop_and_calc(toks, ops);
+                return src;
+            default:
+                fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
+                return NULL;
+            }
         }
 
         token op;

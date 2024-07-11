@@ -304,6 +304,7 @@ int vm_cmd_echo(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
         return __LINE__;
     }
     printf("\n");
+    r.write(v.idx, TYPE_SIGNED, true);
     return 0;
 }
 
