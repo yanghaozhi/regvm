@@ -31,6 +31,8 @@ public:
 
     const char* expression(const char* src, int& reg);
 
+    const char* call_func(const char* src, const token& name, int& count, int8_t* rets);
+
 private:
     int depth      = 0;
 
@@ -46,6 +48,5 @@ private:
     int token_2_reg(const token& tok);
     int operator_level(int op) const;
     template <typename T, typename O> int pop_and_calc(T& toks, O& ops);
-    const char* call_func(const char* src, const token& name, int& count, int8_t* rets);
 };
 

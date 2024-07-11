@@ -45,7 +45,6 @@ decl_var_init::decl_var_init(parser* p)
 const char* decl_var_init::go2(parser* p, const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
     int v = -1;
-    printf("-------------------\n");
     src = p->expression(src, v);
     int n = regs.get();
     auto& insts = p->insts;
@@ -54,3 +53,14 @@ const char* decl_var_init::go2(parser* p, const char* src, const token* toks, in
     return src;
 }
 
+call_func_no_ret::call_func_no_ret(parser* p)
+{
+    p->add(this, Id, '(', -1);
+}
+
+const char* call_func_no_ret::go(parser* p, const char* src, const token* toks, int count)
+{
+    int c = 16;
+    int8_t rets[16];
+    return p->call_func(src, toks[0], c, rets);
+}

@@ -50,8 +50,10 @@ const char* parser::statement(const char* src)
 
         token& tok = toks[idx];
         src = next_token(src, tok);
-        if (tok.info.type == 0)
+        switch (tok.info.type)
         {
+        case 0:
+        case ';':
             continue;
         }
 

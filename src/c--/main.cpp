@@ -46,8 +46,9 @@ bool grammar(std::vector<inst>& insts, const char* src)
     printf("%s\n", src);
 
     parser par;
-    decl_var_only   dvo(&par);
-    decl_var_init   dvi(&par);
+    decl_var_only       dvo(&par);
+    decl_var_init       dvi(&par);
+    call_func_no_ret    cfnr(&par);
 
     while ((src != NULL) && (*src != '\0'))
     {
