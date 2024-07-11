@@ -147,9 +147,7 @@ int main(int argc, char** argv)
 
     for (auto& it : insts)
     {
-        //it.print(stdout);
-        inst* t = &it;
-        (t->*op)(fp);
+        (it.*op)(fp);
     }
 
     if (fp != stdout)

@@ -20,10 +20,13 @@ inst::inst(const char* n, int i, int r, const std::string_view& v) :
 {
 }
 
-inst::inst(const char* n, int i, int r, int e, int8_t* a) :
-    bytes(4), id(i), reg(r), ex(e), name(n)
+inst::inst(const char* n, int i, int r, int e, const std::vector<int>& a) :
+    bytes(4), id(i), reg(r), ex(e), name(n), args(a)
 {
-    memcpy(args, a, sizeof(args));
+    while (args.size() < 4)
+    {
+        args.emplace_back(0);
+    }
 }
 
 inst::inst(const char* n, int i, int r, int e, uv v) :

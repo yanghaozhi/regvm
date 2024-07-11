@@ -33,6 +33,8 @@ public:
 
     const char* call_func(const char* src, const token& name, int& count, int8_t* rets);
 
+    const char* comma(const char* src, std::vector<int>& rets);
+
 private:
     int depth      = 0;
 

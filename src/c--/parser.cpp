@@ -219,44 +219,15 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
     //TODO : need to check func name valid !!!
     if (name.name == "echo")
     {
-        int8_t args[4] = {0};
-        int argc = 1;
-        while ((argc < 4) && (src != NULL) && (*src != '\0'))
+        std::vector<int> args;
+        args.emplace_back(-1);
+        src = comma(src, args);
+        if (src == NULL)
         {
-            const char* p = src;
-            token tok[2];
-            src = next_token(src, tok[0]);
-            src = next_token(src, tok[1]);
-            switch (tok[1].info.type)
-            {
-            case ',':
-                args[argc] = token_2_reg(tok[0]);
-                if (args[argc] < 0)
-                {
-                    return NULL;
-                }
-                break;
-            case ')':
-                args[argc] = token_2_reg(tok[0]);
-                if (args[argc] < 0)
-                {
-                    return NULL;
-                }
-                args[0] = argc;
-                rets[0] = regs.get();
-                INST(CMD, rets[0], 0, args);
-                count = 1;
-                return src;
-            default:
-                {
-                    int r = -1;
-                    src = expression(p, r);
-                    args[argc] = r;
-                }
-                break;
-            }
-            argc += 1;
+            return NULL;
         }
+        args.front() = args.size() - 1;
+        INST(CMD, rets[0], 0, args);
     }
     return src;
 }
@@ -334,6 +305,42 @@ const char* parser::expression(const char* src, int& reg)
         }
     }
 
+    return src;
+}
+
+const char* parser::comma(const char* src, std::vector<int>& rets)
+{
+    while ((src != NULL) && (*src != '\0'))
+    {
+        const char* p = src;
+        token tok[2];
+        src = next_token(src, tok[0]);
+        src = next_token(src, tok[1]);
+        int reg = -1;
+        switch (tok[1].info.type)
+        {
+        case ',':
+            reg = token_2_reg(tok[0]);
+            break;
+        case ')':
+            reg = token_2_reg(tok[0]);
+            rets.emplace_back(reg);
+            return src;
+        case ';':
+            fprintf(stderr, "%d : comma expression should NOT end with ;\n", lineno);
+            return NULL;
+        default:
+            {
+                src = expression(p, reg);
+            }
+            break;
+        }
+        if (reg < 0)
+        {
+            return NULL;
+        }
+        rets.emplace_back(reg);
+    }
     return src;
 }
 

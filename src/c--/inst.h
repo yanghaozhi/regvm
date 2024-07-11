@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -22,7 +23,7 @@ struct inst
 
     inst(const char* n, int i, int r, int e, uv v);
 
-    inst(const char* n, int i, int r, int e, int8_t* args);
+    inst(const char* n, int i, int r, int e, const std::vector<int>& args);
 
     void print(FILE* fp);
     void print_bin(FILE* fp);
@@ -37,7 +38,7 @@ struct inst
     uv                  val;
     std::string         str;
 
-    int8_t              args[4];
+    std::vector<int>    args;
 };
 
 class sel_reg
