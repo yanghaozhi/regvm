@@ -227,6 +227,7 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
             return NULL;
         }
         args.front() = args.size() - 1;
+        rets[0] = regs.get();
         INST(CMD, rets[0], 0, args);
     }
     return src;

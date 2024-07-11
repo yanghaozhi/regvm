@@ -120,7 +120,7 @@ int main(int argc, char** argv)
     }
 
 
-    void (inst::*op)(FILE*);
+    void (inst::*op)(FILE*) = &inst::print_txt;
     const char* opts = "rps";
     int opt = 0;
     FILE* fp = stdout;
