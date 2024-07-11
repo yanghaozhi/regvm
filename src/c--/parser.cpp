@@ -46,7 +46,7 @@ const char* parser::statement(const char* src)
 
         if (idx >= depth)
         {
-            fprintf(stderr, "%d : too deep to find next token %d !!!\n", lineno, idx);
+            LOGE("%d : too deep to find next token %d !!!", lineno, idx);
             return NULL;
         }
 
@@ -63,7 +63,7 @@ const char* parser::statement(const char* src)
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
-            fprintf(stderr, "%d : no parser op want token %c : %s !!!\n", lineno, (char)tok.info.type, std::string(tok.name).c_str());
+            LOGE("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
             return NULL;
         }
         cur = it->second;
@@ -108,7 +108,7 @@ bool parser::add(op* func, ...)
 
 int parser::operator_level(int op) const
 {
-    //ref : https://zh.cppreference.com/w/cpp/language/operator_precedence
+    //ref : https://en.cppreference.com/w/cpp/language/operator_precedence
     switch (op)
     {
     case Add:
@@ -150,7 +150,7 @@ int parser::token_2_reg(const token& tok)
         }
         break;
     default:
-        fprintf(stderr, "%d : invalid expression %d - %s !!!\n", lineno, tok.info.type, std::string(tok.name).c_str());
+        LOGE("%d : invalid expression %d - %s !!!", lineno, tok.info.type, std::string(tok.name).c_str());
         return -1;
     }
     return reg;
@@ -160,10 +160,12 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
 {
     if (toks.size() == 0)
     {
+        LOGE("toks is empty");
         return -1;
     }
     if (ops.size() != toks.size() - 1)
     {
+        LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
         assert(0);
         return -1;
     }
@@ -200,7 +202,7 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
             INST(DIV, l, r);
             break;
         default:
-            //fprintf(stderr, "%d : UNKNOWN operator of expression %d - %s !!!\n", lineno, tok[1].info.type, std::string(tok[1].name).c_str());
+            LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
             return -1;
         }
         r = l;
@@ -212,7 +214,7 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
 {
     if (name.info.type != Id)
     {
-        fprintf(stderr, "%d : invalid function name %d - %s !!!\n", lineno, name.info.type, std::string(name.name).c_str());
+        LOGE("%d : invalid function name %d - %s !!!", lineno, name.info.type, std::string(name.name).c_str());
         return NULL;
     }
     //TODO : need to check func name valid !!!
@@ -223,6 +225,7 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
         src = comma(src, args);
         if (src == NULL)
         {
+            LOGE("invalid of comma expression !!!");
             return NULL;
         }
         args.front() = args.size() - 1;
@@ -232,7 +235,7 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
     return src;
 }
 
-const char* parser::expression(const char* src, int& reg)
+const char* parser::expression(const char* src, int& reg, int* end)
 {
     std::deque<token>   toks;
     std::deque<int>     ops;
@@ -246,7 +249,7 @@ const char* parser::expression(const char* src, int& reg)
             switch (v.info.type)
             {
             case '(':
-                src = expression(src, v.reg);
+                src = expression(src, v.reg, end);
                 break;
             case Num:
             case Id:
@@ -254,9 +257,13 @@ const char* parser::expression(const char* src, int& reg)
             case ';':
                 toks.pop_back();
                 reg = pop_and_calc(toks, ops);
+                if (end != NULL)
+                {
+                    *end = ';';
+                }
                 return src;
             default:
-                fprintf(stderr, "%d : invalid token of expression %d - %c - %s !!!\n", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
+                LOGE("%d : invalid token of expression %d - %c - %s !!!", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
                 return NULL;
             }
         }
@@ -270,6 +277,10 @@ const char* parser::expression(const char* src, int& reg)
         case ',':
         case ')':
             reg = pop_and_calc(toks, ops);
+            if (end != NULL)
+            {
+                *end = op.info.type;
+            }
             return src;
         case '(':   //函数调用
             {
@@ -307,7 +318,10 @@ const char* parser::expression(const char* src, int& reg)
             reg = r;
         }
     }
-
+    if (end != NULL)
+    {
+        *end = 0;
+    }
     return src;
 }
 
@@ -315,41 +329,29 @@ const char* parser::comma(const char* src, std::vector<int>& rets)
 {
     while ((src != NULL) && (*src != '\0'))
     {
-        const char* p = src;
-        token tok[2];
-        src = next_token(src, tok[0]);
-        switch (tok[0].info.type)
-        {
-        case ';':
-            return src;
-        default:
-            break;
-        }
-        src = next_token(src, tok[1]);
-        int reg = -1;
-        switch (tok[1].info.type)
-        {
-        case ',':
-            reg = token_2_reg(tok[0]);
-            break;
-        case ')':
-            reg = token_2_reg(tok[0]);
-            rets.emplace_back(reg);
-            return src;
-        case ';':
-            fprintf(stderr, "%d : comma expression should NOT end with ;\n", lineno);
-            return NULL;
-        default:
-            {
-                src = expression(p, reg);
-            }
-            break;
-        }
+        int reg = -1; 
+        int end = -1;
+        src = expression(src, reg, &end);
         if (reg < 0)
         {
+            LOGE("invalid expression result : %d !!!", reg);
             return NULL;
         }
         rets.emplace_back(reg);
+
+        switch (end)
+        {
+        case ',':
+            break;
+        case ';':
+            LOGW("will comma expression end with ; ?");
+            [[fallthrough]];
+        case ')':
+            return src;
+        default:
+            LOGE("%d : comma expression should NOT end with %d - %c\n", lineno, end, (char)end);
+            return NULL;
+        }
     }
     return src;
 }

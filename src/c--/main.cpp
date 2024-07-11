@@ -50,6 +50,7 @@ bool grammar(std::vector<inst>& insts, const char* src)
     decl_var_only       dvo(&par);
     decl_var_init       dvi(&par);
     call_func_no_ret    cfnr(&par);
+    assign_var          avar(&par);
 
     while ((src != NULL) && (*src != '\0'))
     {

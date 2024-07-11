@@ -26,3 +26,9 @@ struct call_func_no_ret : public parser::op
     virtual const char* go(parser* p, const char* src, const token* toks, int count);
 };
 
+struct assign_var : public parser::op
+{
+    assign_var(parser* p);
+    virtual const char* go(parser* p, const char* src, const token* toks, int count);
+};
+

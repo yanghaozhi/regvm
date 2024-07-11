@@ -64,3 +64,20 @@ const char* call_func_no_ret::go(parser* p, const char* src, const token* toks, 
     int8_t rets[16];
     return p->call_func(src, toks[0], c, rets);
 }
+
+assign_var::assign_var(parser* p)
+{
+    p->add(this, Id, Assign, -1);
+}
+
+const char* assign_var::go(parser* p, const char* src, const token* toks, int count)
+{
+    int v = -1;
+    src = p->expression(src, v);
+    int n = regs.get();
+    auto& insts = p->insts;
+    insts.emplace_back("SETC", CODE_SETL, n, toks[0].name);
+    INST(STORE, v, n);
+    return src;
+}
+

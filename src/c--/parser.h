@@ -29,7 +29,7 @@ public:
 
     bool add(op* func, ...);
 
-    const char* expression(const char* src, int& reg);
+    const char* expression(const char* src, int& reg, int* end = NULL);
 
     const char* call_func(const char* src, const token& name, int& count, int8_t* rets);
 
