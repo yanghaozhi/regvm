@@ -33,6 +33,31 @@ parser::~parser()
 
 const char* parser::statement(const char* src)
 {
+    token tok;
+    const char* p = src;
+    src = next_token(src, tok);
+    switch (tok.info.type)
+    {
+    case 0:
+    case ';':
+        return src;
+    case '{':
+        INST(BLOCK, 0, 0);
+        while ((src != NULL) && (*src != '\0'))
+        {
+            src = statement(src);
+        }
+        return src;
+    case '}':
+        INST(BLOCK, 0, 1);
+        return src;
+    default:
+        src = p;
+        break;
+    }
+
+
+
     token toks[depth];
 
     trie_tree* cur = parser_list;
@@ -59,7 +84,7 @@ const char* parser::statement(const char* src)
             continue;
         }
 
-        LOGD("%d", tok.info.type);
+        LOGD("%d %c", tok.info.type, (char)tok.info.orig);
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
