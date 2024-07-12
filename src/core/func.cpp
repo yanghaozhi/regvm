@@ -188,20 +188,11 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         SHIFT(SHR, >>=);
 #undef BITWISE
 
-#define JUMP(i, cmp)                                                                        \
-    case CODE_##i:                                                                          \
-        *next = ((int64_t)vm->reg.id(code->reg) cmp 0) ? vm_jump(vm, *code, offset) : 1;    \
-        break;
-        JUMP(JZ, ==);
-        JUMP(JNZ, !=);
-        JUMP(JG, >);
-        JUMP(JL, <);
-        JUMP(JNG, <=);
-        JUMP(JNL, >=);
-#undef JUMP
-
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);
+        break;
+    case CODE_JNZ:
+        *next = ((int64_t)vm->reg.id(code->reg) != 0) ? vm_jump(vm, *code, offset) : 1;
         break;
     case CODE_TRAP:
         *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);

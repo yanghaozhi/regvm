@@ -236,12 +236,25 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
             UNSUPPORT_TYPE("chg", r.type, code, offset);
             return false;
         }
+#define CMP(k, cmp)                             \
+    case k:                                     \
+        vm_conv_impl(vm, r, TYPE_SIGNED);       \
+        r.value.sint = (r.value.sint cmp 0);    \
+        return true;
+
+        CMP(5, ==);
+        CMP(6, !=);
+        CMP(7, >);
+        CMP(8, >=);
+        CMP(9, <);
+        CMP(10, <=);
+
+#undef CMP
     default:
         UNSUPPORT_TYPE("chg", code.ex, code, offset);
         return false;
     }
 }
-
 
 int vm_jump(struct regvm* vm, const code_t code, int offset)
 {

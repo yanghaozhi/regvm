@@ -70,12 +70,7 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(SHR);
         SET_KEY(SHL);
         SET_KEY(JUMP);
-        SET_KEY(JZ);
         SET_KEY(JNZ);
-        SET_KEY(JG);
-        SET_KEY(JL);
-        SET_KEY(JNG);
-        SET_KEY(JNL);
         SET_KEY(CMD);
         SET_KEY(STR);
         SET_KEY(LIST);
