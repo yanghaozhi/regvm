@@ -15,6 +15,7 @@
 #define LOG_ACTIVE  0
 #endif
 
+#define LOG_IS_ENBALE(level) (LOG_##level >= LOG_ACTIVE)
 
 #ifndef __FILE_NAME__
 inline const char* only_file_name(const char* f)
@@ -38,12 +39,12 @@ inline const char* only_file_name(const char* f)
 #include <Windows.h>
 #include <format>
 #ifndef _DEBUG
-#define LOG_COLOR(level, color, fmt, ...) if (LOG_##level >= LOG_ACTIVE) printf(FMT_WITH_COLOR("[%5s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
+#define LOG_COLOR(level, color, fmt, ...) if (LOG_IS_ENBALE(level)) printf(FMT_WITH_COLOR("[%5s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
 #else   //PRINT_TO_CONSOLE
 #define LOG_COLOR(level, color, fmt, ...) OutputDebugStringA(std::format("[{}] [{}:{}] " fmt " \n", #level, only_file_name(__FILE__), __LINE__, ##__VA_ARGS__).c_str());
 #endif  //PRINT_TO_CONSOLE
 #else   //COLOR
-#define LOG_COLOR(level, color, fmt, ...) if (LOG_##level >= LOG_ACTIVE) printf(FMT_WITH_COLOR("[%5s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
+#define LOG_COLOR(level, color, fmt, ...) if (LOG_IS_ENBALE(level)) printf(FMT_WITH_COLOR("[%5s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
 #endif  //COLOR
 
 #define LOG_NORMAL  0
@@ -56,7 +57,7 @@ inline const char* only_file_name(const char* f)
 
 
 #define LOGT(fmt, ...) LOG_COLOR(TRACE, LOG_BLUE, fmt, ##__VA_ARGS__)
-#define LOGD(fmt, ...) LOG_COLOR(DEBUG, LOG_PURPLE, fmt, ##__VA_ARGS__)
+#define LOGD(fmt, ...) LOG_COLOR(DEBUG, LOG_CYAN, fmt, ##__VA_ARGS__)
 #define LOGI(fmt, ...) LOG_COLOR(INFO,  LOG_GREEN, fmt, ##__VA_ARGS__)
 #define LOGW(fmt, ...) LOG_COLOR(WARN,  LOG_YELLOW, fmt, ##__VA_ARGS__)
 #define LOGE(fmt, ...) LOG_COLOR(ERROR, LOG_RED, fmt, ##__VA_ARGS__)

@@ -157,7 +157,7 @@ int main(int argc, char** argv)
         fclose(fp);
     }
 
-    if (codes != NULL)
+    if ((LOG_IS_ENBALE(DEBUG) == true) && (codes != NULL))
     {
         const int line = 16;
         int j = 0;
@@ -181,7 +181,7 @@ int main(int argc, char** argv)
 
         regvm_exit(vm);
 
-        printf("run : %d\n", r);
+        LOGI("run : %d\n", r);
     }
     //auto r = grammar(t2);
     //printf("grammar : %d\n", r);
