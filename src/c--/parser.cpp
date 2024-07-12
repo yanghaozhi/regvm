@@ -141,10 +141,18 @@ int parser::operator_level(int op) const
         return 6;
     case Mul:
     case Div:
+    case Mod:
         return 5;
     case Shl:
     case Shr:
         return 7;
+    case Gt:
+    case Ge:
+    case Lt:
+    case Le:
+        return 9;
+    case Eq:
+        return 10;
     //case Xor:
     //    return 12;
     //case Or:
@@ -225,6 +233,29 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
             break;
         case Div:
             INST(DIV, l, r);
+            break;
+        //case Mod:
+        //    INST(MOD, l, r);
+        //    break;
+        case Gt:
+            INST(SUB, l, r);
+            INST(CHG, l, 7);
+            break;
+        case Ge:
+            INST(SUB, l, r);
+            INST(CHG, l, 8);
+            break;
+        case Lt:
+            INST(SUB, l, r);
+            INST(CHG, l, 9);
+            break;
+        case Le:
+            INST(SUB, l, r);
+            INST(CHG, l, 10);
+            break;
+        case Eq:
+            INST(SUB, l, r);
+            INST(CHG, l, 5);
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
@@ -476,59 +507,61 @@ const char* parser::next_token(const char* src, token& tok)
                 tok.info.data_type = TYPE_SIGNED;
             }
             return src;
-#define ADD_SUB(TOK, TYPE, DEF, DUP, EQ)                    \
+
+#define COMBINE_OP(TOK, DEF, EQ, EXTRA, ...)                \
         case TOK:                                           \
             switch (*next)                                  \
             {                                               \
-            case TOK:                                       \
-                tok.info.type = DUP;                        \
-                return next + 1;                            \
             case '=':                                       \
                 tok.info.type = EQ;                         \
                 return next + 1;                            \
                 break;                                      \
-            case '0' ... '9':                               \
-                tok.info.type = Num;                        \
-                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE, strtoll, 10);   \
+            EXTRA(TOK, ##__VA_ARGS__);                      \
             default:                                        \
                 tok.info.type = DEF;                        \
                 return next;                                \
             }                                               \
             break;
-            ADD_SUB('+', TYPE_SIGNED, Add, Inc, AddE);
-            ADD_SUB('-', TYPE_SIGNED, Sub, Dec, SubE);
-#undef ADD_SUB
-        case '*':
-            tok.info.type = Mul;
-            return next;
-        case '/':   //TODO : 不支持多行注释
-            if (*next == '/')
-            {
-                next = strchr(next, '\n');
+
+//TODO : 不支持多行注释
+#define COMMENT(TOK)                                        \
+            case TOK:                                       \
+                next = strchr(next, '\n');                  \
                 continue;
-            }
-            else
-            {
-                tok.info.type = Div;
-                return next;
-            }
-        case '=':
-            if(*next != '=')
-            {
-                tok.info.type = Assign;
-                return next;
-            }
-            else
-            {
-                tok.info.type = Eq;
+#define DUP(TOK, TYPE)                                      \
+            case TOK:                                       \
+                tok.info.type = TYPE;                       \
                 return next + 1;
-            }
+#define NUM(TOK, TYPE)                                      \
+            case '0' ... '9':                               \
+                tok.info.type = Num;                        \
+                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_SIGNED, strtoll, 10);   \
+            DUP(TOK, TYPE)
+#define NOP(...)
+
+            COMBINE_OP('+', Add, AddE, NUM, Inc);
+            COMBINE_OP('-', Sub, SubE, NUM, Dec);
+            COMBINE_OP('*', Mul, MulE, NOP);
+            COMBINE_OP('/', Div, DivE, COMMENT);
+            COMBINE_OP('%', Mod, ModE, NOP);
+            COMBINE_OP('>', Gt, Ge, DUP, Shr);
+            COMBINE_OP('<', Lt, Le, DUP, Shl);
+            COMBINE_OP('=', Assign, Eq, NOP);
+
+#undef NOP
+#undef DUP
+#undef NUM 
+#undef COMMENT
+
+#undef COMBINE_OP
+
         case '~': 
         case ';': 
         case '{': 
         case '}': 
         case '(': 
         case ')': 
+        case '[': 
         case ']': 
         case ',': 
         case ':':

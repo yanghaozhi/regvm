@@ -68,6 +68,11 @@ const char* call_func_no_ret::go(parser* p, const char* src, const token* toks, 
 assign_var::assign_var(parser* p)
 {
     p->add(this, Id, Assign, -1);
+    p->add(this, Id, AddE, -1);
+    p->add(this, Id, SubE, -1);
+    p->add(this, Id, MulE, -1);
+    p->add(this, Id, DivE, -1);
+    p->add(this, Id, ModE, -1);
 }
 
 const char* assign_var::go(parser* p, const char* src, const token* toks, int count)
