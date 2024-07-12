@@ -42,19 +42,18 @@ int regvm_code_len(code_t code)
     case CODE_NOP:
         count += code.ex;
         break;
-    case CODE_SETS:
-        count += 1;
-        break;
-    case CODE_SETI:
-        count += 2;
-        break;
-    case CODE_SETL:
-        count += 4;
-        break;
     case CODE_EXIT:
         break;
     default:
-        if (code.id >= 0x80)
+        if (code.id >= 224)
+        {
+            count += 4;
+        }
+        else if (code.id >= 192)
+        {
+            count += 2;
+        }
+        else if (code.id >= 128)
         {
             count += 1;
         }

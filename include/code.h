@@ -197,13 +197,21 @@ enum DATA_TYPE
 //+---------+---------------+-----------------------+-----------------------+
 
 
+//指令长度计算规则
+//指令为0的，是NOP指令，根据其内容决定长度
+//指令最高位为0的，其长度为2 byte（共64条）
+//指令最高位为1的，则其后带有扩展数据
+//最高位为10xxxxx的，带有2 byte扩展（共64条）
+//最高位为110xxxx的，带有4 byte扩展（共32条）
+//最高位为111xxxx的，带有8 byte扩展（共32条）
+
 enum CODE_ID
 {
     CODE_NOP    = 0,
     CODE_TRAP,
-    CODE_SETS,
-    CODE_SETI,
-    CODE_SETL,
+    //CODE_SETS,
+    //CODE_SETI,
+    //CODE_SETL,
     CODE_MOVE,
     CODE_CLEAR,
     CODE_LOAD,
@@ -235,10 +243,15 @@ enum CODE_ID
     CODE_JNG,
     CODE_JNL,
 
-    CODE_CMD    = 128,
+    CODE_SETS   = 128,      //2 byte
+    CODE_CMD,
     CODE_STR,
     CODE_LIST,
     CODE_DICT,
+
+    CODE_SETI   = 192,      //4 byte
+
+    CODE_SETL   = 224,      //8 byte
 
     CODE_EXIT   = 255,
 };
