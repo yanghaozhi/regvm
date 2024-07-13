@@ -234,9 +234,9 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
         case Div:
             INST(DIV, l, r);
             break;
-        //case Mod:
-        //    INST(MOD, l, r);
-        //    break;
+        case Mod:
+            INST(MOD, l, r);
+            break;
         case Gt:
             INST(SUB, l, r);
             INST(CHG, l, 7);
@@ -262,7 +262,7 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
             return -1;
         }
         r = l;
-    } while ((ops.size() > 0) && (level == operator_level(ops.back())));
+    } while ((ops.size() > 0) && (level <= operator_level(ops.back())));
     return l;
 }
 

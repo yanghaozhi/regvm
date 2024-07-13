@@ -100,6 +100,9 @@ enum DATA_TYPE
 //| DIV     | CODE_DIV      | reg                   | ex                    |
 //  $reg /= $ex
 //+---------+---------------+-----------------------+-----------------------+
+//| MOD     | CODE_MOD      | reg                   | ex                    |
+//  $reg %= $ex
+//+---------+---------------+-----------------------+-----------------------+
 //| AND     | CODE_AND      | reg                   | ex                    |
 //  $reg &= $ex
 //+---------+---------------+-----------------------+-----------------------+
@@ -200,9 +203,6 @@ enum CODE_ID
 {
     CODE_NOP    = 0,
     CODE_TRAP,
-    //CODE_SETS,
-    //CODE_SETI,
-    //CODE_SETL,
     CODE_MOVE,
     CODE_CLEAR,
     CODE_LOAD,
@@ -218,6 +218,7 @@ enum CODE_ID
     CODE_SUB,
     CODE_MUL,
     CODE_DIV,
+    CODE_MOD,
     CODE_AND,
     CODE_OR,
     CODE_XOR,

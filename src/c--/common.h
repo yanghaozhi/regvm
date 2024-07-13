@@ -32,7 +32,7 @@ struct token
         uv              value;
         DATA_TYPE       data_type;
         int             type;
-        int             orig;
+        char            orig;
     }                   info;
 
     std::string_view    name;

@@ -31,7 +31,7 @@ const char* decl_var_only::go2(parser* p, const char* src, const token* toks, in
     int v = regs.get();
     INST(CLEAR, v, type);
     int n = regs.get();
-    insts.emplace_back("SETC",  CODE_SETL,  n, name);
+    INST(SETC, n, name);
     INST(STORE, v, n);
     return src;
 }
@@ -48,7 +48,7 @@ const char* decl_var_init::go2(parser* p, const char* src, const token* toks, in
     src = p->expression(src, v);
     int n = regs.get();
     auto& insts = p->insts;
-    insts.emplace_back("SETC", CODE_SETL, n, name);
+    INST(SETC, n, name);
     INST(STORE, v, n);
     return src;
 }
@@ -79,10 +79,30 @@ const char* assign_var::go(parser* p, const char* src, const token* toks, int co
 {
     int v = -1;
     src = p->expression(src, v);
-    int n = regs.get();
     auto& insts = p->insts;
-    insts.emplace_back("SETC", CODE_SETL, n, toks[0].name);
-    INST(STORE, v, n);
+    int n = regs.get();
+    INST(SETC, n, toks[0].name);
+    switch (toks[0].info.type)
+    {
+    case Assign:
+        INST(STORE, v, n);
+        break;
+#define CALC(k, op)                     \
+    case k:                             \
+        {                               \
+            int vv = regs.get();        \
+            INST(LOAD, vv, n);          \
+            INST(op, vv, v);            \
+            INST(STORE, vv, n);         \
+        }                               \
+        break;
+        CALC(AddE, ADD);
+        CALC(SubE, SUB);
+        CALC(MulE, MUL);
+        CALC(DivE, DIV);
+        CALC(ModE, MOD);
+#undef CALC
+    }
     return src;
 }
 
