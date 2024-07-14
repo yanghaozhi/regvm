@@ -178,7 +178,17 @@ void select::cleanup(data& v)
     v.binded = false;
     if (v.var.length() > 0)
     {
-        vars.erase(v.var);
+        if (vars.erase(v.var) > 0)
+        {
+            if (binds.remove(v.id) == true)
+            {
+                frees.add(v.id);
+            }
+        }
+    }
+    if (locks.erase(v.id) > 0)
+    {
+        frees.add(v.id);
     }
 }
 

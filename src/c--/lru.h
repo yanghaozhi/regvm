@@ -34,12 +34,14 @@ public:
         return v;
     }
 
-    void remove(T v)
+    bool remove(T v)
     {
         if (active(v) >= 0)
         {
             size -= 1;
+            return true;
         }
+        return false;
     }
 
     T active(T v)
