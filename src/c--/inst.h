@@ -1,11 +1,15 @@
 #pragma once
 
+#include <assert.h>
+
 #include <vector>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
 #include "common.h"
+
+#include "lru.h"
 
 #define INST(c, r, e, ...)   insts.emplace_back(#c, CODE_##c, r, e, ##__VA_ARGS__);
 
@@ -42,27 +46,5 @@ struct inst
 
     std::vector<int>    args;
 };
-
-class sel_reg
-{
-public:
-    sel_reg();
-
-    int get(const char* name);
-    inline int get(void)   {return used(0);}
-    int active(int reg_id);
-
-    int tmp(void);  //just use in next inst, so NOT NEED to active
-
-    void clear(const char* name)    {names.erase(name);};
-
-private:
-    int used(int id);
-
-    int8_t      regs[16];
-    std::unordered_map<std::string_view, int>    names;
-};
-
-extern sel_reg         regs;
 
 

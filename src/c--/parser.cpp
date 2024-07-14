@@ -194,48 +194,61 @@ int parser::operator_level(int op) const
     }
 }
 
-int parser::token_2_reg(const token& tok)
+select::reg parser::token_2_reg(const token& tok)
 {
-    if (tok.reg >= 0)
+    if (tok.reg.valid() == true)
     {
         return tok.reg;
     }
 
-    int reg = regs.get();
     switch (tok.info.type)
     {
     case Num:
-        INST(SETS, reg, tok.info.data_type, tok.info.value);
+        {
+            auto reg = regs.get();
+            INST(SETS, reg, tok.info.data_type, tok.info.value);
+            return reg;
+        }
         break;
     case Id:
         {
-            int n = regs.tmp();
+            int n = regs.get();
             INST(SETC, n, tok.name);
+            auto reg = regs.var(tok.name);
             INST(LOAD, reg, n);
+            //auto reg = regs.var(tok.name);
+            //INST(LOAD, reg.get([](select::reg* r)
+            //        {
+            //            auto n = regs.get();
+            //            INST(SETC, n, tok.name);
+            //            *id = n;
+            //            *ver = 
+            //        }), n);
+            return reg;
         }
         break;
     default:
         LOGE("%d : invalid expression %d - %s !!!", lineno, tok.info.type, std::string(tok.name).c_str());
-        return -1;
+        break;
     }
-    return reg;
+    return select::reg();
 }
 
-template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
+template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& ops)
 {
     if (toks.size() == 0)
     {
         LOGE("toks is empty");
-        return -1;
+        return select::reg();
     }
     if (ops.size() != toks.size() - 1)
     {
         LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
         assert(0);
-        return -1;
+        return select::reg();
     }
 
-    int r = token_2_reg(toks.back());
+    auto r = token_2_reg(toks.back());
     toks.pop_back();
     if (ops.size() == 0)
     {
@@ -243,7 +256,7 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
     }
 
     int op = -1;
-    int l = -1;
+    select::reg l;
     const int level = operator_level(ops.back());
     do
     {
@@ -291,14 +304,14 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
-            return -1;
+            return select::reg();
         }
         r = l;
     } while ((ops.size() > 0) && (level <= operator_level(ops.back())));
     return l;
 }
 
-const char* parser::call_func(const char* src, const token& name, int& count, int8_t* rets)
+const char* parser::call_func(const char* src, const token& name, std::vector<select::reg>& rets)
 {
     if (name.info.type != Id)
     {
@@ -308,22 +321,27 @@ const char* parser::call_func(const char* src, const token& name, int& count, in
     //TODO : need to check func name valid !!!
     if (name.name == "echo")
     {
-        std::vector<int> args;
-        args.emplace_back(-1);
+        std::vector<select::reg> args;
         src = comma(src, args);
         if (src == NULL)
         {
             LOGE("invalid of comma expression !!!");
             return NULL;
         }
-        args.front() = args.size() - 1;
-        rets[0] = regs.get();
-        INST(CMD, rets[0], 0, args);
+
+        std::vector<int> a;
+        a.push_back(args.size());
+        for (auto& it : args)
+        {
+            a.emplace_back((int)it);
+        }
+        rets.emplace_back(regs.lock());
+        INST(CMD, (int)(rets[0]), 0, a);
     }
     return src;
 }
 
-const char* parser::expression(const char* src, int& reg, int* end)
+const char* parser::expression(const char* src, select::reg& reg, int* end)
 {
     std::deque<token>   toks;
     std::deque<int>     ops;
@@ -358,7 +376,7 @@ const char* parser::expression(const char* src, int& reg, int* end)
 
         token op;
         src = next_token(src, op);
-        int r = -1;
+        select::reg r;
         switch (op.info.type)
         {
         case ';':
@@ -372,11 +390,12 @@ const char* parser::expression(const char* src, int& reg, int* end)
             return src;
         case '(':   //函数调用
             {
-                int count = 17;
-                int8_t rets[17];
-                memset(rets, 0xFF, sizeof(rets));
-                src = call_func(src, toks.back(), count, rets);
-                toks.back().reg = rets[0];
+                std::vector<select::reg> rets;
+                src = call_func(src, toks.back(), rets);
+                if (rets.size() >= 1)
+                {
+                    toks.back().reg = rets[0];
+                }
             }
             break;
         default:
@@ -387,23 +406,23 @@ const char* parser::expression(const char* src, int& reg, int* end)
                     int prev = operator_level(ops.back());
                     if (cur > prev)
                     {
-                        int r = pop_and_calc(toks, ops);
+                        auto rr = pop_and_calc(toks, ops);
                         auto& vv = toks.emplace_back();
-                        vv.reg = r;
+                        vv.reg = rr;
                     }
                 }
                 ops.emplace_back(op.info.type);
             }
             break;
         }
-        if (r >= 0)
+        if (r.valid() == true)
         {
             auto& vv = toks.emplace_back();
             vv.reg = r;
         }
         else
         {
-            reg = r;
+            reg.clear();
         }
     }
     if (end != NULL)
@@ -413,16 +432,16 @@ const char* parser::expression(const char* src, int& reg, int* end)
     return src;
 }
 
-const char* parser::comma(const char* src, std::vector<int>& rets)
+const char* parser::comma(const char* src, std::vector<select::reg>& rets)
 {
     while ((src != NULL) && (*src != '\0'))
     {
-        int reg = -1; 
+        select::reg reg; 
         int end = -1;
         src = expression(src, reg, &end);
         if (reg < 0)
         {
-            LOGE("invalid expression result : %d !!!", reg);
+            LOGE("invalid expression result : %d !!!", (int)reg);
             return NULL;
         }
         rets.emplace_back(reg);

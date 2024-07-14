@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "common.h"
+#include "select.h"
 #include "inst.h"
 
 class parser
@@ -34,11 +35,11 @@ public:
 
     const char* statement(const char* src, int* end = NULL);
 
-    const char* expression(const char* src, int& reg, int* end = NULL);
+    const char* expression(const char* src, select::reg& reg, int* end = NULL);
 
-    const char* call_func(const char* src, const token& name, int& count, int8_t* rets);
+    const char* call_func(const char* src, const token& name, std::vector<select::reg>& rets);
 
-    const char* comma(const char* src, std::vector<int>& rets);
+    const char* comma(const char* src, std::vector<select::reg>& rets);
 
     int label_id    = 1;
 
@@ -60,8 +61,8 @@ private:
     std::multimap<int, inst*>                   pending_labels;
     std::map<int, uint32_t>                     labels;
 
-    int token_2_reg(const token& tok);
+    select::reg token_2_reg(const token& tok);
     int operator_level(int op) const;
-    template <typename T, typename O> int pop_and_calc(T& toks, O& ops);
+    template <typename T, typename O> select::reg pop_and_calc(T& toks, O& ops);
 };
 

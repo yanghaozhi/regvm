@@ -2,6 +2,7 @@
 
 #include <code.h>
 
+#include "select.h"
 
 //支持的标记类别(供词法分析器next解析成对应的标记)
 enum TOKEN_T
@@ -36,7 +37,7 @@ struct token
     }                   info;
 
     std::string_view    name;
-    int                 reg = -1;
+    select::reg         reg;
 };
 
 const char* next_token(const char* src, int& lineno, token& tok);

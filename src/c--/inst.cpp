@@ -8,8 +8,6 @@
 #include <string>
 
 
-sel_reg         regs;
-
 inst::inst(const char* n, int i, int r, int e) :
     bytes(2), id(i), reg(r), ex(e), name(n)
 {
@@ -199,47 +197,3 @@ void inst::print_txt(FILE* fp)
 }
 
 
-sel_reg::sel_reg()
-{
-    for (int i = 0; i < (int)sizeof(regs); i++)
-    {
-        regs[i] = i;
-    }
-}
-
-int sel_reg::get(const char* name)
-{
-    auto it = names.find(name);
-    if (it != names.end())
-    {
-        return active(it->second);
-    }
-    else
-    {
-        int v = used(0);
-        names.emplace(name, v);
-        return v;
-    }
-}
-
-int sel_reg::tmp(void)
-{
-    return regs[0];
-}
-
-int sel_reg::active(int reg_id)
-{
-    int8_t* p = (int8_t*)memchr(regs, reg_id, sizeof(regs));
-    return used(p - regs);
-}
-
-int sel_reg::used(int id)
-{
-    int v = regs[id];
-    if (id != sizeof(regs) - 1)
-    {
-        memmove(regs + id, regs + id + 1, sizeof(regs) - id - 1);
-        regs[sizeof(regs) - 1] = v;
-    }
-    return v;
-}

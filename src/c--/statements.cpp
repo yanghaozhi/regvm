@@ -33,11 +33,9 @@ decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
 
 const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
-    int v = regs.get();
-    INST(CLEAR, v, type);
-    int n = regs.get();
+    auto n = regs.get();
     INST(SETC, n, name);
-    INST(STORE, v, n);
+    INST(NEW, n, type);
     return src;
 }
 
@@ -49,10 +47,11 @@ decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
 
 const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
-    int v = -1;
+    select::reg v;
     src = p->expression(src, v);
-    int n = regs.get();
+    auto n = regs.get();
     INST(SETC, n, name);
+    INST(NEW, n, type);
     INST(STORE, v, n);
     return src;
 }
@@ -64,9 +63,8 @@ call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 
 const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
-    int c = 16;
-    int8_t rets[16];
-    return p->call_func(src, toks[0], c, rets);
+    std::vector<select::reg> rets;
+    return p->call_func(src, toks[0], rets);
 }
 
 assign_var::assign_var(parser* p) : parser::op(p)
@@ -81,9 +79,9 @@ assign_var::assign_var(parser* p) : parser::op(p)
 
 const char* assign_var::go(const char* src, const token* toks, int count)
 {
-    int v = -1;
+    select::reg v;
     src = p->expression(src, v);
-    int n = regs.get();
+    auto n = regs.get();
     INST(SETC, n, toks[0].name);
     switch (toks[0].info.type)
     {
@@ -93,7 +91,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 #define CALC(k, op)                     \
     case k:                             \
         {                               \
-            int vv = regs.get();        \
+            auto vv = regs.get();       \
             INST(LOAD, vv, n);          \
             INST(op, vv, v);            \
             INST(STORE, vv, n);         \
@@ -139,9 +137,9 @@ int if_else::set_addr(inst* code, int begin, int end)
 const char* if_else::go(const char* src, const token* toks, int count)
 {
     LOGD("%s", src);
-    int cmp = -1;
+    select::reg cmp;
     src = p->expression(src, cmp);
-    LOGD("%d, %s", cmp, src);
+    LOGD("%d, %s", (int)cmp, src);
 
     struct 
     {
@@ -153,7 +151,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 
     uv pos;
     pos.sint = -1;
-    int addr = regs.get();
+    auto addr = regs.get();
     INST(SETS, addr, TYPE_ADDR, pos);
     labels[0].code = &insts.back();
 
