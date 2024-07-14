@@ -49,10 +49,13 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
 {
     select::reg v;
     src = p->expression(src, v);
+    if (src == NULL) return NULL;
+
     auto n = regs.get();
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
+    regs.bind(name, v);
     return src;
 }
 

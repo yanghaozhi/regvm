@@ -46,8 +46,8 @@ public:
     {
         if constexpr (sizeof(T) == 1)
         {
-            T* p = (T*)memchr(datas, v, size);
-            return used(p - datas);
+            T* p = (T*)memrchr(datas, v, size);
+            return (p != NULL) ? used(p - datas) : -1;
         }
         else
         {

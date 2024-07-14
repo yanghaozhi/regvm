@@ -12,11 +12,11 @@ select::reg::reg(void) : id(-1), version(0)
 {
 }
 
-select::reg::reg(const reg& o) : id(regs.acquire(o.id, o.version)), version(o.version)
+select::reg::reg(const reg& o) : id(regs.acquire(o.id, o.version)), version(o.version), reload(o.reload)
 {
 }
 
-select::reg::reg(reg&& o) : id(o.id), version(o.version)
+select::reg::reg(reg&& o) : id(o.id), version(o.version), reload(o.reload)
 {
     o.id = -1;
 }
@@ -46,6 +46,27 @@ select::reg& select::reg::operator = (const select::reg& o)
     return *this;
 }
 
+select::reg::operator int (void) const
+{
+    if (valid() == false)
+    {
+        if ((bool)reload == false)
+        {
+            //assert(0);
+            id = -1;
+        }
+        else
+        {
+            auto v = reload();
+            v.acquire();
+            id = v.id;
+            version = v.version;
+        }
+    }
+    (regs.datas[id].binded == false) ? regs.frees.active(id) : regs.binds.active(id);
+    return id;
+}
+
 void select::reg::acquire()
 {
     regs.acquire(id, version);
@@ -58,7 +79,7 @@ select::select()
     for (int i = 0; i < 16; i++)
     {
         datas[i].id = i;
-        datas[i].locked = false;
+        datas[i].binded = false;
         datas[i].ref = 0;
         datas[i].version = 1;
 
@@ -77,12 +98,12 @@ select::reg select::var(const std::string_view& name)
     auto it = vars.find(name);
     if (it != vars.end())
     {
-        return select::reg(it->second->id, it->second->version);
+        return it->second;
     }
 
     int v = (frees.size > min_frees) ? frees.remove() : free_binds();
+    datas[v].binded = true;
     binds.add(v);
-    vars.emplace(name, &datas[v]);
     return alloc(datas[v]);
 }
 
@@ -93,13 +114,19 @@ select::reg select::lock(void)
     return alloc(datas[v]);
 }
 
+bool select::bind(const std::string_view& name, const reg& reg)
+{
+    return vars.emplace(name, reg).second;
+}
+
 void select::cleanup(bool var_only)
 {
     for (auto& it : vars)
     {
-        binds.remove(it.second->id);
-        cleanup(*it.second);
-        frees.add(it.second->id);
+        binds.remove(it.second.id);
+        datas[it.second.id].binded = false;
+        cleanup(datas[it.second.id]);
+        frees.add(it.second.id);
     }
     if (var_only == true)
     {
@@ -148,7 +175,7 @@ select::reg select::alloc(data& v)
 void select::cleanup(data& v)
 {
     v.version += 1;
-    v.locked = false;
+    v.binded = false;
     if (v.var.length() > 0)
     {
         vars.erase(v.var);
@@ -162,6 +189,7 @@ int select::free_binds(void)
         return -1;
     }
     int v = binds.remove();
+    datas[v].binded = false;
     cleanup(datas[v]);
     frees.add(v);
     return v;

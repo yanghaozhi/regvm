@@ -5,6 +5,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <functional>
 #include <string_view>
 #include <unordered_map>
 
@@ -30,26 +31,11 @@ public:
 
         reg& operator = (const reg& o);
 
-        inline operator int (void) const
-        {
-            if (valid() == false)
-            {
-                assert(0);
-            }
-            return id;
-        }
-        template <typename F> int get(F func)
-        {
-            if (valid() == false)
-            {
-                func(this);
-                acquire();
-            }
-            return id;
-        }
+        operator int (void) const;
     private:
-        int             id;
-        uint32_t        version;
+        mutable int                 id;
+        mutable uint32_t            version;
+        std::function<reg (void)>   reload;
 
         friend class select;
 
@@ -58,11 +44,26 @@ public:
 
     //get a reg to store var
     reg var(const std::string_view& name);
+    template <typename F> reg var(const std::string_view& name, F reload)
+    {
+        auto it = vars.find(name);
+        if (it != vars.end())
+        {
+            auto ret = it->second;
+            ret.reload = reload;
+            return ret;
+        }
+        auto r = vars.emplace(name, reload());
+        r.first->second.reload = reload;
+        return r.first->second;
+    }
 
     //get a reg and lock it
     reg lock(void);
 
     reg get(void);
+
+    bool bind(const std::string_view& name, const reg& reg);
 
     //cleanup all binded/locked reg to frees
     void cleanup(bool var_only);
@@ -71,7 +72,7 @@ private:
     struct data
     {
         int8_t              id;
-        bool                locked;
+        bool                binded;
         uint16_t            ref;
         uint32_t            version;
         std::string_view    var;
@@ -83,7 +84,7 @@ private:
     lru<int8_t, 16>         binds;
 
     std::set<int>           locks;
-    std::unordered_map<std::string_view, data*>    vars;
+    std::unordered_map<std::string_view, select::reg>    vars;
 
     reg alloc(data& v);
     void cleanup(data& v);

@@ -212,11 +212,19 @@ select::reg parser::token_2_reg(const token& tok)
         break;
     case Id:
         {
-            int n = regs.get();
-            INST(SETC, n, tok.name);
-            auto reg = regs.var(tok.name);
-            INST(LOAD, reg, n);
+            //int n = regs.get();
+            //INST(SETC, n, tok.name);
             //auto reg = regs.var(tok.name);
+            //INST(LOAD, reg, n);
+            std::string_view name = tok.name;
+            auto reg = regs.var(tok.name, [this, name]()
+                {
+                    auto n = regs.get();
+                    INST(SETC, n, name);
+                    auto reg = regs.var(name);
+                    INST(LOAD, reg, n);
+                    return reg;
+                });
             //INST(LOAD, reg.get([](select::reg* r)
             //        {
             //            auto n = regs.get();
