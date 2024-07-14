@@ -2,7 +2,13 @@
 
 #include <stdio.h>
 
-template <typename T> const char* var_crtp<T>::go(parser* p, const char* src, const token* toks, int count)
+#include <log.h>
+
+template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
+{
+}
+
+template <typename T> const char* var_crtp<T>::go(const char* src, const token* toks, int count)
 {
     DATA_TYPE type = TYPE_NULL;
     switch (toks[0].info.type)
@@ -16,18 +22,17 @@ template <typename T> const char* var_crtp<T>::go(parser* p, const char* src, co
     default:
         break;
     }
-    return static_cast<T*>(this)->go2(p, src, toks + 2, count - 2, type, toks[1].name);
+    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, type, toks[1].name);
 }
 
-decl_var_only::decl_var_only(parser* p)
+decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
 {
     p->add(this, Int, Id, ';', -1);
     p->add(this, Double, Id, ';', -1);
 }
 
-const char* decl_var_only::go2(parser* p, const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
+const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
-    auto& insts = p->insts;
     int v = regs.get();
     INST(CLEAR, v, type);
     int n = regs.get();
@@ -36,36 +41,35 @@ const char* decl_var_only::go2(parser* p, const char* src, const token* toks, in
     return src;
 }
 
-decl_var_init::decl_var_init(parser* p)
+decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
 {
     p->add(this, Int, Id, Assign, -1);
     p->add(this, Double, Id, Assign, -1);
 }
 
-const char* decl_var_init::go2(parser* p, const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
+const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
     int v = -1;
     src = p->expression(src, v);
     int n = regs.get();
-    auto& insts = p->insts;
     INST(SETC, n, name);
     INST(STORE, v, n);
     return src;
 }
 
-call_func_no_ret::call_func_no_ret(parser* p)
+call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 {
     p->add(this, Id, '(', -1);
 }
 
-const char* call_func_no_ret::go(parser* p, const char* src, const token* toks, int count)
+const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
     int c = 16;
     int8_t rets[16];
     return p->call_func(src, toks[0], c, rets);
 }
 
-assign_var::assign_var(parser* p)
+assign_var::assign_var(parser* p) : parser::op(p)
 {
     p->add(this, Id, Assign, -1);
     p->add(this, Id, AddE, -1);
@@ -75,11 +79,10 @@ assign_var::assign_var(parser* p)
     p->add(this, Id, ModE, -1);
 }
 
-const char* assign_var::go(parser* p, const char* src, const token* toks, int count)
+const char* assign_var::go(const char* src, const token* toks, int count)
 {
     int v = -1;
     src = p->expression(src, v);
-    auto& insts = p->insts;
     int n = regs.get();
     INST(SETC, n, toks[0].name);
     switch (toks[0].info.type)
@@ -102,6 +105,88 @@ const char* assign_var::go(parser* p, const char* src, const token* toks, int co
         CALC(DivE, DIV);
         CALC(ModE, MOD);
 #undef CALC
+    }
+    return src;
+}
+
+if_else::if_else(parser* p) : parser::op(p)
+{
+    p->add(this, If, '(', -1);
+}
+
+int if_else::calc_bytes(int begin, int end)
+{
+    int r = 0;
+    auto b = insts.begin() + begin;
+    auto e = insts.begin() + end;
+    for (auto& p = b; p != e; ++p)
+    {
+        LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
+        r += p->bytes;
+    }
+    LOGT("--------------- %d", r >> 1);
+    return r;
+}
+
+int if_else::set_addr(inst* code, int begin, int end)
+{
+    code->val.sint = (calc_bytes(begin, end) >> 1) + 1;
+    code->ex = TYPE_SIGNED;
+    code->recalc();
+    return code->val.sint;
+}
+
+const char* if_else::go(const char* src, const token* toks, int count)
+{
+    LOGD("%s", src);
+    int cmp = -1;
+    src = p->expression(src, cmp);
+    LOGD("%d, %s", cmp, src);
+
+    struct 
+    {
+        inst*   code;
+        int     begin;
+        int     end;
+    } labels[2];
+    //int offsets[2];
+
+    uv pos;
+    pos.sint = -1;
+    int addr = regs.get();
+    INST(SETS, addr, TYPE_ADDR, pos);
+    labels[0].code = &insts.back();
+
+    INST(JZ, cmp, addr);
+    labels[0].begin = insts.size();
+
+    src = p->statement(src);
+
+    token tok;
+    auto o = p->next_token(src, tok);
+    if (tok.info.type == Else)
+    {
+        uv pos;
+        pos.sint = -1;
+        addr = regs.get();
+        INST(SETS, addr, TYPE_ADDR, pos);
+        labels[1].code = &insts.back();
+
+        INST(JUMP, cmp, addr);
+        labels[1].begin = insts.size();
+
+        labels[0].end = insts.size();
+
+        src = p->statement(o);
+
+        labels[1].end = insts.size();
+
+        set_addr(labels[1].code, labels[1].begin, labels[1].end);
+        set_addr(labels[0].code, labels[0].begin, labels[0].end);
+    }
+    else
+    {
+        set_addr(labels[0].code, labels[0].begin, insts.size());
     }
     return src;
 }

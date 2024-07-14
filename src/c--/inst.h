@@ -25,6 +25,8 @@ struct inst
 
     inst(const char* n, int i, int r, int e, const std::vector<int>& args);
 
+    void recalc();
+
     void print(FILE* fp);
     void print_bin(FILE* fp);
     void print_txt(FILE* fp);

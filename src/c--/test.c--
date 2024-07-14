@@ -8,5 +8,19 @@ int j = echo(i, 10 * 20 - 30, -18.484) + 10;
     echo(i, j);
 }
 
-echo(10 * 20 > j, j < 4 + 1);
+echo(j);
 
+echo(10 * 20 > j);
+
+echo(j);
+
+if (j > 10)
+{
+    echo(1234);
+}
+else
+{
+    echo(1024);
+}
+
+echo(333);

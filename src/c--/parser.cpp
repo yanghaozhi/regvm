@@ -16,8 +16,8 @@
 
 parser::parser() : parser_list(new trie_tree())
 {
-    keywords.emplace("else", Else);
     keywords.emplace("if", If);
+    keywords.emplace("else", Else);
     keywords.emplace("int", Int);
     keywords.emplace("double", Double);
     keywords.emplace("return", Return);
@@ -30,33 +30,65 @@ parser::~parser()
     //TODO
 }
 
+void parser::set_label(int label, int reg)
+{
+    uv addr;
+    auto it = labels.find(label);
+    if (it != labels.end())
+    {
+        addr.uint = it->second;
+        INST(SETI, reg, TYPE_ADDR, addr);
+    }
+    else
+    {
+        addr.uint = -1;
+        INST(SETI, reg, TYPE_ADDR, addr);
+        pending_labels.emplace(label, &insts.back());
+    }
+}
 
-const char* parser::statement(const char* src)
+void parser::finish_label(int label, uint32_t addr)
+{
+    labels.emplace(label, addr);
+    auto r = pending_labels.equal_range(label);
+    for (auto it = r.first; it != r.second; ++it)
+    {
+        it->second->val.uint = addr;
+        pending_labels.erase(it);
+    }
+}
+
+const char* parser::statement(const char* src, int* end)
 {
     token tok;
     const char* p = src;
     src = next_token(src, tok);
     switch (tok.info.type)
     {
+    case '}':
+        INST(BLOCK, 0, 1);
+        [[fallthrough]];
     case 0:
     case ';':
+        if (end != NULL)
+        {
+            *end = tok.info.type;
+        }
         return src;
     case '{':
         INST(BLOCK, 0, 0);
-        while ((src != NULL) && (*src != '\0'))
         {
-            src = statement(src);
+            int e = -1;
+            while ((src != NULL) && (*src != '\0') && (e != '}'))
+            {
+                src = statement(src, &e);
+            }
         }
-        return src;
-    case '}':
-        INST(BLOCK, 0, 1);
         return src;
     default:
         src = p;
         break;
     }
-
-
 
     token toks[depth];
 
@@ -66,7 +98,7 @@ const char* parser::statement(const char* src)
     {
         if (cur->next.empty() == true)
         {
-            return cur->func->go(this, src, toks, idx);
+            return cur->func->go(src, toks, idx);
         }
 
         if (idx >= depth)
@@ -239,23 +271,23 @@ template <typename T, typename O> int parser::pop_and_calc(T& toks, O& ops)
             break;
         case Gt:
             INST(SUB, l, r);
-            INST(CHG, l, 7);
+            INST(CMP, l, 2);
             break;
         case Ge:
             INST(SUB, l, r);
-            INST(CHG, l, 8);
+            INST(CHG, l, 3);
             break;
         case Lt:
             INST(SUB, l, r);
-            INST(CHG, l, 9);
+            INST(CHG, l, 4);
             break;
         case Le:
             INST(SUB, l, r);
-            INST(CHG, l, 10);
+            INST(CHG, l, 5);
             break;
         case Eq:
             INST(SUB, l, r);
-            INST(CHG, l, 5);
+            INST(CHG, l, 0);
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);

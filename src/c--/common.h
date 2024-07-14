@@ -7,8 +7,8 @@
 enum TOKEN_T
 {
     Num = 256,   //避免和ascii字符冲突
-    Str, Fun, Sys, Glo, Loc, Id, Else, Enum, If,
-    Int, Double,
+    Int, Double, Str,
+    Fun, Sys, Glo, Loc, Id, Enum, If, Else,
     Return, Sizeof, While,
     Assign, Cond, Lor, Lan, Or, Xor, 
     Shl, Shr,

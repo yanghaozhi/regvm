@@ -7,6 +7,8 @@
 #include "vm.h"
 #include "ext.h"
 
+#include <log.h>
+
 #define UNSUPPORT_TYPE(op, t, c, o) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
@@ -26,6 +28,7 @@ extern bool vm_conv(struct regvm* vm, const code_t code, int offset);
 extern bool vm_type(struct regvm* vm, const code_t code, int offset);
 extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
 extern int vm_jump(struct regvm* vm, const code_t code, int offset);
+extern int vm_cmp(struct regvm* vm, const code_t code, int offset);
 
 extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
@@ -74,6 +77,8 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
                 code->id, code->reg, code->ex, offset);                 \
     }
 
+    LOGT("%d : code 0x%02X - %d - %d", offset, code->id, code->reg, code->ex);
+
     switch (code->id)
     {
 #define EXTRA_RUN(id, need, func, ...)                                          \
@@ -112,6 +117,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CODE_RUN(CONV, vm_conv, vm, *code, offset);
         CODE_RUN(TYPE, vm_type, vm, *code, offset);
         CODE_RUN(CHG, vm_chg, vm, *code, offset);
+        CODE_RUN(CMP, vm_cmp, vm, *code, offset);
 #undef CODE_RUN
 
 #define FROM_REG vm->reg.id(code->ex)
@@ -191,9 +197,13 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     case CODE_JUMP:
         *next = vm_jump(vm, *code, offset);
         break;
-    case CODE_JNZ:
-        *next = ((int64_t)vm->reg.id(code->reg) != 0) ? vm_jump(vm, *code, offset) : 1;
+#define JUMP(i, cmp)                                                                        \
+    case CODE_##i:                                                                          \
+        *next = ((int64_t)vm->reg.id(code->reg) cmp 0) ? vm_jump(vm, *code, offset) : 1;    \
         break;
+        JUMP(JZ, ==);
+        JUMP(JNZ, !=);
+#undef JUMP
     case CODE_TRAP:
         *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
         break;
@@ -264,6 +274,12 @@ bool func::run(struct regvm* vm, int64_t start)
         rest -= next;
         offset += next;
     }
+
+    if (rest < 0)
+    {
+        VM_ERROR(ERR_RUNTIME, code_t{0, 0, 0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
+    }
+
     auto& r = vm->reg.id(0);
     vm->exit_code = (r.type == TYPE_NULL) ? 0 : (int64_t)r;
     return true;

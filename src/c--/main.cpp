@@ -42,7 +42,7 @@ struct func
 std::unordered_map<std::string_view, func> funcs;
 
 
-bool grammar(std::vector<inst>& insts, const char* src)
+bool grammar(std::deque<inst>& insts, const char* src)
 {
     LOGT("%s", src);
 
@@ -51,6 +51,7 @@ bool grammar(std::vector<inst>& insts, const char* src)
     decl_var_init       dvi(&par);
     call_func_no_ret    cfnr(&par);
     assign_var          avar(&par);
+    if_else             ifelse(&par);
 
     while ((src != NULL) && (*src != '\0'))
     {
@@ -102,7 +103,7 @@ options:
 
 int main(int argc, char** argv)
 {
-    std::vector<inst> insts;
+    std::deque<inst> insts;
 
     const char* src = t1;
     int fd = -1;

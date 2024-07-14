@@ -32,57 +32,63 @@ inst::inst(const char* n, int i, int r, int e, const std::vector<int>& a) :
 inst::inst(const char* n, int i, int r, int e, uv v) :
     bytes(2), id(i), reg(r), ex(e), name(n), val(v)
 {
+    if (ex != TYPE_ADDR)
+    {
+        recalc();
+    }
+}
+
+#define SIZE_SETS   2
+#define SIZE_SETI   4
+#define SIZE_SETL   8
+#define CHANGE_CODE(x) id = CODE_##x; name = #x; bytes += SIZE_##x;
+void inst::recalc()
+{
     switch (ex)
     {
     case TYPE_SIGNED:
-        if (-32768 <= v.sint && v.sint <= 32767)
+        if (-32768 <= val.sint && val.sint <= 32767)
         {
-            id = CODE_SETS;
-            name = "SETS";
-            bytes += 2;
+            CHANGE_CODE(SETS);
         }
-        else if (-2147483648 <= v.sint && v.sint <= 2147483647)
+        else if (-2147483648 <= val.sint && val.sint <= 2147483647)
         {
-            id = CODE_SETI;
-            name = "SETI";
-            bytes += 4;
+            CHANGE_CODE(SETI);
         }
         else
         {
-            id = CODE_SETL;
-            name = "SETL";
-            bytes += 8;
+            CHANGE_CODE(SETL);
         }
         break;
     case TYPE_UNSIGNED:
-        if (v.uint <= 0xFFFF)
+        if (val.uint <= 0xFFFF)
         {
-            id = CODE_SETS;
-            name = "SETS";
-            bytes += 2;
+            CHANGE_CODE(SETS);
         }
-        else if (v.uint <= 0xFFFFFFFF)
+        else if (val.uint <= 0xFFFFFFFF)
         {
-            id = CODE_SETI;
-            name = "SETI";
-            bytes += 4;
+            CHANGE_CODE(SETI);
         }
         else
         {
-            id = CODE_SETL;
-            name = "SETL";
-            bytes += 8;
+            CHANGE_CODE(SETL);
         }
         break;
     case TYPE_DOUBLE:
-        id = CODE_SETL;
-        name = "SETL";
-        bytes += 8;
+        CHANGE_CODE(SETL);
+        break;
+    case TYPE_ADDR:
+        CHANGE_CODE(SETI);
         break;
     default:
         break;
     }
 }
+#undef CHANGE_CODE
+#undef SIZE_SETS
+#undef SIZE_SETI
+#undef SIZE_SETL
+
 
 void inst::print(FILE* fp)
 {
@@ -167,6 +173,9 @@ void inst::print_txt(FILE* fp)
             break;
         case TYPE_DOUBLE:
             fprintf(fp, "\t%f\n", val.dbl);
+            break;
+        case TYPE_ADDR:
+            fprintf(fp, "\t%X\n", (uint32_t)val.uint);
             break;
         default:
             assert(0);
