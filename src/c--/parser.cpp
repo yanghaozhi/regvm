@@ -63,6 +63,7 @@ const char* parser::statement(const char* src, int* end)
     {
     case '}':
         INST(BLOCK, 0, 1);
+        regs.cleanup(true);
         [[fallthrough]];
     case 0:
     case ';':
@@ -73,6 +74,7 @@ const char* parser::statement(const char* src, int* end)
         return src;
     case '{':
         INST(BLOCK, 0, 0);
+        regs.cleanup(true);
         {
             int e = -1;
             while ((src != NULL) && (*src != '\0') && (e != '}'))
@@ -248,7 +250,6 @@ template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& o
     if (ops.size() != toks.size() - 1)
     {
         LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
-        assert(0);
         return select::reg();
     }
 
@@ -292,19 +293,19 @@ template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& o
             break;
         case Ge:
             INST(SUB, l, r);
-            INST(CHG, l, 3);
+            INST(CMP, l, 3);
             break;
         case Lt:
             INST(SUB, l, r);
-            INST(CHG, l, 4);
+            INST(CMP, l, 4);
             break;
         case Le:
             INST(SUB, l, r);
-            INST(CHG, l, 5);
+            INST(CMP, l, 5);
             break;
         case Eq:
             INST(SUB, l, r);
-            INST(CHG, l, 0);
+            INST(CMP, l, 0);
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
@@ -380,7 +381,6 @@ const char* parser::expression(const char* src, select::reg& reg, int* end)
 
         token op;
         src = next_token(src, op);
-        select::reg r;
         switch (op.info.type)
         {
         case ';':
@@ -419,15 +419,16 @@ const char* parser::expression(const char* src, select::reg& reg, int* end)
             }
             break;
         }
-        if (r.valid() == true)
-        {
-            auto& vv = toks.emplace_back();
-            vv.reg = r;
-        }
-        else
-        {
-            reg.clear();
-        }
+        //if (r.valid() == true)
+        //{
+        //    auto& vv = toks.emplace_back();
+        //    vv.reg = r;
+        //}
+        //else
+        //{
+        //    LOGW("expr : %d : %s", (int)r, src);
+        //    reg.clear();
+        //}
     }
     if (end != NULL)
     {
@@ -445,7 +446,7 @@ const char* parser::comma(const char* src, std::vector<select::reg>& rets)
         src = expression(src, reg, &end);
         if (reg < 0)
         {
-            LOGE("invalid expression result : %d !!!", (int)reg);
+            LOGE("invalid expression result : %d : %s !!!", (int)reg, src);
             return NULL;
         }
         rets.emplace_back(reg);

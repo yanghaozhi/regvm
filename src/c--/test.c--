@@ -23,9 +23,18 @@ else
     echo(1024);
 }
 
-int k = echo(333);
-do
-{
-    k -= 1;
-    echo (k);
-} while (k >= 0);
+//int k = echo(333);
+//do
+//{
+//    k -= 1;
+//    echo (k);
+//} while (k >= 0);
+j += 1;
+echo(j);
+
+j += 1;
+echo(j);
+
+j += 1;
+echo(j);
+

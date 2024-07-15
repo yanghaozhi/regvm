@@ -98,7 +98,14 @@ select::reg select::var(const std::string_view& name)
     auto it = vars.find(name);
     if (it != vars.end())
     {
-        return it->second;
+        if (it->second.valid() == true)
+        {
+            return it->second;
+        }
+        else
+        {
+            vars.erase(it);
+        }
     }
 
     int v = (frees.size > min_frees) ? frees.remove() : free_binds();
@@ -117,6 +124,10 @@ select::reg select::lock(void)
 
 bool select::bind(const std::string_view& name, const reg& reg)
 {
+    if (frees.remove(reg.id) == true)
+    {
+        binds.add(reg.id);
+    }
     return vars.emplace(name, reg).second;
 }
 
@@ -126,7 +137,7 @@ void select::cleanup(bool var_only)
     {
         binds.remove(it.second.id);
         datas[it.second.id].binded = false;
-        cleanup(datas[it.second.id]);
+        clear(datas[it.second.id]);
         frees.add(it.second.id);
     }
     if (var_only == true)
@@ -155,7 +166,7 @@ int select::release(int id, uint32_t version)
         v.ref -= 1;
         if (v.ref == 0)
         {
-            cleanup(v);
+            clear(v);
             return -1;
         }
         return -1;
@@ -174,7 +185,7 @@ select::reg select::alloc(data& v)
     return select::reg(v.id, ++v.version);
 }
 
-void select::cleanup(data& v)
+void select::clear(data& v)
 {
     v.version += 1;
     v.binded = false;
@@ -202,7 +213,7 @@ int select::free_binds(void)
     }
     int v = binds.remove();
     datas[v].binded = false;
-    cleanup(datas[v]);
+    clear(datas[v]);
     frees.add(v);
     return v;
 }

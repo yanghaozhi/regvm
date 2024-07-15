@@ -55,7 +55,6 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
-    regs.bind(name, v);
     return src;
 }
 
@@ -86,7 +85,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     src = p->expression(src, v);
     auto n = regs.tmp();
     INST(SETC, n, toks[0].name);
-    switch (toks[0].info.type)
+    switch (toks[1].info.type)
     {
     case Assign:
         INST(STORE, v, n);
@@ -133,7 +132,7 @@ int jumps::set_addr(label& l, bool backward)
     l.code->val.sint = (calc_bytes(l.begin, l.end) >> 1) + 1;
     if (backward == true)
     {
-        l.code->val.sint = -(l.code->val.sint);
+        l.code->val.sint = -(l.code->val.sint) - 1;
     }
     l.code->ex = TYPE_SIGNED;
     l.code->recalc();

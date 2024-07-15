@@ -48,8 +48,15 @@ public:
         if (it != vars.end())
         {
             auto ret = it->second;
-            ret.reload = reload;
-            return ret;
+            if (ret.valid() == true)
+            {
+                ret.reload = reload;
+                return ret;
+            }
+            else
+            {
+                vars.erase(it);
+            }
         }
         auto r = reload();
         r.reload = reload;
@@ -87,7 +94,7 @@ private:
     std::unordered_map<std::string_view, select::reg>    vars;
 
     reg alloc(data& v);
-    void cleanup(data& v);
+    void clear(data& v);
     int free_binds(void);
 
     int acquire(int id, uint32_t version);
