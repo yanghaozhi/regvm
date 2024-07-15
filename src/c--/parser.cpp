@@ -42,7 +42,8 @@ bool parser::go(const char* src, std::deque<inst>& out)
     decl_var_init       dvi(this);
     call_func_no_ret    cfnr(this);
     assign_var          avar(this);
-    if_else             ifelse(this);
+    if_else             ie(this);
+    do_while            dw(this);
 
     while ((src != NULL) && (*src != '\0'))
     {

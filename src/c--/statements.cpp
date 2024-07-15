@@ -128,12 +128,16 @@ int jumps::calc_bytes(int begin, int end)
     return r;
 }
 
-int jumps::set_addr(inst* code, int begin, int end)
+int jumps::set_addr(label& l, bool backward)
 {
-    code->val.sint = (calc_bytes(begin, end) >> 1) + 1;
-    code->ex = TYPE_SIGNED;
-    code->recalc();
-    return code->val.sint;
+    l.code->val.sint = (calc_bytes(l.begin, l.end) >> 1) + 1;
+    if (backward == true)
+    {
+        l.code->val.sint = -(l.code->val.sint);
+    }
+    l.code->ex = TYPE_SIGNED;
+    l.code->recalc();
+    return l.code->val.sint;
 }
 
 if_else::if_else(parser* p) : jumps(p)
@@ -181,13 +185,50 @@ const char* if_else::go(const char* src, const token* toks, int count)
 
         labels[1].end = insts.size();
 
-        set_addr(labels[1].code, labels[1].begin, labels[1].end);
-        set_addr(labels[0].code, labels[0].begin, labels[0].end);
+        set_addr(labels[1], false);
+        set_addr(labels[0], false);
     }
     else
     {
-        set_addr(labels[0].code, labels[0].begin, insts.size());
+        labels[0].end = insts.size();
+        set_addr(labels[0], false);
     }
     return src;
 }
 
+do_while::do_while(parser* p) : jumps(p)
+{
+    p->add(this, Do, '{', -1);
+}
+
+const char* do_while::go(const char* src, const token* toks, int count)
+{
+    label l;
+    l.begin = insts.size();
+
+    src = p->statement(src - 1);
+
+    token tok;
+    src = p->next_token(src, tok);
+    if (tok.info.type != While)
+    {
+        LOGE("do {...} MUST end with while !!!");
+        return NULL;
+    }
+
+    select::reg cmp;
+    src = p->expression(src, cmp);
+
+    l.end = insts.size();
+
+    uv pos;
+    pos.sint = -1;
+    auto addr = regs.tmp();
+    INST(SETS, addr, TYPE_ADDR, pos);
+    l.code = &insts.back();
+
+    INST(JUMP, cmp, addr);
+    set_addr(l, true);
+
+    return src;
+}

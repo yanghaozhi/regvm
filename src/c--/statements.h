@@ -44,12 +44,18 @@ struct jumps : public parser::op
 
     jumps(parser* p);
     int calc_bytes(int begin, int end);
-    int set_addr(inst* code, int begin, int end);
+    int set_addr(label& l, bool backward);
 };
 
 struct if_else : public jumps
 {
     if_else(parser* p);
+    virtual const char* go(const char* src, const token* toks, int count);
+};
+
+struct do_while : public jumps
+{
+    do_while(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);
 };
 

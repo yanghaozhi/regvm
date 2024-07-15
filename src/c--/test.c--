@@ -23,4 +23,9 @@ else
     echo(1024);
 }
 
-echo(333);
+int k = echo(333);
+do
+{
+    k -= 1;
+    echo (k);
+} while (k >= 0);
