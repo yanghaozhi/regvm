@@ -26,8 +26,10 @@ public:
         virtual const char* go(const char* src, const token* toks, int count)    = 0;
     };
 
-    int                 lineno      = 0;
-    std::deque<inst>   insts;
+    int                     lineno      = 0;
+    std::deque<inst>        insts;
+
+    bool go(const char* src, std::deque<inst>& insts);
 
     bool add(op* func, ...);
 
@@ -41,11 +43,6 @@ public:
 
     const char* comma(const char* src, std::vector<select::reg>& rets);
 
-    int label_id    = 1;
-
-    void set_label(int label, int reg);
-    void finish_label(int label, uint32_t addr);
-
 private:
     int depth      = 0;
 
@@ -57,9 +54,6 @@ private:
 
     trie_tree*                                  parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
-
-    std::multimap<int, inst*>                   pending_labels;
-    std::map<int, uint32_t>                     labels;
 
     select::reg token_2_reg(const token& tok);
     int operator_level(int op) const;

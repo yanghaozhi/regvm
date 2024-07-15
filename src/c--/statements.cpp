@@ -110,12 +110,11 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     return src;
 }
 
-if_else::if_else(parser* p) : parser::op(p)
+jumps::jumps(parser* p) : parser::op(p)
 {
-    p->add(this, If, '(', -1);
 }
 
-int if_else::calc_bytes(int begin, int end)
+int jumps::calc_bytes(int begin, int end)
 {
     int r = 0;
     auto b = insts.begin() + begin;
@@ -129,12 +128,17 @@ int if_else::calc_bytes(int begin, int end)
     return r;
 }
 
-int if_else::set_addr(inst* code, int begin, int end)
+int jumps::set_addr(inst* code, int begin, int end)
 {
     code->val.sint = (calc_bytes(begin, end) >> 1) + 1;
     code->ex = TYPE_SIGNED;
     code->recalc();
     return code->val.sint;
+}
+
+if_else::if_else(parser* p) : jumps(p)
+{
+    p->add(this, If, '(', -1);
 }
 
 const char* if_else::go(const char* src, const token* toks, int count)
@@ -144,12 +148,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
     src = p->expression(src, cmp);
     LOGD("%d, %s", (int)cmp, src);
 
-    struct 
-    {
-        inst*   code;
-        int     begin;
-        int     end;
-    } labels[2];
+    label labels[2];
     //int offsets[2];
 
     uv pos;

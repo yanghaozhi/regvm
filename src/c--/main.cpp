@@ -19,7 +19,6 @@
 #include "inst.h"
 #include "common.h"
 #include "parser.h"
-#include "statements.h"
 
 #include <log.h>
 #include <code.h>
@@ -40,27 +39,6 @@ struct func
 };
 
 std::unordered_map<std::string_view, func> funcs;
-
-
-bool grammar(std::deque<inst>& insts, const char* src)
-{
-    LOGT("%s", src);
-
-    parser par;
-    decl_var_only       dvo(&par);
-    decl_var_init       dvi(&par);
-    call_func_no_ret    cfnr(&par);
-    assign_var          avar(&par);
-    if_else             ifelse(&par);
-
-    while ((src != NULL) && (*src != '\0'))
-    {
-        src = par.statement(src);
-    }
-
-    insts.swap(par.insts);
-    return (src != NULL) ? true : false;
-}
 
 
 
@@ -115,7 +93,8 @@ int main(int argc, char** argv)
         src = (const char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     }
 
-    auto r = grammar(insts, src);
+    parser par;
+    auto r = par.go(src, insts);
     LOGD("parse : %d", r);
     if (r == false)
     {
@@ -158,21 +137,24 @@ int main(int argc, char** argv)
         fclose(fp);
     }
 
-    if ((LOG_IS_ENBALE(DEBUG) == true) && (codes != NULL))
+    if (codes != NULL)
     {
-        const int line = 16;
-        int j = 0;
-        const unsigned char* p = (const unsigned char*)codes;
-        for (int i = 0; i < (int)bytes; i++)
+        if (LOG_IS_ENBALE(DEBUG) == true)
         {
-            if (j++ >= line)
+            const int line = 16;
+            int j = 0;
+            const unsigned char* p = (const unsigned char*)codes;
+            for (int i = 0; i < (int)bytes; i++)
             {
-                printf("\n");
-                j = 1;
+                if (j++ >= line)
+                {
+                    printf("\n");
+                    j = 1;
+                }
+                printf("%02X ", p[i]);
             }
-            printf("%02X ", p[i]);
+            printf("\n\n");
         }
-        printf("\n\n");
 
 
         auto vm = regvm_init();

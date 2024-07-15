@@ -12,6 +12,7 @@
 #include <log.h>
 #include <code.h>
 
+#include "statements.h"
 
 
 parser::parser() : parser_list(new trie_tree())
@@ -20,8 +21,11 @@ parser::parser() : parser_list(new trie_tree())
     keywords.emplace("else", Else);
     keywords.emplace("int", Int);
     keywords.emplace("double", Double);
-    keywords.emplace("return", Return);
+    keywords.emplace("for", For);
+    keywords.emplace("do", Do);
     keywords.emplace("while", While);
+    keywords.emplace("break", Break);
+    keywords.emplace("continue", Continue);
 }
 
 
@@ -30,32 +34,23 @@ parser::~parser()
     //TODO
 }
 
-void parser::set_label(int label, int reg)
+bool parser::go(const char* src, std::deque<inst>& out)
 {
-    uv addr;
-    auto it = labels.find(label);
-    if (it != labels.end())
-    {
-        addr.uint = it->second;
-        INST(SETI, reg, TYPE_ADDR, addr);
-    }
-    else
-    {
-        addr.uint = -1;
-        INST(SETI, reg, TYPE_ADDR, addr);
-        pending_labels.emplace(label, &insts.back());
-    }
-}
+    LOGD("%s", src);
 
-void parser::finish_label(int label, uint32_t addr)
-{
-    labels.emplace(label, addr);
-    auto r = pending_labels.equal_range(label);
-    for (auto it = r.first; it != r.second; ++it)
+    decl_var_only       dvo(this);
+    decl_var_init       dvi(this);
+    call_func_no_ret    cfnr(this);
+    assign_var          avar(this);
+    if_else             ifelse(this);
+
+    while ((src != NULL) && (*src != '\0'))
     {
-        it->second->val.uint = addr;
-        pending_labels.erase(it);
+        src = statement(src);
     }
+
+    out.swap(insts);
+    return (src != NULL) ? true : false;
 }
 
 const char* parser::statement(const char* src, int* end)

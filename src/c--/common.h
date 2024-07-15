@@ -9,13 +9,11 @@ enum TOKEN_T
 {
     Num = 256,   //避免和ascii字符冲突
     Int, Double, Str,
-    Fun, Sys, Glo, Loc, Id, Enum, If, Else,
-    Return, Sizeof, While,
-    Assign, Cond, Lor, Lan, Or, Xor, 
+    Id, If, Else, For, Do, While, Break, Continue,
+    Assign, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
     Shl, Shr,
-    And, Eq, Ne, Lt, Gt, Le, Ge,
     Add, AddE, Sub, SubE, Mul, MulE, Div, DivE, Mod, ModE,
-    Inc, Dec, Brak
+    Inc, Dec
 };
 
 
