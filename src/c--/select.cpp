@@ -87,7 +87,7 @@ select::select()
     }
 }
 
-select::reg select::get(void)
+select::reg select::tmp(void)
 {
     int v = frees.get();
     return alloc(datas[v]);
@@ -104,7 +104,8 @@ select::reg select::var(const std::string_view& name)
     int v = (frees.size > min_frees) ? frees.remove() : free_binds();
     datas[v].binded = true;
     binds.add(v);
-    return alloc(datas[v]);
+    auto r = vars.emplace(name, alloc(datas[v]));
+    return r.first->second;
 }
 
 select::reg select::lock(void)
@@ -169,6 +170,7 @@ bool select::valid(int id, uint32_t version)
 
 select::reg select::alloc(data& v)
 {
+    v.version += 1;
     return select::reg(v.id, ++v.version);
 }
 

@@ -33,7 +33,7 @@ decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
 
 const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
 {
-    auto n = regs.get();
+    auto n = regs.tmp();
     INST(SETC, n, name);
     INST(NEW, n, type);
     return src;
@@ -51,7 +51,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     src = p->expression(src, v);
     if (src == NULL) return NULL;
 
-    auto n = regs.get();
+    auto n = regs.tmp();
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
@@ -84,7 +84,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 {
     select::reg v;
     src = p->expression(src, v);
-    auto n = regs.get();
+    auto n = regs.tmp();
     INST(SETC, n, toks[0].name);
     switch (toks[0].info.type)
     {
@@ -94,7 +94,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 #define CALC(k, op)                     \
     case k:                             \
         {                               \
-            auto vv = regs.get();       \
+            auto vv = regs.tmp();       \
             INST(LOAD, vv, n);          \
             INST(op, vv, v);            \
             INST(STORE, vv, n);         \
@@ -154,7 +154,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 
     uv pos;
     pos.sint = -1;
-    auto addr = regs.get();
+    auto addr = regs.tmp();
     INST(SETS, addr, TYPE_ADDR, pos);
     labels[0].code = &insts.back();
 
@@ -169,7 +169,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
     {
         uv pos;
         pos.sint = -1;
-        addr = regs.get();
+        addr = regs.tmp();
         INST(SETS, addr, TYPE_ADDR, pos);
         labels[1].code = &insts.back();
 

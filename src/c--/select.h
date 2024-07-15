@@ -42,9 +42,7 @@ public:
         void acquire();
     };
 
-    //get a reg to store var
-    reg var(const std::string_view& name);
-    template <typename F> reg var(const std::string_view& name, F reload)
+    template <typename F> reg get(const std::string_view& name, F reload)
     {
         auto it = vars.find(name);
         if (it != vars.end())
@@ -53,15 +51,17 @@ public:
             ret.reload = reload;
             return ret;
         }
-        auto r = vars.emplace(name, reload());
-        r.first->second.reload = reload;
-        return r.first->second;
+        auto r = reload();
+        r.reload = reload;
+        return r;
     }
 
+    //get a reg to store var
+    reg var(const std::string_view& name);
     //get a reg and lock it
     reg lock(void);
 
-    reg get(void);
+    reg tmp(void);
 
     bool bind(const std::string_view& name, const reg& reg);
 

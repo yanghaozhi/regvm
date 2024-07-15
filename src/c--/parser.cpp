@@ -205,7 +205,7 @@ select::reg parser::token_2_reg(const token& tok)
     {
     case Num:
         {
-            auto reg = regs.get();
+            auto reg = regs.tmp();
             INST(SETS, reg, tok.info.data_type, tok.info.value);
             return reg;
         }
@@ -217,9 +217,9 @@ select::reg parser::token_2_reg(const token& tok)
             //auto reg = regs.var(tok.name);
             //INST(LOAD, reg, n);
             std::string_view name = tok.name;
-            auto reg = regs.var(tok.name, [this, name]()
+            auto reg = regs.get(tok.name, [this, name]()
                 {
-                    auto n = regs.get();
+                    auto n = regs.tmp();
                     INST(SETC, n, name);
                     auto reg = regs.var(name);
                     INST(LOAD, reg, n);
