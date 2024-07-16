@@ -33,27 +33,13 @@ struct assign_var : public parser::op
     virtual const char* go(const char* src, const token* toks, int count);
 };
 
-struct jumps : public parser::op
-{
-    struct label
-    {
-        inst*   code;
-        int     begin;
-        int     end;
-    };
-
-    jumps(parser* p);
-    int calc_bytes(int begin, int end);
-    int set_addr(label& l, bool backward);
-};
-
-struct if_else : public jumps
+struct if_else : public parser::op
 {
     if_else(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);
 };
 
-struct do_while : public jumps
+struct do_while : public parser::op
 {
     do_while(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);

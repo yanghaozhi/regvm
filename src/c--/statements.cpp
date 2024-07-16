@@ -118,59 +118,121 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     return src;
 }
 
-jumps::jumps(parser* p) : parser::op(p)
+class labels
 {
-}
+public:
+    labels(std::deque<inst>& i) : insts(i)  {}
 
-int jumps::calc_bytes(int begin, int end)
-{
-    int r = 0;
-    auto b = insts.begin() + begin;
-    auto e = insts.begin() + end;
-    for (auto& p = b; p != e; ++p)
+    void set_jump(int label, const char* name, int code, int reg);
+    void set_label(int label);
+    bool finish();
+
+private:
+    struct jump
     {
-        LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
-        r += p->bytes;
-    }
-    LOGT("--------------- %d", r >> 1);
-    return r;
-}
+        inst*   code;
+        int     label;
+        int     pos;
+        int     to;
+    };
 
-int jumps::set_addr(label& l, bool backward)
-{
-    l.code->val.sint = (calc_bytes(l.begin, l.end) >> 1) + 1;
-    if (backward == true)
+    int64_t     label_min = 0xFFFFFFFFFF;
+    int64_t     label_max = -1;
+
+    std::deque<inst>&   insts;
+    std::vector<jump>   js;
+    std::map<int, int>  ls;
+
+    int calc_bytes(int begin, int end)
     {
-        l.code->val.sint = -(l.code->val.sint) - 1;
+        int r = 0;
+        auto b = insts.begin() + begin;
+        auto e = insts.begin() + end;
+        for (auto& p = b; p != e; ++p)
+        {
+            LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
+            r += p->bytes;
+        }
+        LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
+        return r;
     }
-    l.code->ex = TYPE_SIGNED;
-    l.code->recalc();
-    return l.code->val.sint;
+};
+
+#define SET_JUMP(j, l, c, r) j.set_jump(l, #c, CODE_##c, r);
+
+void labels::set_jump(int label, const char* name, int code, int reg)
+{
+    uv pos;
+    pos.sint = -1;
+    auto addr = regs.tmp();
+    INST(SETS, addr, TYPE_ADDR, pos);
+
+    js.emplace_back(jump{&insts.back(), label, (int)insts.size() + 1, -1});
+
+    insts.emplace_back(name, code, reg, (int)addr);
 }
 
-if_else::if_else(parser* p) : jumps(p)
+void labels::set_label(int label)
+{
+    int64_t cur = insts.size();
+    if (cur < label_min)
+    {
+        label_min = cur;
+    }
+    if (cur > label_max)
+    {
+        label_max = cur;
+    }
+    ls.emplace(label, cur);
+}
+
+bool labels::finish()
+{
+    int64_t diff = (std::max(label_max, (int64_t)js.back().pos) - std::min(label_min, (int64_t)js.front().pos)) * 2;
+
+    for (auto& it : js)
+    {
+        auto l = ls.find(it.label);
+        if (l == ls.end())
+        {
+            LOGE("need to jump to label %d, but it is NOT exists !!!", it.label);
+            return false;
+        }
+
+        it.code->val.sint = diff;
+        it.code->ex = TYPE_SIGNED;
+        it.code->recalc();
+        it.to = l->second;
+    }
+
+    for (auto& it : js)
+    {
+        if (it.to > it.pos)
+        {
+            it.code->val.sint = (calc_bytes(it.pos, it.to) >> 1) + 1;
+        }
+        else
+        {
+            it.code->val.sint = -(calc_bytes(it.to, it.pos) >> 1);
+        }
+    }
+
+    return true;
+}
+
+if_else::if_else(parser* p) : parser::op(p)
 {
     p->add(this, If, '(', -1);
 }
 
 const char* if_else::go(const char* src, const token* toks, int count)
 {
-    LOGD("%s", src);
     select::reg cmp;
     src = p->expression(src, cmp);
-    LOGD("%d, %s", (int)cmp, src);
 
-    label labels[2];
-    //int offsets[2];
+    labels jump(insts);
 
-    uv pos;
-    pos.sint = -1;
-    auto addr = regs.tmp();
-    INST(SETS, addr, TYPE_ADDR, pos);
-    labels[0].code = &insts.back();
-
-    INST(JZ, cmp, addr);
-    labels[0].begin = insts.size();
+    SET_JUMP(jump, 0, JZ, cmp);
 
     src = p->statement(src);
 
@@ -178,41 +240,31 @@ const char* if_else::go(const char* src, const token* toks, int count)
     auto o = p->next_token(src, tok);
     if (tok.info.type == Else)
     {
-        uv pos;
-        pos.sint = -1;
-        addr = regs.tmp();
-        INST(SETS, addr, TYPE_ADDR, pos);
-        labels[1].code = &insts.back();
+        SET_JUMP(jump, 1, JUMP, -1);
 
-        INST(JUMP, cmp, addr);
-        labels[1].begin = insts.size();
-
-        labels[0].end = insts.size();
+        jump.set_label(0);
 
         src = p->statement(o);
 
-        labels[1].end = insts.size();
-
-        set_addr(labels[1], false);
-        set_addr(labels[0], false);
+        jump.set_label(1);
     }
     else
     {
-        labels[0].end = insts.size();
-        set_addr(labels[0], false);
+        jump.set_label(0);
     }
-    return src;
+    return (jump.finish() == true) ? src : NULL;
 }
 
-do_while::do_while(parser* p) : jumps(p)
+do_while::do_while(parser* p) : parser::op(p)
 {
     p->add(this, Do, '{', -1);
 }
 
 const char* do_while::go(const char* src, const token* toks, int count)
 {
-    label l;
-    l.begin = insts.size();
+    labels jump(insts);
+
+    jump.set_label(0);
 
     src = p->statement(src - 1);
 
@@ -227,16 +279,7 @@ const char* do_while::go(const char* src, const token* toks, int count)
     select::reg cmp;
     src = p->expression(src, cmp);
 
-    l.end = insts.size();
+    SET_JUMP(jump, 0, JNZ, cmp);
 
-    uv pos;
-    pos.sint = -1;
-    auto addr = regs.tmp();
-    INST(SETS, addr, TYPE_ADDR, pos);
-    l.code = &insts.back();
-
-    INST(JNZ, cmp, addr);
-    set_addr(l, true);
-
-    return src;
+    return (jump.finish() == true) ? src : NULL;
 }
