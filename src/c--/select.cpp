@@ -140,9 +140,9 @@ void select::cleanup(bool var_only)
         clear(datas[it.second.id]);
         frees.add(it.second.id);
     }
-    if (var_only == true)
+    vars.clear();
+    if (var_only == false)
     {
-        return;
     }
 }
 
@@ -189,6 +189,7 @@ void select::clear(data& v)
 {
     v.version += 1;
     v.binded = false;
+    v.ref = 0;
     if (v.var.length() > 0)
     {
         if (vars.erase(v.var) > 0)

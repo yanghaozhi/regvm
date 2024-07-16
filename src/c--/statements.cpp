@@ -83,21 +83,30 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 {
     select::reg v;
     src = p->expression(src, v);
-    auto n = regs.tmp();
-    INST(SETC, n, toks[0].name);
     switch (toks[1].info.type)
     {
     case Assign:
-        INST(STORE, v, n);
+        {
+            auto n = regs.tmp();
+            INST(SETC, n, toks[0].name);
+            INST(STORE, v, n);
+        }
         break;
-#define CALC(k, op)                     \
-    case k:                             \
-        {                               \
-            auto vv = regs.tmp();       \
-            INST(LOAD, vv, n);          \
-            INST(op, vv, v);            \
-            INST(STORE, vv, n);         \
-        }                               \
+#define CALC(k, op)                                         \
+    case k:                                                 \
+        {                                                   \
+            std::string_view name = toks[0].name;           \
+            auto reg = regs.get(name, [this, name, v]()     \
+                {                                           \
+                    auto n = regs.tmp();                    \
+                    INST(SETC, n, name);                    \
+                    auto vv = regs.tmp();                   \
+                    INST(LOAD, vv, n);                      \
+                    return vv;                              \
+                });                                         \
+            INST(op, reg, v);                               \
+            INST(STORE, reg, reg);                          \
+        }                                                   \
         break;
         CALC(AddE, ADD);
         CALC(SubE, SUB);
@@ -226,7 +235,7 @@ const char* do_while::go(const char* src, const token* toks, int count)
     INST(SETS, addr, TYPE_ADDR, pos);
     l.code = &insts.back();
 
-    INST(JUMP, cmp, addr);
+    INST(JNZ, cmp, addr);
     set_addr(l, true);
 
     return src;

@@ -281,7 +281,7 @@ bool func::run(struct regvm* vm, int64_t start)
     }
 
     auto& r = vm->reg.id(0);
-    vm->exit_code = (r.type == TYPE_NULL) ? 0 : (int64_t)r;
+    vm->exit_code = (r.type == TYPE_NULL) ? 0 : r.value.sint;
     return true;
 }
 

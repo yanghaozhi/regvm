@@ -23,12 +23,6 @@ else
     echo(1024);
 }
 
-//int k = echo(333);
-//do
-//{
-//    k -= 1;
-//    echo (k);
-//} while (k >= 0);
 j += 1;
 echo(j);
 
@@ -38,3 +32,9 @@ echo(j);
 j += 1;
 echo(j);
 
+int k = j - 10;
+do
+{
+    echo (k);
+    k -= 1;
+} while (k >= 0);
