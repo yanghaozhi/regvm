@@ -213,7 +213,7 @@ bool labels::finish()
         }
         else
         {
-            it.code->val.sint = -(calc_bytes(it.to, it.pos) >> 1);
+            it.code->val.sint = -((calc_bytes(it.to, it.pos) - js.front().code->bytes) >> 1) - 1;
         }
     }
 
