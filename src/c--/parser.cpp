@@ -388,6 +388,7 @@ const char* parser::expression(const char* src, select::reg& reg, int* end)
         src = next_token(src, op);
         switch (op.info.type)
         {
+        case ':':
         case ';':
         case ',':
         case ')':

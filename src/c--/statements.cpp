@@ -300,3 +300,98 @@ const char* do_while::go(const char* src, const token* toks, int count)
 
     return (jump.finish() == true) ? src : NULL;
 }
+
+while_loop::while_loop(parser* p) : parser::op(p)
+{
+    p->add(this, While, '(', -1);
+}
+
+const char* while_loop::go(const char* src, const token* toks, int count)
+{
+    labels jump(insts);
+
+    jump.set_label(0);
+
+    select::reg cmp;
+    src = p->expression(src, cmp);
+
+    SET_JUMP(jump, 2, JZ, cmp);
+
+    src = p->statement(src - 1, [&jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                SET_JUMP(jump, 2, JUMP, -1);
+                break;
+            case Continue:
+                SET_JUMP(jump, 0, JUMP, -1);
+                break;
+            default:
+                break;
+            }
+        });
+
+    SET_JUMP(jump, 0, JUMP, -1);
+
+    jump.set_label(2);
+
+    return (jump.finish() == true) ? src : NULL;
+}
+
+for_loop::for_loop(parser* p) : parser::op(p)
+{
+    p->add(this, For, '(', -1);
+}
+
+const char* for_loop::go(const char* src, const token* toks, int count)
+{
+    labels jump(insts);
+
+    int end = -1;
+    select::reg cmp;
+    src = p->expression(src, cmp, &end);
+
+    jump.set_label(0);
+
+    const char* expr3 = NULL;
+    switch (end)
+    {
+    case ';':
+        src = p->expression(src, cmp);
+        expr3 = src;
+        break;
+    case ':':
+        break;
+    default:
+        LOGE("Unexpect token : %c !!!", *(src - 1));
+        return NULL;
+    }
+
+    SET_JUMP(jump, 5, JZ, cmp);
+
+    src = p->statement(src - 1, [&jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                SET_JUMP(jump, 5, JUMP, -1);
+                break;
+            case Continue:
+                SET_JUMP(jump, 0, JUMP, -1);
+                break;
+            default:
+                break;
+            }
+        });
+
+    p->expression(expr3, cmp);
+
+    SET_JUMP(jump, 0, JUMP, -1);
+
+    jump.set_label(5);
+
+    return (jump.finish() == true) ? src : NULL;
+}
+
+
