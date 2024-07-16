@@ -3,6 +3,7 @@
 #include <map>
 #include <deque>
 #include <vector>
+#include <functional>
 #include <string_view>
 #include <unordered_map>
 
@@ -35,7 +36,7 @@ public:
 
     const char* next_token(const char* src, token& tok);
 
-    const char* statement(const char* src, int* end = NULL);
+    const char* statement(const char* src, std::function<void (const token&)> cb = {});
 
     const char* expression(const char* src, select::reg& reg, int* end = NULL);
 

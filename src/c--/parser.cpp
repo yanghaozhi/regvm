@@ -54,7 +54,7 @@ bool parser::go(const char* src, std::deque<inst>& out)
     return (src != NULL) ? true : false;
 }
 
-const char* parser::statement(const char* src, int* end)
+const char* parser::statement(const char* src, std::function<void (const token&)> cb)
 {
     token tok;
     const char* p = src;
@@ -67,22 +67,27 @@ const char* parser::statement(const char* src, int* end)
         [[fallthrough]];
     case 0:
     case ';':
-        if (end != NULL)
-        {
-            *end = tok.info.type;
-        }
         return src;
     case '{':
         INST(BLOCK, 0, 0);
         regs.cleanup(true);
+        while ((src != NULL) && (*src != '\0') && (*(src - 1) != '}'))
         {
-            int e = -1;
-            while ((src != NULL) && (*src != '\0') && (e != '}'))
-            {
-                src = statement(src, &e);
-            }
+            src = statement(src);
         }
         return src;
+    case Break:
+    case Continue:
+        if (cb)
+        {
+            cb(tok);
+            return src;
+        }
+        else
+        {
+            LOGE("Do NOT allow use break/continue outside loops !!!");
+            return NULL;
+        }
     default:
         src = p;
         break;

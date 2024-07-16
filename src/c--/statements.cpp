@@ -266,7 +266,22 @@ const char* do_while::go(const char* src, const token* toks, int count)
 
     jump.set_label(0);
 
-    src = p->statement(src - 1);
+    src = p->statement(src - 1, [&jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                SET_JUMP(jump, 2, JUMP, -1);
+                break;
+            case Continue:
+                SET_JUMP(jump, 1, JUMP, -1);
+                break;
+            default:
+                break;
+            }
+        });
+
+    jump.set_label(1);
 
     token tok;
     src = p->next_token(src, tok);
@@ -280,6 +295,8 @@ const char* do_while::go(const char* src, const token* toks, int count)
     src = p->expression(src, cmp);
 
     SET_JUMP(jump, 0, JNZ, cmp);
+
+    jump.set_label(2);
 
     return (jump.finish() == true) ? src : NULL;
 }
