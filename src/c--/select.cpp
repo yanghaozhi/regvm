@@ -1,5 +1,6 @@
 #include "select.h"
 
+#include <log.h>
 
 class select               regs;
 
@@ -112,6 +113,7 @@ select::reg select::var(const std::string_view& name)
     datas[v].binded = true;
     binds.add(v);
     auto r = vars.emplace(name, alloc(datas[v]));
+    LOGT("bind %d:%d => %s", datas[v].id, datas[v].version, std::string(name).c_str());
     return r.first->second;
 }
 
@@ -119,6 +121,7 @@ select::reg select::lock(void)
 {
     int v = (frees.size > min_frees) ? frees.remove() : free_binds();
     locks.emplace(v);
+    LOGT("lock %d:%d => %d", datas[v].id, datas[v].version, (int)locks.size());
     return alloc(datas[v]);
 }
 
@@ -128,11 +131,13 @@ bool select::bind(const std::string_view& name, const reg& reg)
     {
         binds.add(reg.id);
     }
+    LOGT("bind exists %d:%d => %s", datas[reg.id].id, datas[reg.id].version, std::string(name).c_str());
     return vars.emplace(name, reg).second;
 }
 
 void select::cleanup(bool var_only)
 {
+    LOGT("%d - %d - %d - %d", (int)locks.size(), (int)vars.size(), binds.size, frees.size);
     for (auto& it : vars)
     {
         binds.remove(it.second.id);
@@ -144,6 +149,7 @@ void select::cleanup(bool var_only)
     if (var_only == false)
     {
     }
+    LOGT("%d - %d - %d - %d", (int)locks.size(), (int)vars.size(), binds.size, frees.size);
 }
 
 int select::acquire(int id, uint32_t version)
@@ -187,6 +193,7 @@ select::reg select::alloc(data& v)
 
 void select::clear(data& v)
 {
+    LOGT("clear %d:%d", v.id, v.version);
     v.version += 1;
     v.binded = false;
     v.ref = 0;
