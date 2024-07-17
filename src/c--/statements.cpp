@@ -317,7 +317,7 @@ const char* while_loop::go(const char* src, const token* toks, int count)
 
     SET_JUMP(jump, 2, JZ, cmp);
 
-    src = p->statement(src - 1, [&jump](auto& tok)
+    src = p->statement(src, [&jump](auto& tok)
         {
             switch (tok.info.type)
             {
@@ -352,15 +352,21 @@ const char* for_loop::go(const char* src, const token* toks, int count)
 
     jump.set_label(0);
 
-    select::reg cmp;
     std::deque<inst> expr3;
     switch (*(src - 1))
     {
     case ';':
-        src = p->expression(src, cmp);
-        expr3.swap(insts);
-        src = p->statement(src);
-        expr3.swap(insts);
+        {
+            select::reg cmp;
+            src = p->expression(src, cmp);
+            SET_JUMP(jump, 5, JZ, cmp);
+
+            regs.cleanup(true);
+
+            expr3.swap(insts);
+            src = p->statement(src);
+            expr3.swap(insts);
+        }
         break;
     case ':':
         break;
@@ -368,8 +374,6 @@ const char* for_loop::go(const char* src, const token* toks, int count)
         LOGE("Unexpect token : %c !!!", *(src - 1));
         return NULL;
     }
-
-    SET_JUMP(jump, 5, JZ, cmp);
 
     src = p->statement(src, [&jump](auto& tok)
         {

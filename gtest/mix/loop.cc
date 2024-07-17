@@ -21,7 +21,8 @@ DEC     1   1
 SETC    2   9   #LABEL:  aaa
 #TRAP    0   5
 # if ($1 > 0) jump $2
-JG      1   2
+CMP     1   2
+JNZ     1   2
 TRAP    1   6
 # $0 += 10
 INC     0   10

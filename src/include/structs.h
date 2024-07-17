@@ -100,7 +100,7 @@ template <typename T> struct regv
 
     inline bool clear()
     {
-        store();
+        //store();
 
         if (need_free == true)
         {

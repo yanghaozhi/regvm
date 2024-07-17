@@ -139,7 +139,8 @@ bool parser::add(op* func, ...)
 {
     trie_tree* cur = parser_list;
 
-    LOGT("add %s ", typeid(func).name());
+    LOGT("add %s ", typeid(*func).name());
+
     va_list ap;
     va_start(ap, func);
     int t = -1;
