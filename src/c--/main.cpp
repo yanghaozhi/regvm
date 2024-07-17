@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
     if (codes != NULL)
     {
-        if (LOG_IS_ENBALE(DEBUG) == true)
+        if LOG_IS_ENBALE(DEBUG)
         {
             const int line = 16;
             int j = 0;

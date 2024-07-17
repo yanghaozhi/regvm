@@ -348,18 +348,19 @@ const char* for_loop::go(const char* src, const token* toks, int count)
 {
     labels jump(insts);
 
-    int end = -1;
-    select::reg cmp;
-    src = p->expression(src, cmp, &end);
+    src = p->statement(src);
 
     jump.set_label(0);
 
-    const char* expr3 = NULL;
-    switch (end)
+    select::reg cmp;
+    std::deque<inst> expr3;
+    switch (*(src - 1))
     {
     case ';':
         src = p->expression(src, cmp);
-        expr3 = src;
+        expr3.swap(insts);
+        src = p->statement(src);
+        expr3.swap(insts);
         break;
     case ':':
         break;
@@ -370,7 +371,7 @@ const char* for_loop::go(const char* src, const token* toks, int count)
 
     SET_JUMP(jump, 5, JZ, cmp);
 
-    src = p->statement(src - 1, [&jump](auto& tok)
+    src = p->statement(src, [&jump](auto& tok)
         {
             switch (tok.info.type)
             {
@@ -385,7 +386,10 @@ const char* for_loop::go(const char* src, const token* toks, int count)
             }
         });
 
-    p->expression(expr3, cmp);
+    for (auto& it : expr3)
+    {
+        insts.emplace_back(it);
+    }
 
     SET_JUMP(jump, 0, JUMP, -1);
 

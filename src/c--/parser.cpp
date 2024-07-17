@@ -44,6 +44,8 @@ bool parser::go(const char* src, std::deque<inst>& out)
     assign_var          avar(this);
     if_else             ie(this);
     do_while            dw(this);
+    while_loop          wl(this);
+    for_loop            fl(this);
 
     while ((src != NULL) && (*src != '\0'))
     {
