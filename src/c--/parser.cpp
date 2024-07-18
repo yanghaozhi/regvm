@@ -248,6 +248,44 @@ select::reg parser::token_2_reg(const token& tok)
     return select::reg();
 }
 
+template <typename T, typename O> select::reg parser::immediate_optimize(T& toks, O& ops)
+{
+    auto& tok = toks.back();
+    if ((tok.info.type != Num) || (ops.size() == 0))
+    {
+        return token_2_reg(tok);
+    }
+
+    unsigned int v = tok.info.value.uint;
+
+    switch (ops.back())
+    {
+#define OPTIMIZE(k, op, vv, ...)                                \
+    case k:                                                     \
+        if (v op vv)                                            \
+        {                                                       \
+            toks.pop_back();                                    \
+            ops.pop_back();                                     \
+            select::reg l = token_2_reg(toks.back());           \
+            INST(__VA_ARGS__);                                  \
+            return l;                                           \
+        }                                                       \
+        break;
+        OPTIMIZE(Add, <=, 16, INC, l, v);
+        OPTIMIZE(Sub, <=, 16, DEC, l, v);
+        OPTIMIZE(Eq, ==, 0, CMP, l, 0);
+        OPTIMIZE(Ne, ==, 0, CMP, l, 1);
+        OPTIMIZE(Gt, ==, 0, CMP, l, 2);
+        OPTIMIZE(Ge, ==, 0, CMP, l, 3);
+        OPTIMIZE(Lt, ==, 0, CMP, l, 4);
+        OPTIMIZE(Le, ==, 0, CMP, l, 5);
+#undef OPTIMIZE
+    default:
+        break;
+    }
+    return token_2_reg(tok);
+}
+
 template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& ops)
 {
     if (toks.size() == 0)
@@ -261,7 +299,7 @@ template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& o
         return select::reg();
     }
 
-    auto r = token_2_reg(toks.back());
+    auto r = immediate_optimize(toks, ops);
     toks.pop_back();
     if (ops.size() == 0)
     {
@@ -295,6 +333,14 @@ template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& o
         case Mod:
             INST(MOD, l, r);
             break;
+        case Eq:
+            INST(SUB, l, r);
+            INST(CMP, l, 0);
+            break;
+        case Ne:
+            INST(SUB, l, r);
+            INST(CMP, l, 1);
+            break;
         case Gt:
             INST(SUB, l, r);
             INST(CMP, l, 2);
@@ -310,10 +356,6 @@ template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& o
         case Le:
             INST(SUB, l, r);
             INST(CMP, l, 5);
-            break;
-        case Eq:
-            INST(SUB, l, r);
-            INST(CMP, l, 0);
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
@@ -612,6 +654,7 @@ const char* parser::next_token(const char* src, token& tok)
             COMBINE_OP('>', Gt, Ge, DUP, Shr);
             COMBINE_OP('<', Lt, Le, DUP, Shl);
             COMBINE_OP('=', Assign, Eq, NOP);
+            COMBINE_OP('!', Not, Ne, NOP);
 
 #undef NOP
 #undef DUP

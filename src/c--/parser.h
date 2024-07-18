@@ -58,6 +58,7 @@ private:
 
     select::reg token_2_reg(const token& tok);
     int operator_level(int op) const;
+    template <typename T, typename O> select::reg immediate_optimize(T& toks, O& ops);
     template <typename T, typename O> select::reg pop_and_calc(T& toks, O& ops);
 };
 

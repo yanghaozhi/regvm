@@ -7,13 +7,13 @@
 //支持的标记类别(供词法分析器next解析成对应的标记)
 enum TOKEN_T
 {
-    Num = 256,   //避免和ascii字符冲突
-    Int, Double, Str,
-    Id, If, Else, For, Do, While, Break, Continue,
-    Assign, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge,
-    Shl, Shr,
-    Add, AddE, Sub, SubE, Mul, MulE, Div, DivE, Mod, ModE,
-    Inc, Dec
+    S       = 256,   //避免和ascii字符冲突
+    Num     = 260, Int, Double, Str, Id,
+    If      = 270, Else, For, Do, While, Break, Continue,
+    Assign  = 280, AddE, SubE, MulE, DivE, ModE,
+    And     = 290, Or, Not, Eq, Ne, Lt, Gt, Le, Ge,
+    Xor     = 300, Shl, Shr,
+    Add     = 310, Sub, Mul, Div, Mod, Inc, Dec,
 };
 
 
