@@ -2,6 +2,8 @@
 
 #include <log.h>
 
+#include "common.h"
+
 class select               regs;
 
 select::reg::reg(int i, uint32_t v) : id(i), version(v)
@@ -81,6 +83,7 @@ select::select()
     {
         datas[i].id = i;
         datas[i].binded = false;
+        datas[i].var = "";
         datas[i].ref = 0;
         datas[i].version = 1;
 
@@ -94,27 +97,56 @@ select::reg select::tmp(void)
     return alloc(datas[v]);
 }
 
-select::reg select::var(const std::string_view& name)
+select::reg select::get(const std::string_view& name, std::function<reg (void)>&& reload)
 {
+    LOGT("try to get var %s", VIEW(name));
     auto it = vars.find(name);
     if (it != vars.end())
     {
-        if (it->second.valid() == true)
+        if (valid(it->second, it->first) == true)
         {
-            return it->second;
+            LOGT("get var %s from binded %d:%d", VIEW(it->first), it->second, datas[it->second].version);
+            auto r = alloc(datas[it->second], false);
+            r.reload = std::move(reload);
+            return r;
         }
         else
         {
+            LOGT("get var %s from vars %d:%d, but it's invalid", VIEW(it->first), it->second, datas[it->second].version);
+            vars.erase(it);
+        }
+    }
+    auto r = reload();
+    r.reload = std::move(reload);
+    LOGT("get var %s -> %d", VIEW(name), r.id);
+    return r;
+}
+
+select::reg select::var(const std::string_view& name)
+{
+    LOGT("try to get var %s", VIEW(name));
+    auto it = vars.find(name);
+    if (it != vars.end())
+    {
+        if (valid(it->second, it->first) == true)
+        {
+            LOGT("get var %s from binded %d:%d", VIEW(it->first), it->second, datas[it->second].version);
+            return alloc(datas[it->second], false);
+        }
+        else
+        {
+            LOGT("get var %s from vars %d:%d, but it's invalid", VIEW(it->first), it->second, datas[it->second].version);
             vars.erase(it);
         }
     }
 
     int v = (frees.size > min_frees) ? frees.remove() : free_binds();
     datas[v].binded = true;
+    datas[v].var = name;
     binds.add(v);
-    auto r = vars.emplace(name, alloc(datas[v]));
-    LOGT("bind %d:%d => %s", datas[v].id, datas[v].version, std::string(name).c_str());
-    return r.first->second;
+    vars.emplace(name, alloc(datas[v]));
+    LOGT("bind %d:%d => %s", datas[v].id, datas[v].version, VIEW(name));
+    return alloc(datas[v], false);
 }
 
 select::reg select::lock(void)
@@ -127,12 +159,45 @@ select::reg select::lock(void)
 
 bool select::bind(const std::string_view& name, const reg& reg)
 {
+    auto& d = datas[reg.id];
+    if ((d.binded == true) && (d.var.length() > 0) && (d.var != name))
+    {
+        unbind(d);
+    }
+
     if (frees.remove(reg.id) == true)
     {
         binds.add(reg.id);
     }
-    LOGT("bind exists %d:%d => %s", datas[reg.id].id, datas[reg.id].version, std::string(name).c_str());
-    return vars.emplace(name, reg).second;
+
+    d.binded = true;
+    d.var = name;
+
+    LOGT("bind exists %d:%d => %s", d.id, d.version, VIEW(name));
+    return vars.emplace(name, reg.id).second;
+}
+
+bool select::unbind(data& v)
+{
+    LOGT("unbinding %s of %d", VIEW(v.var), v.id);
+    if (vars.erase(v.var) > 0)
+    {
+        if (binds.remove(v.id) == true)
+        {
+            frees.add(v.id);
+            return unbind_impl(v);
+        }
+    }
+    return false;
+}
+
+bool select::unbind_impl(data& v)
+{
+    v.var = "";
+    v.binded = false;
+    v.version += 1;
+    LOGT("%s of %d unbinded", VIEW(v.var), v.id);
+    return true;
 }
 
 void select::cleanup(bool var_only)
@@ -140,10 +205,10 @@ void select::cleanup(bool var_only)
     LOGT("%d - %d - %d - %d", (int)locks.size(), (int)vars.size(), binds.size, frees.size);
     for (auto& it : vars)
     {
-        binds.remove(it.second.id);
-        datas[it.second.id].binded = false;
-        clear(datas[it.second.id]);
-        frees.add(it.second.id);
+        unbind_impl(datas[it.second]);
+        binds.remove(it.second);
+        clear(datas[it.second]);
+        frees.add(it.second);
     }
     vars.clear();
     if (var_only == false)
@@ -180,33 +245,31 @@ int select::release(int id, uint32_t version)
     return -1;
 }
 
+bool select::valid(int id, const std::string_view& name)
+{
+    LOGT("check valid : %d, want : %s, real : %s", id, VIEW(name), VIEW(datas[id].var));
+    return ((id >= 0) && (name == datas[id].var)) ? true : false;
+}
+
 bool select::valid(int id, uint32_t version)
 {
     return ((id >= 0) && (version == datas[id].version)) ? true : false;
 }
 
-select::reg select::alloc(data& v)
+select::reg select::alloc(data& v, bool inc_ver)
 {
-    v.version += 1;
-    return select::reg(v.id, ++v.version);
+    if (inc_ver == true)
+    {
+        v.version += 1;
+    }
+    return select::reg(v.id, v.version);
 }
 
 void select::clear(data& v)
 {
     LOGT("clear %d:%d", v.id, v.version);
     v.version += 1;
-    v.binded = false;
     v.ref = 0;
-    if (v.var.length() > 0)
-    {
-        if (vars.erase(v.var) > 0)
-        {
-            if (binds.remove(v.id) == true)
-            {
-                frees.add(v.id);
-            }
-        }
-    }
     if (locks.erase(v.id) > 0)
     {
         frees.add(v.id);

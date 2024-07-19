@@ -45,7 +45,8 @@ public:
     const char* comma(const char* src, std::vector<select::reg>& rets);
 
 private:
-    int depth      = 0;
+    int                             depth      = 0;
+    const char*                     last_line   = NULL;
 
     struct trie_tree
     {

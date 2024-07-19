@@ -55,6 +55,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
+    regs.bind(name, v);
     return src;
 }
 
@@ -79,8 +80,67 @@ assign_var::assign_var(parser* p) : parser::op(p)
     p->add(this, Id, ModE, -1);
 }
 
+template <typename T> const char* assign_var::optimize(const char* src, const std::string_view& name, T& reload, const char* inst, int code_id)
+{
+    token toks[2];
+    src = p->next_token(src, toks[0]);
+    switch (toks[0].info.type)
+    {
+    case TYPE_SIGNED:
+    case TYPE_UNSIGNED:
+        if ((toks[0].info.type != Num) || (toks[0].info.value.uint >= 16))
+        {
+            return NULL;
+        }
+        break;
+    default:
+        return NULL;
+    }
+    src = p->next_token(src, toks[1]);
+    switch (toks[1].info.type)
+    {
+    case ';':
+    case ')':
+        break;
+    default:
+        return NULL;
+    }
+    auto reg = regs.get(name, reload);
+    insts.emplace_back(inst, code_id, reg, toks[0].info.value.uint);
+    INST(STORE, reg, reg);
+    regs.bind(name, reg);
+    return src;
+}
+
 const char* assign_var::go(const char* src, const token* toks, int count)
 {
+    const std::string_view& name = toks[0].name;
+    auto reload = [this, name]()
+        {
+            auto n = regs.tmp();
+            INST(SETC, n, name);
+            auto vv = regs.tmp();
+            INST(LOAD, vv, n);
+            return vv;
+        };
+
+    const char* o = NULL;
+    switch (toks[1].info.type)
+    {
+    case AddE:
+        o = optimize(src, name, reload, "INC", CODE_INC);
+        break;
+    case SubE:
+        o = optimize(src, name, reload, "DEC", CODE_DEC);
+        break;
+    default:
+        break;
+    }
+    if (o != NULL)
+    {
+        return o;
+    }
+
     select::reg v;
     src = p->expression(src, v);
     switch (toks[1].info.type)
@@ -95,15 +155,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 #define CALC(k, op)                                         \
     case k:                                                 \
         {                                                   \
-            std::string_view name = toks[0].name;           \
-            auto reg = regs.get(name, [this, name, v]()     \
-                {                                           \
-                    auto n = regs.tmp();                    \
-                    INST(SETC, n, name);                    \
-                    auto vv = regs.tmp();                   \
-                    INST(LOAD, vv, n);                      \
-                    return vv;                              \
-                });                                         \
+            auto reg = regs.get(name, reload);              \
             INST(op, reg, v);                               \
             INST(STORE, reg, reg);                          \
         }                                                   \
