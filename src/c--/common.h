@@ -40,4 +40,4 @@ struct token
 
 const char* next_token(const char* src, int& lineno, token& tok);
 
-
+#define VIEW(x) std::string(x).c_str()

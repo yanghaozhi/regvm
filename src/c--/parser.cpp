@@ -38,6 +38,9 @@ bool parser::go(const char* src, std::deque<inst>& out)
 {
     LOGD("%s", src);
 
+    last_line = src;
+    lineno = 0;
+
     decl_var_only       dvo(this);
     decl_var_init       dvi(this);
     call_func_no_ret    cfnr(this);
@@ -565,6 +568,8 @@ const char* parser::next_token(const char* src, token& tok)
             next = strchr(next, '\n');
             continue;
         case '\n':
+            LOGD("%s", std::string(last_line, src - last_line).c_str());
+            last_line = src;
             lineno += 1;
             break;
         case '\'':  //字符

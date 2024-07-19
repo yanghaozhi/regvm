@@ -55,6 +55,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
+    regs.bind(name, v);
     return src;
 }
 
@@ -107,6 +108,7 @@ template <typename T> const char* assign_var::optimize(const char* src, const st
     auto reg = regs.get(name, reload);
     insts.emplace_back(inst, code_id, reg, toks[0].info.value.uint);
     INST(STORE, reg, reg);
+    regs.bind(name, reg);
     return src;
 }
 

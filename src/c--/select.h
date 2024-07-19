@@ -42,26 +42,7 @@ public:
         void acquire();
     };
 
-    template <typename F> reg get(const std::string_view& name, F reload)
-    {
-        auto it = vars.find(name);
-        if (it != vars.end())
-        {
-            auto ret = it->second;
-            if (ret.valid() == true)
-            {
-                ret.reload = reload;
-                return ret;
-            }
-            else
-            {
-                vars.erase(it);
-            }
-        }
-        auto r = reload();
-        r.reload = reload;
-        return r;
-    }
+    reg get(const std::string_view& name, std::function<reg (void)>&& reload);
 
     //get a reg to store var
     reg var(const std::string_view& name);
@@ -91,15 +72,18 @@ private:
     lru<int8_t, 16>         binds;
 
     std::set<int>           locks;
-    std::unordered_map<std::string_view, select::reg>    vars;
+    std::unordered_map<std::string_view, int>    vars;
 
-    reg alloc(data& v);
+    reg alloc(data& v, bool inc_ver = true);
     void clear(data& v);
     int free_binds(void);
+    bool unbind(data& v);
+    bool unbind_impl(data& v);
 
     int acquire(int id, uint32_t version);
     int release(int id, uint32_t version);
     bool valid(int id, uint32_t version);
+    bool valid(int id, const std::string_view& name);
 };
 
 extern class select               regs;
