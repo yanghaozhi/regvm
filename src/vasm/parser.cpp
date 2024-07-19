@@ -67,6 +67,7 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(CONV);
         SET_KEY(TYPE);
         SET_KEY(CHG);
+        SET_KEY(CMP);
         SET_KEY(SHR);
         SET_KEY(SHL);
         SET_KEY(JUMP);
