@@ -80,6 +80,16 @@ bool regvm::call(int64_t id, const code_t code, int offset)
 
 
 #ifndef REGVM_EXT
+bool regvm_core::vm_init()
+{
+    return true;
+}
+
+bool regvm_core::vm_exit()
+{
+    return true;
+}
+
 core::var* regvm_core::vm_var(int id)
 {
     assert(0);

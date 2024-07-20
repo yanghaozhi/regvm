@@ -42,8 +42,20 @@ template <typename T> struct regvm_crtp : public regvm
 #include "regvm_ext.h"
 
 #else
+namespace ext
+{
+struct var : public core::var_crtp<var>
+{
+    const uint16_t      type;
+    bool release(void) const    {return false;};
+};
+}
+
 struct regvm_core : public regvm_crtp<regvm_core>
 {
+    typedef ext::var     var_t;
+    bool release(void) const    {return false;};
+
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
     ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
 

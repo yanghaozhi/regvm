@@ -6,6 +6,7 @@
 
 #include "structs.h"
 #include "error.h"
+#include "ext.h"
 
 #ifdef REGVM_EXT
 #include "regvm_ext.h"
