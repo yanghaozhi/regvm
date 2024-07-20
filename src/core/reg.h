@@ -38,9 +38,65 @@ public:
 
         //bool set_from(core::var* v);
 
-        double conv_d(int type) const;
-        int64_t conv_i(int type) const;
-        uint64_t conv_u(int type) const;
+        inline double conv_d(int type) const
+        {
+            switch (type)
+            {
+            case TYPE_SIGNED:
+                return (double)value.sint;
+            case TYPE_UNSIGNED:
+                return (double)value.uint;
+            case TYPE_DOUBLE:
+                return value.dbl;
+#ifdef NULL_AS_0
+            case TYPE_NULL:
+                return 0;
+#endif
+            default:
+                assert(0);
+                return -1;
+            }
+        }
+
+        inline int64_t conv_i(int type) const
+        {
+            switch (type)
+            {
+            case TYPE_SIGNED:
+            case TYPE_UNSIGNED:
+            case TYPE_ADDR:
+                return value.sint;
+            case TYPE_DOUBLE:
+                return (int64_t)value.dbl;
+#ifdef NULL_AS_0
+            case TYPE_NULL:
+                return 0;
+#endif
+            default:
+                assert(0);
+                return -1;
+            }
+        }
+
+        inline uint64_t conv_u(int type) const
+        {
+            switch (type)
+            {
+            case TYPE_SIGNED:
+            case TYPE_UNSIGNED:
+            case TYPE_ADDR:
+                return value.uint;
+            case TYPE_DOUBLE:
+                return (uint64_t)value.dbl;
+#ifdef NULL_AS_0
+            case TYPE_NULL:
+                return 0;
+#endif
+            default:
+                assert(0);
+                return -1;
+            }
+        }
     };
 
 
