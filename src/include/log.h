@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LOG_TRACE   1
-#define LOG_DEBUG   2
+#define LOG_TRACE   5
+#define LOG_DEBUG   4
 #define LOG_INFO    3
-#define LOG_WARN    4
-#define LOG_ERROR   5
+#define LOG_WARN    2
+#define LOG_ERROR   1
 
 #ifdef LOG_LEVEL
 #define LOG_ACTIVE  LOG_LEVEL
@@ -15,7 +15,7 @@
 #define LOG_ACTIVE  0
 #endif
 
-#define LOG_IS_ENBALE(level) constexpr (LOG_##level >= LOG_ACTIVE)
+#define LOG_IS_ENBALE(level) constexpr (LOG_##level <= LOG_ACTIVE)
 
 #ifndef __FILE_NAME__
 inline const char* only_file_name(const char* f)

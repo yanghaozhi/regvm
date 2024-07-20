@@ -104,16 +104,16 @@ bool var::set_reg(const core::regv<var>* new_reg) const
 {
     if (new_reg == reg) return true;
 
-    if (reg == NULL)
+    if (new_reg != NULL)
     {
-        if (new_reg != NULL)
+        if (reg == NULL)
         {
             ++ref;
         }
     }
     else
     {
-        if (new_reg == NULL)
+        if (reg != NULL)
         {
             if (release() == false)
             {

@@ -156,13 +156,13 @@ template <typename T> struct regv
 
     inline bool set_from(const var_crtp<T>* v) const
     {
-        if (from != NULL)
-        {
-            from->set_reg(NULL);
-        }
         if (v != NULL)
         {
             v->set_reg(this);
+        }
+        if (from != NULL)
+        {
+            from->set_reg(NULL);
         }
         from = const_cast<decltype(from)>(v);
         return true;
