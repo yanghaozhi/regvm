@@ -10,6 +10,7 @@
 #include "reg.h"
 #include "frame.h"
 
+#if 0
 #ifdef DEBUG
 #define VM_ERROR(e, c, o, fmt, ...)                                             \
     vm->err.self.line = __LINE__;                                               \
@@ -18,6 +19,9 @@
     vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #else
 #define VM_ERROR(e, c, o, fmt, ...)    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
+#endif
+#else
+#define VM_ERROR(e, c, o, fmt, ...)    /*vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);*/
 #endif
 
 namespace core

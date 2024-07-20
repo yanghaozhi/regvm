@@ -59,7 +59,7 @@ bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
         auto& e = reg.id(code.ex);
         if (e.type != TYPE_STRING)
         {
-            auto vm = this;
+            //auto vm = this;
             VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
             fatal = true;
             return false;
@@ -88,7 +88,7 @@ bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
     auto v = get(e.value.str, false);
     if (v == NULL)
     {
-        auto vm = this;
+        //auto vm = this;
         VM_ERROR(ERR_INVALID_VAR, code, offset, "load var name : %s", e.value.str);
         return false;
     }

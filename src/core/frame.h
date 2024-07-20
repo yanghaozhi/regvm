@@ -17,8 +17,8 @@ class frame
     friend class error;
 
 public:
-    frame(frame& cur, func* func, const code_t code, int offset);
-    frame(regvm* vm, func* func, const code_t code, int offset);
+    frame(frame& cur, func* func, int code, int reg, int ex, int offset);
+    frame(regvm* vm, func* func, int code, int reg, int ex, int offset);
     ~frame();
 
     const uint32_t      depth;
@@ -45,7 +45,9 @@ public:
 
 private:
     regvm*              vm;
-    const code_t        code;
+    const int           code;
+    const int           reg;
+    const int           ex;
     const int           offset;
     bool                valid   = true;
 

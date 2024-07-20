@@ -15,6 +15,7 @@ using namespace core;
 
 
 
+extern vm_op_t      vm_ops[128];
 extern vm_sub_op_t  cmd_ops[16];
 extern vm_sub_op_t  str_ops[16];
 extern vm_sub_op_t  list_ops[16];
@@ -22,8 +23,6 @@ extern vm_sub_op_t  dict_ops[16];
 
 
 extern bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value);
-extern bool vm_move(struct regvm* vm, const code_t code);
-extern bool vm_clear(struct regvm* vm, const code_t code, int offset);
 extern bool vm_conv(struct regvm* vm, const code_t code, int offset);
 extern bool vm_type(struct regvm* vm, const code_t code, int offset);
 extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
@@ -67,8 +66,6 @@ bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra,
 
 bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* next)
 {
-    *next = 1;
-
 #define STEP_ERROR(e, fmt, ...) VM_ERROR(e, *code, offset, fmt, ##__VA_ARGS__);
 #define CALL(f, ...)                                                    \
     if (f(__VA_ARGS__) == false)                                        \
@@ -79,28 +76,45 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
 
     LOGT("%d : code 0x%02X - %d - %d", offset, code->id, code->reg, code->ex);
 
+    if (code->id < 128)
+    {
+        *next = vm_ops[code->id](vm, code->reg, code->ex, offset);
+    }
+    else
+    {
+        *next = 1;
+        switch (code->id)
+        {
+#define EXTRA_RUN(id, need, func, ...)                                              \
+        case CODE_##id:                                                             \
+            if (max < (need))                                                       \
+            {                                                                       \
+                STEP_ERROR(ERR_INST_TRUNC, "need at lease %d bytes", (need) << 1);  \
+                return 0;                                                           \
+            }                                                                       \
+            CALL(func, ##__VA_ARGS__);                                              \
+            *next += (need);                                                        \
+            break;
+            EXTRA_RUN(NOP, code->ex, NULL_CALL);
+            EXTRA_RUN(SETS, 1, vm_set, vm, *code, offset, *(int16_t*)&code[1]);
+            EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
+            EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
+
+            EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], -1, cmd_ops);
+            EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_STRING, str_ops);
+            EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_LIST, list_ops);
+            EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_DICT, dict_ops);
+#undef EXTRA_RUN
+        default:
+            VM_ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
+            fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
+            return false;
+        }
+    }
+
+#if 0
     switch (code->id)
     {
-#define EXTRA_RUN(id, need, func, ...)                                          \
-    case CODE_##id:                                                             \
-        if (max < (need))                                                       \
-        {                                                                       \
-            STEP_ERROR(ERR_INST_TRUNC, "need at lease %d bytes", (need) << 1);  \
-            return 0;                                                           \
-        }                                                                       \
-        CALL(func, ##__VA_ARGS__);                                              \
-        *next += (need);                                                        \
-        break;
-        EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, *code, offset, *(int16_t*)&code[1]);
-        EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
-        EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
-
-        EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], -1, cmd_ops);
-        EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_STRING, str_ops);
-        EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_LIST, list_ops);
-        EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_DICT, dict_ops);
-#undef EXTRA_RUN
 
 
 #define CODE_RUN(id, func, ...)             \
@@ -211,22 +225,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         vm->exit_code = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
         vm->exit = true;
         [[fallthrough]];
-    case CODE_RET:
-        *next = 0;
         return true;
-    case CODE_CALL:
-        {
-            auto& r = vm->reg.id(code->reg);
-            if ((vm->call(r, *code, offset) == false) || (vm->fatal == true))
-            {
-                return false;
-            }
-            if (vm->exit == true)
-            {
-                return true;
-            }
-        }
-        break;
     default:
         VM_ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
         fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
@@ -234,6 +233,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     };
 
 #undef CALL
+#endif
 
     return !vm->fatal;
 }

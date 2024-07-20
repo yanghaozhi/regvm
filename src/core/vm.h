@@ -34,7 +34,7 @@ struct regvm
     virtual ~regvm();
 
     bool run(const code_t* start, int count);
-    bool call(int64_t id, const code_t code, int offset);
-    bool call(core::reg::v& reg, const code_t code, int offset);
+    bool call(int64_t id, int code, int reg, int ex, int offset);
+    bool call(core::reg::v& addr, int code, int reg, int ex, int offset);
 };
 

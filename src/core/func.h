@@ -24,6 +24,7 @@ union extend_args
     };
 };
 
+typedef int (*vm_op_t)(regvm* vm, int reg, int ex, int offset);
 typedef int (*vm_sub_op_t)(regvm* vm, reg::v& r, reg::v& v, const extend_args& args);
 
 class func

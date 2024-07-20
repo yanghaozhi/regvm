@@ -43,30 +43,30 @@ bool regvm::run(const code_t* start, int count)
     auto r = funcs.try_emplace((int32_t)0, start, count, 0, count, 0, &src);
     if (r.second == false)
     {
-        auto vm = this;
+        //auto vm = this;
         VM_ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
         return false;
     }
-    core::frame f(this, &r.first->second, code_t{0, 0, 0}, 0);
+    core::frame f(this, &r.first->second, 0, 0, 0, 0);
     return f.run();
 }
 
-bool regvm::call(core::reg::v& reg, const code_t code, int offset)
+bool regvm::call(core::reg::v& addr, int code, int reg, int ex, int offset)
 {
-    if (reg.type != TYPE_ADDR)
+    if (addr.type != TYPE_ADDR)
     {
-        return call((int64_t)reg, code, offset);
+        return call((int64_t)reg, code, reg, ex, offset);
     }
     else
     {
-        core::frame f(*call_stack, call_stack->running, code, offset);
+        core::frame f(*call_stack, call_stack->running, code, reg, ex, offset);
         return f.run((int64_t)reg);
     }
 }
 
-bool regvm::call(int64_t id, const code_t code, int offset)
+bool regvm::call(int64_t id, int code, int reg, int ex, int offset)
 {
-    auto vm = this;
+    //auto vm = this;
     auto it = funcs.find(id);
     if (it == funcs.end())
     {
@@ -74,7 +74,7 @@ bool regvm::call(int64_t id, const code_t code, int offset)
         return false;
     }
 
-    core::frame f(*call_stack, &it->second, code, offset);
+    core::frame f(*call_stack, &it->second, code, reg, ex, offset);
     return f.run();
 }
 
@@ -102,30 +102,30 @@ core::var* regvm_core::vm_var(int type, const char* name)
     return NULL;
 }
 
-bool regvm_core::vm_new(const code_t code, int offset, int64_t value)
+bool regvm_core::vm_new(int code, int reg, int ex, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_store(const code_t code, int offset, int64_t value)
+bool regvm_core::vm_store(int code, int reg, int ex, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_load(const code_t code, int offset, int64_t value)
+bool regvm_core::vm_load(int code, int reg, int ex, int offset, int64_t value)
 {
     assert(0);
     return true;
 }
 
-bool regvm_core::vm_block(const code_t code, int offset, int64_t value)
+bool regvm_core::vm_block(int code, int reg, int ex, int offset, int64_t value)
 {
     return true;
 }
 
-bool regvm_core::vm_call(const code_t code, int offset, int64_t value)
+bool regvm_core::vm_call(int code, int reg, int ex, int offset, int64_t value)
 {
     return true;
 }
