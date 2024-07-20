@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         case 'r':
             {
                 auto p = new TOP<mem_2_run>();
-                p->op.set_dbg(new vasm::debugger());
+                //p->op.set_dbg(new vasm::debugger());
                 op = p;
             }
             break;
