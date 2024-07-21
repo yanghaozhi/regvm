@@ -43,10 +43,7 @@ public:
 
     bool run(struct regvm* vm, int64_t start = -1);
 
-    static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
-    //bool run(struct regvm* vm, const code_t* start, int count);
-    //bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
-
+    static bool step(struct regvm* vm, int code, int reg, int ex, int offset, int max, int* next, const void* extra);
 };
 
 }

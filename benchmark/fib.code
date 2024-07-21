@@ -16,7 +16,7 @@ MOVE    2   3
 MOVE    3   4
 # $1 += 1
 INC     1   1
-SETS    5   1   -11
+SETS    5   1   -10
 # if ($1 <= $0) jump $5
 MOVE    6   1
 # $6 -= $0

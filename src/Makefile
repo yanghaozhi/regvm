@@ -1,10 +1,10 @@
 .PHONY:all
 
 all:
-	make -C core
-	make -C mem
-	make -C vasm
-	make -C c--
+	make -j4 -C core
+	make -j4 -C mem
+	make -j4 -C vasm
+	make -j4 -C c--
 
 clean:
 	make clean -C core

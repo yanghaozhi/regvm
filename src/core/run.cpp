@@ -9,7 +9,7 @@
 #include "reg.h"
 #include "func.h"
 
-#define UNSUPPORT_TYPE(op, t, c, o) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+#define UNSUPPORT_TYPE(op, t, c, r, e, o) VM_ERROR(ERR_TYPE_MISMATCH, c, r, e, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
 
@@ -31,7 +31,7 @@ bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
 int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 {
     int next = 0;
-    return (core::func::step(vm, code, 0, max, &next) == false) ? 0 : next;
+    return (core::func::step(vm, code->id, code->reg, code->ex, 0, max, &next, code + 1) == false) ? 0 : next;
 }
 
 int regvm_code_len(code_t code)
@@ -64,49 +64,49 @@ int regvm_code_len(code_t code)
 
 }   //extern C
 
-bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value)
+bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value)
 {
-    auto& r = vm->reg.id(code.reg);
-    if ((code.ex == TYPE_STRING) && (value & 0x01))
+    auto& r = vm->reg.id(reg);
+    if ((ex == TYPE_STRING) && (value & 0x01))
     {
         //auto it = vm->strs.find(value);
         //if (it == vm->strs.end())
         //{
-        //    VM_ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+        //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
         //    return false;
         //}
         //value = (intptr_t)it->second;
         auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
         if (it.func == NULL)
         {
-            VM_ERROR(ERR_STRING_RELOCATE, code, offset, "need to relocate string : %ld", value);
+            VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
             return false;
         }
-        value = it.call(vm, IRQ_STR_RELOCATE, code, offset, (void*)value);
+        value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
         if (value == 0)
         {
-            VM_ERROR(ERR_STRING_RELOCATE, code, offset, "relocate string : %ld ERROR", value);
+            VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
             return false;
         }
     }
-    return r.write(value, code.ex, (code.ex != r.type));
+    return r.write(value, ex, (ex != r.type));
 }
 
-bool vm_move(struct regvm* vm, const code_t code)
+bool vm_move(struct regvm* vm, int code, int reg, int ex)
 {
-    auto& e = vm->reg.id(code.ex);
-    auto& r = vm->reg.id(code.reg);
+    auto& e = vm->reg.id(ex);
+    auto& r = vm->reg.id(reg);
     return r.write(e.value.uint, e.type, true);
 }
 
-bool vm_clear(struct regvm* vm, const code_t code, int offset)
+bool vm_clear(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
-    if (r.write(0, code.ex, true) == false)
+    auto& r = vm->reg.id(reg);
+    if (r.write(0, ex, true) == false)
     {
         return false;
     }
-    switch (code.ex)
+    switch (ex)
     {
     case TYPE_LIST:
         r.value.list_v = new uvalue::list_t();
@@ -147,28 +147,28 @@ bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
     return true;
 }
 
-bool vm_conv(struct regvm* vm, const code_t code, int offset)
+bool vm_conv(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
-    if (vm_conv_impl(vm, r, code.ex) == false)
+    auto& r = vm->reg.id(reg);
+    if (vm_conv_impl(vm, r, ex) == false)
     {
-        UNSUPPORT_TYPE("conv", code.ex, code, offset);
+        UNSUPPORT_TYPE("conv", ex, code, reg, ex, offset);
         return false;
     }
     return true;
 }
 
-bool vm_type(struct regvm* vm, const code_t code, int offset)
+bool vm_type(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
-    auto& e = vm->reg.id(code.ex);
+    auto& r = vm->reg.id(reg);
+    auto& e = vm->reg.id(ex);
     return r.write(e.type, TYPE_UNSIGNED, true);
 }
 
-bool vm_chg(struct regvm* vm, const code_t code, int offset)
+bool vm_chg(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
-    switch (code.ex)
+    auto& r = vm->reg.id(reg);
+    switch (ex)
     {
     case 0: //clear
         r.value.uint = 0;
@@ -184,7 +184,7 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
             r.value.dbl = 0 - r.value.dbl;
             break;
         default:
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
+            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
             return false;
         }
         return true;
@@ -195,7 +195,7 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
         case TYPE_SIGNED:
             if (vm_conv_impl(vm, r, TYPE_DOUBLE) == false)
             {
-                UNSUPPORT_TYPE("chg", r.type, code, offset);
+                UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
                 return false;
             }
             [[fallthrough]];
@@ -203,7 +203,7 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
             r.value.dbl = 1 / r.value.dbl;
             break;
         default:
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
+            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
             return false;
         }
         return true;
@@ -215,7 +215,7 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
         }
         else
         {
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
+            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
             return false;
         }
     case 4: //malloc
@@ -233,20 +233,20 @@ bool vm_chg(struct regvm* vm, const code_t code, int offset)
         }
         else
         {
-            UNSUPPORT_TYPE("chg", r.type, code, offset);
+            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
             return false;
         }
     default:
-        UNSUPPORT_TYPE("chg", code.ex, code, offset);
+        UNSUPPORT_TYPE("chg", ex, code, reg, ex, offset);
         return false;
     }
 }
 
-bool vm_cmp(struct regvm* vm, const code_t code, int offset)
+bool vm_cmp(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& r = vm->reg.id(code.reg);
+    auto& r = vm->reg.id(reg);
     r.set_from(NULL);
-    switch (code.ex)
+    switch (ex)
     {
 #define CMP(k, cmp)                             \
     case k:                                     \
@@ -261,15 +261,15 @@ bool vm_cmp(struct regvm* vm, const code_t code, int offset)
         CMP(5, <=);
 #undef CMP
     default:
-        UNSUPPORT_TYPE("cmp", code.ex, code, offset);
+        UNSUPPORT_TYPE("cmp", ex, code, reg, ex, offset);
         break;
     }
     return false;
 }
 
-int vm_jump(struct regvm* vm, const code_t code, int offset)
+int vm_jump(struct regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& e = vm->reg.id(code.ex);
+    auto& e = vm->reg.id(ex);
     switch (e.type)
     {
     case TYPE_SIGNED:

@@ -9,7 +9,7 @@
 
 #include <log.h>
 
-#define UNSUPPORT_TYPE(op, t, c, o) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+#define UNSUPPORT_TYPE(op, t, c, o, ...) //VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
 
@@ -21,42 +21,42 @@ extern vm_sub_op_t  list_ops[16];
 extern vm_sub_op_t  dict_ops[16];
 
 
-extern bool vm_set(struct regvm* vm, const code_t code, int offset, int64_t value);
-extern bool vm_move(struct regvm* vm, const code_t code);
-extern bool vm_clear(struct regvm* vm, const code_t code, int offset);
-extern bool vm_conv(struct regvm* vm, const code_t code, int offset);
-extern bool vm_type(struct regvm* vm, const code_t code, int offset);
-extern bool vm_chg(struct regvm* vm, const code_t code, int offset);
-extern int vm_jump(struct regvm* vm, const code_t code, int offset);
-extern int vm_cmp(struct regvm* vm, const code_t code, int offset);
+extern bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value);
+extern bool vm_move(struct regvm* vm, int code, int reg, int ex);
+extern bool vm_clear(struct regvm* vm, int code, int reg, int ex, int offset);
+extern bool vm_conv(struct regvm* vm, int code, int reg, int ex, int offset);
+extern bool vm_type(struct regvm* vm, int code, int reg, int ex, int offset);
+extern bool vm_chg(struct regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_jump(struct regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_cmp(struct regvm* vm, int code, int reg, int ex, int offset);
 
 extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 
 
-bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra, int type, vm_sub_op_t* ops)
+bool vm_extend(struct regvm* vm, int code, int reg, int ex, int offset, uint16_t* extra, int type, vm_sub_op_t* ops)
 {
     extend_args args = {*extra};
     auto& v = vm->reg.id(args.a1);
     if ((type >= 0) && (v.type != type))
     {
-        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT value type : %d - want %d", v.type, type);
+        VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "UNSUPPORT value type : %d - want %d", v.type, type);
         return false;
     }
 
-    auto& r = vm->reg.id(code.reg);
-    vm_sub_op_t f = ops[code.ex];
+    auto& r = vm->reg.id(reg);
+    vm_sub_op_t f = ops[ex];
     if (f == NULL)
     {
-        VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "UNSUPPORT op type : %d of %d", code.ex, type);
+        VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "UNSUPPORT op type : %d of %d", ex, type);
         return false;
     }
 
     int errline = f(vm, r, v, args);
     if (errline > 0)
     {
-        VM_ERROR(ERR_RUNTIME, code, offset, "run sub op ERROR : %d - %d at %d", code.ex, type, errline);
+        VM_ERROR(ERR_RUNTIME, code, reg, ex, offset, "run sub op ERROR : %d - %d at %d", ex, type, errline);
         return false;
     }
     return true;
@@ -65,21 +65,21 @@ bool vm_extend(struct regvm* vm, const code_t code, int offset, uint16_t* extra,
 #define NULL_CALL() true
 
 
-bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* next)
+bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max, int* next, const void* extra)
 {
     *next = 1;
 
-#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, *code, offset, fmt, ##__VA_ARGS__);
+#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, code, reg, ex, offset, fmt, ##__VA_ARGS__);
 #define CALL(f, ...)                                                    \
     if (f(__VA_ARGS__) == false)                                        \
     {                                                                   \
         STEP_ERROR(ERR_RUNTIME, "run code %u-%u-%u at %d ERROR",        \
-                code->id, code->reg, code->ex, offset);                 \
+                code, reg, ex, offset);                 \
     }
 
-    LOGT("%d : code 0x%02X - %d - %d", offset, code->id, code->reg, code->ex);
+    LOGT("%d : code 0x%02X - %d - %d", offset, code, reg, ex);
 
-    switch (code->id)
+    switch (code)
     {
 #define EXTRA_RUN(id, need, func, ...)                                          \
     case CODE_##id:                                                             \
@@ -91,15 +91,15 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CALL(func, ##__VA_ARGS__);                                              \
         *next += (need);                                                        \
         break;
-        EXTRA_RUN(NOP, code->ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, *code, offset, *(int16_t*)&code[1]);
-        EXTRA_RUN(SETI, 2, vm_set, vm, *code, offset, *(int32_t*)&code[1]);
-        EXTRA_RUN(SETL, 4, vm_set, vm, *code, offset, *(int64_t*)&code[1]);
+        EXTRA_RUN(NOP, ex, NULL_CALL);
+        EXTRA_RUN(SETS, 1, vm_set, vm, code, reg, ex, offset, *(int16_t*)extra);
+        EXTRA_RUN(SETI, 2, vm_set, vm, code, reg, ex, offset, *(int32_t*)extra);
+        EXTRA_RUN(SETL, 4, vm_set, vm, code, reg, ex, offset, *(int64_t*)extra);
 
-        EXTRA_RUN(CMD,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], -1, cmd_ops);
-        EXTRA_RUN(STR,  1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_STRING, str_ops);
-        EXTRA_RUN(LIST, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_LIST, list_ops);
-        EXTRA_RUN(DICT, 1, vm_extend, vm, *code, offset, (uint16_t*)&code[1], TYPE_DICT, dict_ops);
+        EXTRA_RUN(CMD,  1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, -1, cmd_ops);
+        EXTRA_RUN(STR,  1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_STRING, str_ops);
+        EXTRA_RUN(LIST, 1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_LIST, list_ops);
+        EXTRA_RUN(DICT, 1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_DICT, dict_ops);
 #undef EXTRA_RUN
 
 
@@ -107,41 +107,41 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
     case CODE_##id:                         \
         CALL(func, ##__VA_ARGS__);          \
         break;
-        CODE_RUN(STORE, CRTP_CALL, vm_store, *code, offset, 0);
-        CODE_RUN(GLOBAL, CRTP_CALL, vm_store, *code, offset, -1);
-        CODE_RUN(NEW, CRTP_CALL, vm_new, *code, offset, -1);
-        CODE_RUN(LOAD, CRTP_CALL, vm_load, *code, offset, -1);
-        CODE_RUN(BLOCK, CRTP_CALL, vm_block, *code, offset, vm->call_stack->id);
-        CODE_RUN(MOVE, vm_move, vm, *code);
-        CODE_RUN(CLEAR, vm_clear, vm, *code, offset);
-        CODE_RUN(CONV, vm_conv, vm, *code, offset);
-        CODE_RUN(TYPE, vm_type, vm, *code, offset);
-        CODE_RUN(CHG, vm_chg, vm, *code, offset);
-        CODE_RUN(CMP, vm_cmp, vm, *code, offset);
+        CODE_RUN(STORE, CRTP_CALL, vm_store, code, reg, ex, offset, 0);
+        CODE_RUN(GLOBAL, CRTP_CALL, vm_store, code, reg, ex, offset, -1);
+        CODE_RUN(NEW, CRTP_CALL, vm_new, code, reg, ex, offset, -1);
+        CODE_RUN(LOAD, CRTP_CALL, vm_load, code, reg, ex, offset, -1);
+        CODE_RUN(BLOCK, CRTP_CALL, vm_block, code, reg, ex, offset, vm->call_stack->id);
+        CODE_RUN(MOVE, vm_move, vm, code, reg, ex);
+        CODE_RUN(CLEAR, vm_clear, vm, code, reg, ex, offset);
+        CODE_RUN(CONV, vm_conv, vm, code, reg, ex, offset);
+        CODE_RUN(TYPE, vm_type, vm, code, reg, ex, offset);
+        CODE_RUN(CHG, vm_chg, vm, code, reg, ex, offset);
+        CODE_RUN(CMP, vm_cmp, vm, code, reg, ex, offset);
 #undef CODE_RUN
 
-#define FROM_REG vm->reg.id(code->ex)
-#define DIRECT code->ex
-#define CALC(i, op, val)                                            \
-    case CODE_##i:                                                  \
-        {                                                           \
-            auto& r = vm->reg.id(code->reg);                        \
-            switch (r.type)                                         \
-            {                                                       \
-            case TYPE_SIGNED:                                       \
-                r.value.sint op (int64_t)val;                       \
-                break;                                              \
-            case TYPE_UNSIGNED:                                     \
-                r.value.uint op (uint64_t)val;                      \
-                break;                                              \
-            case TYPE_DOUBLE:                                       \
-                r.value.dbl op (double)val;                         \
-                break;                                              \
-            default:                                                \
-                UNSUPPORT_TYPE("calc", r.type, *code, offset);      \
-                break;                                              \
-            }                                                       \
-        }                                                           \
+#define FROM_REG vm->reg.id(ex)
+#define DIRECT ex
+#define CALC(i, op, val)                                                    \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(reg);                                      \
+            switch (r.type)                                                 \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                r.value.sint op (int64_t)val;                               \
+                break;                                                      \
+            case TYPE_UNSIGNED:                                             \
+                r.value.uint op (uint64_t)val;                              \
+                break;                                                      \
+            case TYPE_DOUBLE:                                               \
+                r.value.dbl op (double)val;                                 \
+                break;                                                      \
+            default:                                                        \
+                UNSUPPORT_TYPE("calc", r.type, code, reg, ex, offset);      \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
         break;
         CALC(INC, +=, DIRECT);
         CALC(DEC, -=, DIRECT);
@@ -151,64 +151,64 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         CALC(DIV, /=, FROM_REG);
 #undef CALC
 
-#define BITWISE(i, op)                                              \
-    case CODE_##i:                                                  \
-        {                                                           \
-            auto& e = vm->reg.id(code->ex);                         \
-            auto& r = vm->reg.id(code->reg);                        \
-            if (r.type == TYPE_UNSIGNED)                            \
-            {                                                       \
-                r.value.uint op (uint64_t)e;                        \
-            }                                                       \
-            else                                                    \
-            {                                                       \
-                UNSUPPORT_TYPE("bitwise", r.type, *code, offset);   \
-            }                                                       \
-        }                                                           \
+#define BITWISE(i, op)                                                      \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& e = vm->reg.id(ex);                                       \
+            auto& r = vm->reg.id(reg);                                      \
+            if (r.type == TYPE_UNSIGNED)                                    \
+            {                                                               \
+                r.value.uint op (uint64_t)e;                                \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                UNSUPPORT_TYPE("bitwise", r.type, code, reg, ex, offset);   \
+            }                                                               \
+        }                                                                   \
         break;
         BITWISE(AND, &=);
         BITWISE(OR, |=);
         BITWISE(XOR, ^=);
 #undef BITWISE
 
-#define SHIFT(i, op)                                                \
-    case CODE_##i:                                                  \
-        {                                                           \
-            auto& e = vm->reg.id(code->ex);                         \
-            auto& r = vm->reg.id(code->reg);                        \
-            switch (r.type)                                         \
-            {                                                       \
-            case TYPE_SIGNED:                                       \
-                r.value.sint op (uint64_t)e;                        \
-                break;                                              \
-            case TYPE_UNSIGNED:                                     \
-                r.value.uint op (uint64_t)e;                        \
-                break;                                              \
-            default:                                                \
-                UNSUPPORT_TYPE("shift", r.type, *code, offset);     \
-                break;                                              \
-            }                                                       \
-        }                                                           \
+#define SHIFT(i, op)                                                        \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& e = vm->reg.id(ex);                                       \
+            auto& r = vm->reg.id(reg);                                      \
+            switch (r.type)                                                 \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                r.value.sint op (uint64_t)e;                                \
+                break;                                                      \
+            case TYPE_UNSIGNED:                                             \
+                r.value.uint op (uint64_t)e;                                \
+                break;                                                      \
+            default:                                                        \
+                UNSUPPORT_TYPE("shift", r.type, code, reg, ex, offset);     \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
         break;
         SHIFT(SHL, <<=);
         SHIFT(SHR, >>=);
 #undef BITWISE
 
     case CODE_JUMP:
-        *next = vm_jump(vm, *code, offset);
+        *next = vm_jump(vm, code, reg, ex, offset);
         break;
 #define JUMP(i, cmp)                                                                        \
     case CODE_##i:                                                                          \
-        *next = ((int64_t)vm->reg.id(code->reg) cmp 0) ? vm_jump(vm, *code, offset) : 1;    \
+        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_jump(vm, code, reg, ex, offset) : 1;  \
         break;
         JUMP(JZ, ==);
         JUMP(JNZ, !=);
 #undef JUMP
     case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, *code, offset, &vm->call_stack->running->src, *next);
+        *next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
         break;
     case CODE_EXIT:
-        vm->exit_code = (code->ex == 0) ? 0 : (int64_t)vm->reg.id(code->reg);
+        vm->exit_code = (ex == 0) ? 0 : (int64_t)vm->reg.id(reg);
         vm->exit = true;
         [[fallthrough]];
     case CODE_RET:
@@ -216,8 +216,8 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         return true;
     case CODE_CALL:
         {
-            auto& r = vm->reg.id(code->reg);
-            if ((vm->call(r, *code, offset) == false) || (vm->fatal == true))
+            auto& r = vm->reg.id(reg);
+            if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
             {
                 return false;
             }
@@ -228,8 +228,8 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         }
         break;
     default:
-        VM_ERROR(ERR_INVALID_CODE, *code, offset, "invalid code : %u - %u - %u", code->id, code->reg, code->ex);
-        fprintf(stderr, "code %d is NOT SUPPORT YET", code->id);
+        VM_ERROR(ERR_INVALID_CODE, code, reg, ex, offset, "invalid code : %u - %u - %u", code, reg, ex);
+        fprintf(stderr, "code %d is NOT SUPPORT YET", code);
         return false;
     };
 
@@ -261,7 +261,7 @@ bool func::run(struct regvm* vm, int64_t start)
     while (rest > 0)
     {
         int next = 0;
-        if (step(vm, cur, offset, rest, &next) == false)
+        if (step(vm, cur->id, cur->reg, cur->ex, offset, rest, &next, cur + 1) == false)
         {
             return false;
         }
@@ -277,7 +277,7 @@ bool func::run(struct regvm* vm, int64_t start)
 
     if (rest < 0)
     {
-        VM_ERROR(ERR_RUNTIME, code_t{0, 0, 0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
+        VM_ERROR(ERR_RUNTIME, 0, 0, 0, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
     }
 
     auto& r = vm->reg.id(0);
