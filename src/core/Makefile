@@ -18,7 +18,7 @@ tt:
 	@echo $(OBJS)
 
 INC=-I./ -I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/$(EXT)
-OPTS=-O3 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DDEBUG
+OPTS=-O3 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 GCOV=-fprofile-arcs -ftest-coverage

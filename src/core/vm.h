@@ -16,6 +16,8 @@
 #include <map>
 
 
+typedef int (*vm_op_t)(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
+
 struct regvm
 {
     bool            exit        = false;
@@ -29,6 +31,8 @@ struct regvm
 
     std::map<int32_t, core::func>   funcs;
     std::map<int64_t, const char*>  strs;
+
+    vm_op_t         ops[16];
 
     regvm();
     virtual ~regvm();

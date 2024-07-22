@@ -15,20 +15,16 @@ using namespace core;
 
 
 
+extern vm_op_t      vm_ops[16];
 extern vm_sub_op_t  cmd_ops[16];
 extern vm_sub_op_t  str_ops[16];
 extern vm_sub_op_t  list_ops[16];
 extern vm_sub_op_t  dict_ops[16];
 
 
+int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
+
 extern bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value);
-extern bool vm_move(struct regvm* vm, int code, int reg, int ex);
-extern bool vm_clear(struct regvm* vm, int code, int reg, int ex, int offset);
-extern bool vm_conv(struct regvm* vm, int code, int reg, int ex, int offset);
-extern bool vm_type(struct regvm* vm, int code, int reg, int ex, int offset);
-extern bool vm_chg(struct regvm* vm, int code, int reg, int ex, int offset);
-extern int vm_jump(struct regvm* vm, int code, int reg, int ex, int offset);
-extern int vm_cmp(struct regvm* vm, int code, int reg, int ex, int offset);
 
 extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
 extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
@@ -102,7 +98,7 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
         EXTRA_RUN(DICT, 1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_DICT, dict_ops);
 #undef EXTRA_RUN
 
-
+#if 0
 #define CODE_RUN(id, func, ...)             \
     case CODE_##id:                         \
         CALL(func, ##__VA_ARGS__);          \
@@ -119,6 +115,7 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
         CODE_RUN(CHG, vm_chg, vm, code, reg, ex, offset);
         CODE_RUN(CMP, vm_cmp, vm, code, reg, ex, offset);
 #undef CODE_RUN
+#endif
 
 #define FROM_REG vm->reg.id(ex)
 #define DIRECT ex
@@ -194,19 +191,25 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
         SHIFT(SHR, >>=);
 #undef BITWISE
 
-    case CODE_JUMP:
-        *next = vm_jump(vm, code, reg, ex, offset);
-        break;
-#define JUMP(i, cmp)                                                                        \
-    case CODE_##i:                                                                          \
-        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_jump(vm, code, reg, ex, offset) : 1;  \
+#define JUMP(i, cmp)                                                                                        \
+    case CODE_##i:                                                                                          \
+        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_CODE_JUMP(vm, code, reg, ex, offset, -1) : 1;   \
         break;
         JUMP(JZ, ==);
         JUMP(JNZ, !=);
 #undef JUMP
-    case CODE_TRAP:
-        *next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
-        break;
+
+#define WRITE(i, ...)                                                       \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(reg);                                      \
+            auto& e = vm->reg.id(ex);                                       \
+            return r.write(__VA_ARGS__);                                    \
+        }
+        WRITE(MOVE, e.value.uint, e.type, true);
+        WRITE(TYPE, e.type, TYPE_UNSIGNED, true);
+#undef WRITE
+
     case CODE_EXIT:
         vm->exit_code = (ex == 0) ? 0 : (int64_t)vm->reg.id(reg);
         vm->exit = true;
@@ -214,23 +217,22 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
     case CODE_RET:
         *next = 0;
         return true;
-    case CODE_CALL:
+    default:
+        if (code < (int)(sizeof(vm->ops) / sizeof(vm->ops[0])))
         {
-            auto& r = vm->reg.id(reg);
-            if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
+            *next = vm->ops[code](vm, code, reg, ex, offset, -1);
+            if (*next == 0)
             {
+                VM_ERROR(ERR_RUNTIME, code, reg, ex, offset, "run code ERROR : %u - %u - %u", code, reg, ex);
                 return false;
             }
-            if (vm->exit == true)
-            {
-                return true;
-            }
         }
-        break;
-    default:
-        VM_ERROR(ERR_INVALID_CODE, code, reg, ex, offset, "invalid code : %u - %u - %u", code, reg, ex);
-        fprintf(stderr, "code %d is NOT SUPPORT YET", code);
-        return false;
+        else
+        {
+            VM_ERROR(ERR_INVALID_CODE, code, reg, ex, offset, "invalid code : %u - %u - %u", code, reg, ex);
+            fprintf(stderr, "code %d is NOT SUPPORT YET", code);
+            return false;
+        }
     };
 
 #undef CALL
