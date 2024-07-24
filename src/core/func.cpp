@@ -22,7 +22,7 @@ extern vm_sub_op_t  list_ops[16];
 extern vm_sub_op_t  dict_ops[16];
 
 
-int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
+int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset);
 
 extern bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value);
 
@@ -191,9 +191,9 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
         SHIFT(SHR, >>=);
 #undef BITWISE
 
-#define JUMP(i, cmp)                                                                                        \
-    case CODE_##i:                                                                                          \
-        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_CODE_JUMP(vm, code, reg, ex, offset, -1) : 1;   \
+#define JUMP(i, cmp)                                                                            \
+    case CODE_##i:                                                                              \
+        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_CODE_JUMP(vm, code, reg, ex, offset) : 1; \
         break;
         JUMP(JZ, ==);
         JUMP(JNZ, !=);
@@ -220,7 +220,7 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
     default:
         if (code < (int)(sizeof(vm->ops) / sizeof(vm->ops[0])))
         {
-            *next = vm->ops[code](vm, code, reg, ex, offset, -1);
+            *next = vm->ops[code](vm, code, reg, ex, offset);
             if (*next == 0)
             {
                 VM_ERROR(ERR_RUNTIME, code, reg, ex, offset, "run code ERROR : %u - %u - %u", code, reg, ex);

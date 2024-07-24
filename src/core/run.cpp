@@ -67,18 +67,18 @@ int regvm_code_len(code_t code)
 }   //extern C
 
 
-int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 1 + ex;
 }
 
-int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset)
 {
     //*next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
     return 1;
 }
 
-int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& r = vm->reg.id(reg);
     if (r.write(0, ex, true) == false)
@@ -101,32 +101,32 @@ int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset, int64_t extr
     return 1;
 }
 
-int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 0;
 }
 
-int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 0;
 }
 
-int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 0;
 }
 
-int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 0;
 }
 
-int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
 {
     return 0;
 }
 
-int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& r = vm->reg.id(reg);
     if (vm_conv_impl(vm, r, ex) == false)
@@ -137,7 +137,7 @@ int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset, int64_t extra
     return 1;
 }
 
-int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& r = vm->reg.id(reg);
     switch (ex)
@@ -214,7 +214,7 @@ int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
     }
 }
 
-int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& r = vm->reg.id(reg);
     r.set_from(NULL);
@@ -239,7 +239,7 @@ int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
     return 0;
 }
 
-int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& e = vm->reg.id(ex);
     switch (e.type)
@@ -253,7 +253,7 @@ int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra
     }
 }
 
-int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset, int64_t extra)
+int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& r = vm->reg.id(reg);
     if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))

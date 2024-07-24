@@ -5,19 +5,19 @@
 #include "ext.h"
 
 
-extern int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
-extern int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
+extern int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset);
 
 extern "C"
 {
@@ -108,54 +108,3 @@ bool regvm::call(int64_t id, int code, int reg, int ex, int offset)
 }
 
 
-#ifndef REGVM_EXT
-bool regvm_core::vm_init()
-{
-    return true;
-}
-
-bool regvm_core::vm_exit()
-{
-    return true;
-}
-
-core::var* regvm_core::vm_var(int id)
-{
-    assert(0);
-    return NULL;
-}
-
-core::var* regvm_core::vm_var(int type, const char* name)
-{
-    assert(0);
-    return NULL;
-}
-
-bool regvm_core::vm_new(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_store(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_load(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_block(int code, int reg, int ex, int offset, int64_t value)
-{
-    return true;
-}
-
-bool regvm_core::vm_call(int code, int reg, int ex, int offset, int64_t value)
-{
-    return true;
-}
-#endif

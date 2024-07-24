@@ -16,7 +16,7 @@
 #include <map>
 
 
-typedef int (*vm_op_t)(regvm* vm, int code, int reg, int ex, int offset, int64_t extra);
+typedef int (*vm_op_t)(regvm* vm, int code, int reg, int ex, int offset);
 
 struct regvm
 {

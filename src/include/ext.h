@@ -11,9 +11,9 @@
 #include <map>
 
 
-#define CRTP_CALL(name, ...)    static_cast<regvm_crtp<REGVM_IMPL>*>(vm)->name(__VA_ARGS__)
+#define CRTP_CALL(name, ...)    static_cast<REGVM_IMPL*>(vm)->name(__VA_ARGS__)
 
-
+#if 0
 template <typename T> struct regvm_crtp : public regvm
 {
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
@@ -27,14 +27,15 @@ template <typename T> struct regvm_crtp : public regvm
     CRTP_FUNC(vm_var,   core::var*, 1, int);
     CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);   //type, name
 
-    CRTP_FUNC(vm_new,   bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_store, bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_load,  bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_block, bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_call,  bool, 5, int, int, int, int, int64_t);
+    //CRTP_FUNC(vm_new,   bool, 5, int, int, int, int, int64_t);
+    //CRTP_FUNC(vm_store, bool, 5, int, int, int, int, int64_t);
+    //CRTP_FUNC(vm_load,  bool, 5, int, int, int, int, int64_t);
+    //CRTP_FUNC(vm_block, bool, 5, int, int, int, int, int64_t);
+    //CRTP_FUNC(vm_call,  bool, 5, int, int, int, int, int64_t);
 
 #undef CRTP_FUNC
 };
+#endif
 
 
 #ifdef REGVM_EXT
@@ -51,6 +52,7 @@ struct var : public core::var_crtp<var>
 };
 }
 
+#if 0
 struct regvm_core : public regvm_crtp<regvm_core>
 {
     typedef ext::var     var_t;
@@ -72,5 +74,6 @@ struct regvm_core : public regvm_crtp<regvm_core>
 
 #undef CRTP_FUNC
 };
+#endif
 #endif
 
