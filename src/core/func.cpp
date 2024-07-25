@@ -61,7 +61,7 @@ bool vm_extend(struct regvm* vm, int code, int reg, int ex, int offset, uint16_t
 #define NULL_CALL() true
 
 
-bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max, int* next, const void* extra)
+inline bool step(struct regvm* vm, int code, int reg, int ex, int offset, int max, int* next, const void* extra)
 {
     *next = 1;
 
@@ -286,6 +286,11 @@ bool func::run(struct regvm* vm, int64_t start)
     auto& r = vm->reg.id(0);
     vm->exit_code = (r.type == TYPE_NULL) ? 0 : r.value.sint;
     return true;
+}
+
+bool func::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
+{
+    return step(vm, code.id, code.reg, code.ex, 0, max, next, extra);
 }
 
 #undef UNSUPPORT_TYPE
