@@ -189,6 +189,7 @@ bool func::step(struct regvm* vm, int code, int reg, int ex, int offset, int max
         break;
         SHIFT(SHL, <<=);
         SHIFT(SHR, >>=);
+        SHIFT(MOD, %=);
 #undef BITWISE
 
 #define JUMP(i, cmp)                                                                            \

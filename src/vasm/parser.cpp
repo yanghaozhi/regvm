@@ -61,6 +61,7 @@ bool parser::open(char* d, int64_t s)
         SET_KEY(SUB);
         SET_KEY(MUL);
         SET_KEY(DIV);
+        SET_KEY(MOD);
         SET_KEY(AND);
         SET_KEY(OR);
         SET_KEY(XOR);

@@ -20,7 +20,7 @@ frame::frame(frame& cur, func* f, int c, int r, int e, int o) :
 
     vm->call_stack = this;
 
-    if (vm->ops[CODE_CALL](vm, code, reg, ex, id) == false)
+    if (vm->vm_call(code, reg, ex, offset, id) == false)
     {
         VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
         valid = false;
@@ -33,7 +33,7 @@ frame::frame(regvm* v, func* f, int c, int r, int e, int o) :
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    if (vm->ops[CODE_CALL](vm, code, reg, ex, id) == false)
+    if (vm->vm_call(code, reg, ex, offset, id) == false)
     {
         VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
         valid = false;
@@ -42,7 +42,7 @@ frame::frame(regvm* v, func* f, int c, int r, int e, int o) :
 
 frame::~frame()
 {
-    if (vm->ops[CODE_CALL](vm, code, reg, ex, -id) == false)
+    if (vm->vm_call(code, reg, ex, offset, -id) == false)
     {
         VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
         valid = false;

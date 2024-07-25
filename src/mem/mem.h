@@ -32,7 +32,7 @@ public:
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
-    ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
+    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
 
     CRTP_FUNC(vm_init,  bool, 0);
     CRTP_FUNC(vm_exit,  bool, 0);
