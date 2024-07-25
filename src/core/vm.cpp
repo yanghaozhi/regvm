@@ -4,6 +4,21 @@
 
 #include "ext.h"
 
+
+extern int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset);
+extern int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset);
+
 extern "C"
 {
 
@@ -23,7 +38,21 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
-regvm::regvm() : reg()
+regvm::regvm() : reg(), ops{
+    vm_CODE_NOP,
+    vm_CODE_TRAP,
+    vm_CODE_CLEAR,
+    vm_CODE_LOAD,
+    vm_CODE_STORE,
+    vm_CODE_GLOBAL,
+    vm_CODE_NEW,
+    vm_CODE_BLOCK,
+    vm_CODE_CONV,
+    vm_CODE_CHG,
+    vm_CODE_CMP,
+    vm_CODE_JUMP,
+    vm_CODE_CALL,
+    }
 {
 }
 
@@ -43,8 +72,8 @@ bool regvm::run(const code_t* start, int count)
     auto r = funcs.try_emplace((int32_t)0, start, count, 0, count, 0, &src);
     if (r.second == false)
     {
-        //auto vm = this;
-        VM_ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
+        auto vm = this;
+        VM_ERROR(ERR_FUNCTION_CALL, start->id, start->reg, start->ex, 0, "Can not get entry function");
         return false;
     }
     core::frame f(this, &r.first->second, 0, 0, 0, 0);
@@ -66,11 +95,11 @@ bool regvm::call(core::reg::v& addr, int code, int reg, int ex, int offset)
 
 bool regvm::call(int64_t id, int code, int reg, int ex, int offset)
 {
-    //auto vm = this;
+    auto vm = this;
     auto it = funcs.find(id);
     if (it == funcs.end())
     {
-        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
         return false;
     }
 
@@ -79,54 +108,3 @@ bool regvm::call(int64_t id, int code, int reg, int ex, int offset)
 }
 
 
-#ifndef REGVM_EXT
-bool regvm_core::vm_init()
-{
-    return true;
-}
-
-bool regvm_core::vm_exit()
-{
-    return true;
-}
-
-core::var* regvm_core::vm_var(int id)
-{
-    assert(0);
-    return NULL;
-}
-
-core::var* regvm_core::vm_var(int type, const char* name)
-{
-    assert(0);
-    return NULL;
-}
-
-bool regvm_core::vm_new(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_store(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_load(int code, int reg, int ex, int offset, int64_t value)
-{
-    assert(0);
-    return true;
-}
-
-bool regvm_core::vm_block(int code, int reg, int ex, int offset, int64_t value)
-{
-    return true;
-}
-
-bool regvm_core::vm_call(int code, int reg, int ex, int offset, int64_t value)
-{
-    return true;
-}
-#endif

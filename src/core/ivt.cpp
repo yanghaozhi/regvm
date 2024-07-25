@@ -70,7 +70,7 @@ static int64_t irq_STR_RELOCATE(struct regvm* vm, void* arg, code_t code, int of
 
     //发起函数调用
     //需要在此中断中提供新函数的具体信息
-//static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+//static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, int c, int r, int e, int offset, void* extra)
 //{
 //    return 0;
 //}
@@ -113,10 +113,10 @@ bool ivt::set(uint32_t id, regvm_irq_handler func, void* arg)
     return true;
 }
 
-int64_t ivt::call(struct regvm* vm, int id, code_t code, int offset, void* args, int64_t defval)
+int64_t ivt::call(struct regvm* vm, int id, int code, int reg, int ex, int offset, void* args, int64_t defval)
 {
     isr& it = isrs[id];
-    int64_t r = it.call(vm, id, code, offset, args);
+    int64_t r = it.call(vm, id, code, reg, ex, offset, args);
     if ((id == IRQ_ERROR) || ((r == it.err_ret) && (it.err_ret != isr::DO_NOT_CHECK)))
     {
         vm->fatal = true;
@@ -124,8 +124,8 @@ int64_t ivt::call(struct regvm* vm, int id, code_t code, int offset, void* args,
     return r;
 }
 
-int64_t ivt::isr::call(struct regvm* vm, int id, code_t code, int offset, void* extra)
+int64_t ivt::isr::call(struct regvm* vm, int id, int code, int reg, int ex, int offset, void* extra)
 {
-    return func(vm, arg, code, offset, extra);
+    return func(vm, arg, code_t{code, reg, ex}, offset, extra);
 }
 

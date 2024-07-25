@@ -16,7 +16,7 @@ error::error(void)
     reason[0] = '\0';
 }
 
-void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char* fmt, ...)
+void error::set(regvm* vm, int errcode, int code, int reg, int ex, int offset, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -42,6 +42,6 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
 #ifdef DEBUG
     err.self = &vm->err.self;
 #endif
-    vm->idt.call(vm, IRQ_ERROR, cur, offset, &err);
+    vm->idt.call(vm, IRQ_ERROR, code, reg, ex, offset, &err);
 }
 

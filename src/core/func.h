@@ -24,7 +24,6 @@ union extend_args
     };
 };
 
-typedef int (*vm_op_t)(regvm* vm, int reg, int ex, int offset);
 typedef int (*vm_sub_op_t)(regvm* vm, reg::v& r, reg::v& v, const extend_args& args);
 
 class func
@@ -44,10 +43,7 @@ public:
 
     bool run(struct regvm* vm, int64_t start = -1);
 
-    static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
-    //bool run(struct regvm* vm, const code_t* start, int count);
-    //bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
-
+    static bool one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra);
 };
 
 }

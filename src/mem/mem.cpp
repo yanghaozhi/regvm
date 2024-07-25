@@ -35,61 +35,33 @@ core::var* regvm_mem::vm_var(int type, const char* name)
     return var::create(type, name); 
 }
 
-bool regvm_mem::vm_new(code_t code, int offset, int64_t extra)
+bool regvm_mem::vm_call(int code, int reg, int ex, int offset, int64_t id)
 {
-    auto& n = reg.id(code.reg);
-    auto v = get(n.value.str, false);
-    if (v != NULL)
+    if ((id > 0) || ((id == 0) && (frames.empty() == true)))
     {
-        return (v->type == code.ex) ? true : false;
-    }
-    v = add(n.value.str, code.ex, false);
-    return (v != NULL) ? true : false;
-}
-
-bool regvm_mem::vm_store(code_t code, int offset, int64_t extra)
-{
-    auto& r = reg.id(code.reg);
-    if (code.ex == code.reg)
-    {
-        return r.store();
+        frames.emplace_front(offset);
     }
     else
     {
-        auto& e = reg.id(code.ex);
-        if (e.type != TYPE_STRING)
+        if (frames.front().frame != -id)
         {
-            //auto vm = this;
-            VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
-            fatal = true;
+            assert(0);
             return false;
         }
-        else
-        {
-            bool global = (extra == 0) ? false : true;
-            auto v = get(e.value.str, global);
-            if (v != NULL)
-            {
-                if (v->store_from(r) == true)
-                {
-                    return true;
-                }
-            }
-            return add(e.value.str, r.type, global)->store_from(r);
-        }
+        frames.pop_front();
     }
     return true;
 }
 
-bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
+int regvm_mem::vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
 {
-    auto& e = reg.id(code.ex);
-    auto& r = reg.id(code.reg);
+    auto& e = vm->reg.id(ex);
+    auto& r = vm->reg.id(reg);
     auto v = get(e.value.str, false);
     if (v == NULL)
     {
         //auto vm = this;
-        VM_ERROR(ERR_INVALID_VAR, code, offset, "load var name : %s", e.value.str);
+        //VM_ERROR(ERR_INVALID_VAR, code, reg, ex, offset, "load var name : %s", e.value.str);
         return false;
     }
     else
@@ -98,14 +70,64 @@ bool regvm_mem::vm_load(code_t code, int offset, int64_t extra)
     }
 }
 
-bool regvm_mem::vm_block(code_t code, int offset, int64_t extra)
+int regvm_mem::vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
+{
+    auto& r = vm->reg.id(reg);
+    if (ex == reg)
+    {
+        return r.store();
+    }
+    else
+    {
+        auto& e = vm->reg.id(ex);
+        if (e.type != TYPE_STRING)
+        {
+            //auto vm = this;
+            //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+            vm->fatal = true;
+            return false;
+        }
+        else
+        {
+            auto v = get(e.value.str, false);
+            if (v != NULL)
+            {
+                if (v->store_from(r) == true)
+                {
+                    return true;
+                }
+            }
+            return add(e.value.str, r.type, false)->store_from(r);
+        }
+    }
+    return true;
+}
+
+int regvm_mem::vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset)
+{
+    return 0;
+}
+
+int regvm_mem::vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset)
+{
+    auto& n = vm->reg.id(reg);
+    auto v = get(n.value.str, false);
+    if (v != NULL)
+    {
+        return (v->type == ex) ? true : false;
+    }
+    v = add(n.value.str, ex, false);
+    return (v != NULL) ? true : false;
+}
+
+int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
 {
     if (frames.size() == 0)
     {
         return false;
     }
 
-    switch (code.ex)
+    switch (ex)
     {
     case 0:
         frames.back().enter_block();
@@ -115,24 +137,6 @@ bool regvm_mem::vm_block(code_t code, int offset, int64_t extra)
         break;
     }
 
-    return true;
-}
-
-bool regvm_mem::vm_call(code_t code, int offset, int64_t extra)
-{
-    if ((extra > 0) || ((extra == 0) && (frames.empty() == true)))
-    {
-        frames.emplace_front(extra);
-    }
-    else
-    {
-        if (frames.front().frame != -extra)
-        {
-            assert(0);
-            return false;
-        }
-        frames.pop_front();
-    }
     return true;
 }
 
