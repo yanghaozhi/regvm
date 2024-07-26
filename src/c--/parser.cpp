@@ -614,7 +614,7 @@ const char* parser::next_token(const char* src, token& tok)
         case '1' ... '9':   //十进制
             tok.info.type = Num;
             src = whole_number(next - 1, tok.info.value.uint, tok.info.value.dbl, tok.info.data_type, TYPE_UNSIGNED, strtoull, 10);
-            if (tok.info.value.uint < 0x7FFFFFFFFFFFFFFF)
+            if ((tok.info.data_type == TYPE_UNSIGNED) && (tok.info.value.uint < 0x7FFFFFFFFFFFFFFF))
             {
                 tok.info.data_type = TYPE_SIGNED;
             }
