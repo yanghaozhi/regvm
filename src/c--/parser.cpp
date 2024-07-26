@@ -533,17 +533,17 @@ inline uint64_t whole_token(const char* pos, const char** end)
     return h;
 }
 
-template <typename F, typename ... Args> const char* whole_number(const char* str, uv& ret, DATA_TYPE& type, DATA_TYPE ok, F func, Args ... args)
+template <typename T, typename F, typename ... Args> const char* whole_number(const char* str, T& ret, double& dbl, DATA_TYPE& type, DATA_TYPE ok, F func, Args ... args)
 {
     char* end = NULL;
-    ret.uint = func(str, &end, args ...);
+    ret = func(str, &end, args ...);
     if (*end != '.')
     {
         type = ok;
     }
     else
     {
-        ret.dbl = strtod(str, &end);
+        dbl = strtod(str, &end);
         type = TYPE_DOUBLE;
     }
     return end;
@@ -603,18 +603,18 @@ const char* parser::next_token(const char* src, token& tok)
                     break;
                 case '.':
                     tok.info.type = Num;
-                    return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_DOUBLE, strtod);
+                    return whole_number(next - 1, tok.info.value.dbl, tok.info.value.dbl, tok.info.data_type, TYPE_DOUBLE, strtod);
                 default:
                     base = 8;
                     break;
                 };
                 tok.info.type = Num;
-                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_UNSIGNED, strtoull, base);
+                return whole_number(next - 1, tok.info.value.uint, tok.info.value.dbl, tok.info.data_type, TYPE_UNSIGNED, strtoull, base);
             }
         case '1' ... '9':   //十进制
             tok.info.type = Num;
-            src = whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_UNSIGNED, strtoull, 10);
-            if (tok.info.value.uint < 0x7FFFFFFFFFFFFFFF)
+            src = whole_number(next - 1, tok.info.value.uint, tok.info.value.dbl, tok.info.data_type, TYPE_UNSIGNED, strtoull, 10);
+            if ((tok.info.data_type == TYPE_UNSIGNED) && (tok.info.value.uint < 0x7FFFFFFFFFFFFFFF))
             {
                 tok.info.data_type = TYPE_SIGNED;
             }
@@ -647,7 +647,7 @@ const char* parser::next_token(const char* src, token& tok)
 #define NUM(TOK, TYPE)                                      \
             case '0' ... '9':                               \
                 tok.info.type = Num;                        \
-                return whole_number(next - 1, tok.info.value, tok.info.data_type, TYPE_SIGNED, strtoll, 10);   \
+                return whole_number(next - 1, tok.info.value.sint, tok.info.value.dbl, tok.info.data_type, TYPE_SIGNED, strtoll, 10);   \
             DUP(TOK, TYPE)
 #define NOP(...)
 

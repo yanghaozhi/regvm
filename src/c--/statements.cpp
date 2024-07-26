@@ -55,7 +55,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     INST(SETC, n, name);
     INST(NEW, n, type);
     INST(STORE, v, n);
-    regs.bind(name, v);
+    //regs.bind(name, v);
     return src;
 }
 
