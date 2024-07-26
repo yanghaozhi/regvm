@@ -192,6 +192,7 @@ bool func::step(struct regvm* vm, const code_t* code, int offset, int max, int* 
         break;
         SHIFT(SHL, <<=);
         SHIFT(SHR, >>=);
+        SHIFT(MOD, %=);
 #undef BITWISE
 
     case CODE_JUMP:

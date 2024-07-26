@@ -108,7 +108,7 @@ template <typename T> const char* assign_var::optimize(const char* src, const st
     auto reg = regs.get(name, reload);
     insts.emplace_back(inst, code_id, reg, toks[0].info.value.uint);
     INST(STORE, reg, reg);
-    regs.bind(name, reg);
+    //regs.bind(name, reg);
     return src;
 }
 

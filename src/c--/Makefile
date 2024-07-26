@@ -20,7 +20,7 @@ tt:
 
 
 INC=-I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/core -I$(ROOT)/src/$(EXT)
-OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=mem
+OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=mem -DLOG_LEVEL=10
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
 GCOV=-fprofile-arcs -ftest-coverage
