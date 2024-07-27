@@ -19,40 +19,87 @@ namespace core
 class reg
 {
 public:
-    struct v : public core::regv<ext::var>
+    struct v : public core::regv
     {
-        inline operator double () const    {return conv_d(type);};
-        inline operator int64_t () const   {return conv_i(type);};
-        inline operator uint64_t () const  {return conv_u(type);};
+        inline operator double () const    {return conv<double>(type);};
+        inline operator int64_t () const   {return conv<int64_t>(type);};
+        inline operator uint64_t () const  {return conv<uint64_t>(type);};
 
-        bool write(uint64_t num, int type, bool clear);
+        inline bool write(uint64_t v, int t, bool c)
+        {
+            if ((c == true) || (need_free == true))
+            {
+                clear();
+            }
 
-        //bool clear();
+            need_free = false;
+            type = t;
+            value.uint = v;
 
-        //bool store() const;
-        //bool store(core::var* v);
+            return true;
+        }
 
-        //bool load(core::var* v);
-        //
-        //v& neighbor(int id);
+        template <typename T> inline T conv(int type) const
+        {
+            switch (type)
+            {
+            case TYPE_SIGNED:
+                return (T)value.sint;
+            case TYPE_UNSIGNED:
+                return (T)value.uint;
+            case TYPE_DOUBLE:
+                return (T)value.dbl;
+#ifdef NULL_AS_0
+            case TYPE_NULL:
+                return (T)0;
+#endif
+            default:
+                assert(0);
+                return (T)-1;
+            }
+        }
 
-        //bool set_from(core::var* v);
-
-        double conv_d(int type) const;
-        int64_t conv_i(int type) const;
-        uint64_t conv_u(int type) const;
+        inline void copy(const v& o)
+        {
+            clear();
+            need_free = false;
+            type = o.type;
+            value = o.value;
+        }
     };
 
 
     friend class error;
 
-    reg();
-    ~reg();
+    reg()
+    {
+        memset(values, 0, sizeof(values));
+        for (int i = 0; i < SIZE; i++)
+        {
+            values[i].idx = i;
+        }
+    }
+
+    ~reg()
+    {
+        for (int i = 0; i < SIZE; i++)
+        {
+            if (values[i].from != NULL)
+            {
+                values[i].from->release();
+                //values[i].set_from(NULL);
+            }
+            if(values[i].need_free == true)
+            {
+                free_uvalue(values[i].type, values[i].value);
+            }
+        }
+    }
 
     inline v& id(int i)
     {
 #ifdef DEBUG
-        if (i < 0 || (i >= size))
+        if (i < 0 || (i >= SIZE))
         {
             assert(0);
         }
@@ -63,8 +110,8 @@ public:
     //uint8_t type(const int id);
 
 private:
-    static const int    size = 16;
-    v                   values[size];
+    static const int    SIZE = 256;
+    v                   values[SIZE];
 
 };
 

@@ -9,236 +9,266 @@
 
 #include <log.h>
 
-#define UNSUPPORT_TYPE(op, t, c, o, ...) //VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
-
 using namespace core;
 
 
 
-extern vm_op_t      vm_ops[16];
-extern vm_sub_op_t  cmd_ops[16];
-extern vm_sub_op_t  str_ops[16];
-extern vm_sub_op_t  list_ops[16];
-extern vm_sub_op_t  dict_ops[16];
+extern vm_sub_op_t  CHG_OPS[16];
 
 
-int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset);
-
-extern bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value);
-
-extern bool vm_str(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
-extern bool vm_list(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
-extern bool vm_dict(regvm* vm, int ret, int op, reg::v& r, const extend_args& args);
+inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
 
 
-bool vm_extend(struct regvm* vm, int code, int reg, int ex, int offset, uint16_t* extra, int type, vm_sub_op_t* ops)
+inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
 {
-    extend_args args = {*extra};
-    auto& v = vm->reg.id(args.a1);
-    if ((type >= 0) && (v.type != type))
-    {
-        VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "UNSUPPORT value type : %d - want %d", v.type, type);
-        return false;
-    }
+    int next = 1;
 
-    auto& r = vm->reg.id(reg);
-    vm_sub_op_t f = ops[ex];
-    if (f == NULL)
-    {
-        VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "UNSUPPORT op type : %d of %d", ex, type);
-        return false;
-    }
+#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, inst, offset, fmt, ##__VA_ARGS__);
 
-    int errline = f(vm, r, v, args);
-    if (errline > 0)
-    {
-        VM_ERROR(ERR_RUNTIME, code, reg, ex, offset, "run sub op ERROR : %d - %d at %d", ex, type, errline);
-        return false;
-    }
-    return true;
-}
+    int code = inst.id;
 
-#define NULL_CALL() true
-
-
-inline bool step(struct regvm* vm, int code, int reg, int ex, int offset, int max, int* next, const void* extra)
-{
-    *next = 1;
-
-#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, code, reg, ex, offset, fmt, ##__VA_ARGS__);
-#define CALL(f, ...)                                                    \
-    if (f(__VA_ARGS__) == false)                                        \
-    {                                                                   \
-        STEP_ERROR(ERR_RUNTIME, "run code %u-%u-%u at %d ERROR",        \
-                code, reg, ex, offset);                 \
-    }
-
-    LOGT("%d : code 0x%02X - %d - %d", offset, code, reg, ex);
+    LOGT("%d : code %8s - 0x%02X - 0x%02X", offset, CODE_NAME(code), code, inst.value);
 
     switch (code)
     {
-#define EXTRA_RUN(id, need, func, ...)                                          \
-    case CODE_##id:                                                             \
-        if (max < (need))                                                       \
-        {                                                                       \
-            STEP_ERROR(ERR_INST_TRUNC, "need at lease %d bytes", (need) << 1);  \
-            return 0;                                                           \
-        }                                                                       \
-        CALL(func, ##__VA_ARGS__);                                              \
-        *next += (need);                                                        \
-        break;
-        EXTRA_RUN(NOP, ex, NULL_CALL);
-        EXTRA_RUN(SETS, 1, vm_set, vm, code, reg, ex, offset, *(int16_t*)extra);
-        EXTRA_RUN(SETI, 2, vm_set, vm, code, reg, ex, offset, *(int32_t*)extra);
-        EXTRA_RUN(SETL, 4, vm_set, vm, code, reg, ex, offset, *(int64_t*)extra);
-
-        EXTRA_RUN(CMD,  1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, -1, cmd_ops);
-        EXTRA_RUN(STR,  1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_STRING, str_ops);
-        EXTRA_RUN(LIST, 1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_LIST, list_ops);
-        EXTRA_RUN(DICT, 1, vm_extend, vm, code, reg, ex, offset, (uint16_t*)extra, TYPE_DICT, dict_ops);
-#undef EXTRA_RUN
-
-#if 0
-#define CODE_RUN(id, func, ...)             \
-    case CODE_##id:                         \
-        CALL(func, ##__VA_ARGS__);          \
-        break;
-        CODE_RUN(STORE, CRTP_CALL, vm_store, code, reg, ex, offset, 0);
-        CODE_RUN(GLOBAL, CRTP_CALL, vm_store, code, reg, ex, offset, -1);
-        CODE_RUN(NEW, CRTP_CALL, vm_new, code, reg, ex, offset, -1);
-        CODE_RUN(LOAD, CRTP_CALL, vm_load, code, reg, ex, offset, -1);
-        CODE_RUN(BLOCK, CRTP_CALL, vm_block, code, reg, ex, offset, vm->call_stack->id);
-        CODE_RUN(MOVE, vm_move, vm, code, reg, ex);
-        CODE_RUN(CLEAR, vm_clear, vm, code, reg, ex, offset);
-        CODE_RUN(CONV, vm_conv, vm, code, reg, ex, offset);
-        CODE_RUN(TYPE, vm_type, vm, code, reg, ex, offset);
-        CODE_RUN(CHG, vm_chg, vm, code, reg, ex, offset);
-        CODE_RUN(CMP, vm_cmp, vm, code, reg, ex, offset);
-#undef CODE_RUN
-#endif
-
-#define FROM_REG vm->reg.id(ex)
-#define DIRECT ex
-#define CALC(i, op, val)                                                    \
+#define CALC(i, op)                                                         \
     case CODE_##i:                                                          \
         {                                                                   \
-            auto& r = vm->reg.id(reg);                                      \
-            switch (r.type)                                                 \
+            const auto& a = vm->reg.id(inst.a);                             \
+            const auto& b = vm->reg.id(inst.b);                             \
+            auto& r = vm->reg.id(inst.c);                                   \
+            int t = (a.type > b.type) ? a.type : b.type;                    \
+            vm_conv_impl(vm, r, t);                                         \
+            switch (t)                                                      \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                r.value.sint op (int64_t)val;                               \
+                r.value.sint = (int64_t)a op (int64_t)b;                    \
                 break;                                                      \
             case TYPE_UNSIGNED:                                             \
-                r.value.uint op (uint64_t)val;                              \
+                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
                 break;                                                      \
             case TYPE_DOUBLE:                                               \
-                r.value.dbl op (double)val;                                 \
+                r.value.dbl = (double)a op (double)b;                       \
                 break;                                                      \
             default:                                                        \
-                UNSUPPORT_TYPE("calc", r.type, code, reg, ex, offset);      \
+                UNSUPPORT_TYPE(#i, t, inst, offset);                        \
                 break;                                                      \
             }                                                               \
         }                                                                   \
         break;
-        CALC(INC, +=, DIRECT);
-        CALC(DEC, -=, DIRECT);
-        CALC(ADD, +=, FROM_REG);
-        CALC(SUB, -=, FROM_REG);
-        CALC(MUL, *=, FROM_REG);
-        CALC(DIV, /=, FROM_REG);
+        CALC(ADD, +);
+        CALC(SUB, -);
+        CALC(MUL, *);
+        CALC(DIV, /);
 #undef CALC
 
-#define BITWISE(i, op)                                                      \
+#define ONLY_UNSIGNED(i, op)                                                \
     case CODE_##i:                                                          \
         {                                                                   \
-            auto& e = vm->reg.id(ex);                                       \
-            auto& r = vm->reg.id(reg);                                      \
-            if (r.type == TYPE_UNSIGNED)                                    \
+            const auto& a = vm->reg.id(inst.a);                             \
+            const auto& b = vm->reg.id(inst.b);                             \
+            auto& r = vm->reg.id(inst.c);                                   \
+            vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
+            if ((a.type == TYPE_UNSIGNED) && (b.type == TYPE_UNSIGNED))     \
             {                                                               \
-                r.value.uint op (uint64_t)e;                                \
+                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
             }                                                               \
             else                                                            \
             {                                                               \
-                UNSUPPORT_TYPE("bitwise", r.type, code, reg, ex, offset);   \
+                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
             }                                                               \
         }                                                                   \
         break;
-        BITWISE(AND, &=);
-        BITWISE(OR, |=);
-        BITWISE(XOR, ^=);
-#undef BITWISE
+        ONLY_UNSIGNED(AND, &);
+        ONLY_UNSIGNED(OR, |);
+        ONLY_UNSIGNED(XOR, ^);
+#undef ONLY_UNSIGNED
 
-#define SHIFT(i, op)                                                        \
+#define ONLY_INTEGER(i, op)                                                 \
     case CODE_##i:                                                          \
         {                                                                   \
-            auto& e = vm->reg.id(ex);                                       \
-            auto& r = vm->reg.id(reg);                                      \
+            const auto& a = vm->reg.id(inst.a);                             \
+            const auto& b = vm->reg.id(inst.b);                             \
+            auto& r = vm->reg.id(inst.c);                                   \
+            vm_conv_impl(vm, r, a.type);                                    \
             switch (r.type)                                                 \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                r.value.sint op (uint64_t)e;                                \
+                r.value.sint = (int64_t)a op (int64_t)b;                    \
                 break;                                                      \
             case TYPE_UNSIGNED:                                             \
-                r.value.uint op (uint64_t)e;                                \
+                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
                 break;                                                      \
             default:                                                        \
-                UNSUPPORT_TYPE("shift", r.type, code, reg, ex, offset);     \
+                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
                 break;                                                      \
             }                                                               \
         }                                                                   \
         break;
-        SHIFT(SHL, <<=);
-        SHIFT(SHR, >>=);
-        SHIFT(MOD, %=);
-#undef BITWISE
+        ONLY_INTEGER(SHL, <<);
+        ONLY_INTEGER(SHR, >>);
+        ONLY_INTEGER(MOD, %);
+#undef ONLY_INTEGER
 
-#define JUMP(i, cmp)                                                                            \
-    case CODE_##i:                                                                              \
-        *next = ((int64_t)vm->reg.id(reg) cmp 0) ? vm_CODE_JUMP(vm, code, reg, ex, offset) : 1; \
+#define B_LITERALLY(i, op)                                                  \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            const auto& a = vm->reg.id(inst.a);                             \
+            const int b = inst.bs;                                          \
+            auto& r = vm->reg.id(inst.c);                                   \
+            vm_conv_impl(vm, r, a.type);                                    \
+            switch (r.type)                                                 \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                r.value.sint = (int64_t)a op b;                             \
+                break;                                                      \
+            case TYPE_UNSIGNED:                                             \
+                r.value.uint = (uint64_t)a op b;                            \
+                break;                                                      \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
         break;
-        JUMP(JZ, ==);
-        JUMP(JNZ, !=);
-#undef JUMP
+        B_LITERALLY(INC, +);
+        //B_LITERALLY(SHR, >>);
+        //B_LITERALLY(MOD, %);
+#undef B_LITERALLY
+
+#define JUMPS(i, cmp)                                                       \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            const auto& a = vm->reg.id(inst.a);                             \
+            const auto& b = vm->reg.id(inst.b);                             \
+            const auto& dest = vm->reg.id(inst.c);                          \
+            int t = (a.type > b.type) ? a.type : b.type;                    \
+            switch (t)                                                      \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                return ((int64_t)a cmp (int64_t)b) ? (int64_t)dest : 1;     \
+            case TYPE_UNSIGNED:                                             \
+                return ((uint64_t)a cmp (uint64_t)b) ? (int64_t)dest : 1;   \
+            case TYPE_DOUBLE:                                               \
+                return ((double)a cmp (double)b) ? (int64_t)dest : 1;       \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, t, inst, offset);                        \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
+        break;
+        JUMPS(JEQ, ==);
+        JUMPS(JNE, !=);
+        JUMPS(JGT, >);
+        JUMPS(JGE, >=);
+        JUMPS(JLT, <);
+        JUMPS(JLE, <=);
+#undef JUMPS
 
 #define WRITE(i, ...)                                                       \
     case CODE_##i:                                                          \
         {                                                                   \
-            auto& r = vm->reg.id(reg);                                      \
-            auto& e = vm->reg.id(ex);                                       \
+            auto& r = vm->reg.id(inst.a);                                   \
+            auto& e = vm->reg.id(inst.b);                                   \
             return r.write(__VA_ARGS__);                                    \
         }
         WRITE(MOVE, e.value.uint, e.type, true);
-        WRITE(TYPE, e.type, TYPE_UNSIGNED, true);
+        WRITE(TYPE, e.type, TYPE_SIGNED, true);
 #undef WRITE
 
-    case CODE_EXIT:
-        vm->exit_code = (ex == 0) ? 0 : (int64_t)vm->reg.id(reg);
-        vm->exit = true;
-        [[fallthrough]];
-    case CODE_RET:
-        *next = 0;
-        return true;
-    default:
-        if (code < (int)(sizeof(vm->ops) / sizeof(vm->ops[0])))
+#define SUB_OPS(i, op)                                                      \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto f = i##_OPS[inst.op];                                      \
+            if (unlikely(f == NULL))                                        \
+            {                                                               \
+                UNSUPPORT_TYPE(#i, inst.op, inst, offset);                  \
+                return 0;                                                   \
+            }                                                               \
+            return f(vm, inst.a, inst.b, inst.c, offset);                   \
+        }                                                                   \
+        break;
+        SUB_OPS(CHG, c);
+#undef SUBS
+
+    case CODE_CMP:
+        switch (inst.c)
         {
-            *next = vm->ops[code](vm, code, reg, ex, offset);
-            if (*next == 0)
+#define CMP(k, cmp)                             \
+    case k:                                     \
+        vm->reg.id(inst.a).write(((int64_t)vm->reg.id(inst.b) cmp 0), TYPE_SIGNED, true);  \
+        return 1;
+            CMP(0, ==);
+            CMP(1, !=);
+            CMP(2, >);
+            CMP(3, >=);
+            CMP(4, <);
+            CMP(5, <=);
+#undef CMP
+        }
+        break;
+    case CODE_EXIT:
+        vm->exit_code = ((int)inst.a2 != -1) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
+        vm->exit = true;
+        return 0;
+    case CODE_RET:
+        return 0;
+    default:
+        if (likely(code < (int)(sizeof(vm->ops) / sizeof(vm->ops[0]))))
+        {
+            int r = vm->ops[code](vm, inst, offset, extra);
+            if (unlikely(r == 0))
             {
-                VM_ERROR(ERR_RUNTIME, code, reg, ex, offset, "run code ERROR : %u - %u - %u", code, reg, ex);
-                return false;
+                VM_ERROR(ERR_RUNTIME, inst, offset, "run code ERROR : %8s - 0x%02X", CODE_NAME(code), inst.value);
             }
+            return r;
         }
         else
         {
-            VM_ERROR(ERR_INVALID_CODE, code, reg, ex, offset, "invalid code : %u - %u - %u", code, reg, ex);
+            VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
             fprintf(stderr, "code %d is NOT SUPPORT YET", code);
-            return false;
+            return 0;
         }
     };
 
-#undef CALL
+    if (likely(vm->fatal == false))
+    {
+        return next;
+    }
+    else
+    {
+        return 0;
+    }
+}
 
-    return !vm->fatal;
+inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
+{
+    if (r.type == to) return true;
+
+    switch (to)
+    {
+    case TYPE_UNSIGNED:
+        r.value.uint = (uint64_t)r;
+        break;
+    case TYPE_SIGNED:
+        r.value.sint = (int64_t)r;
+        break;
+    case TYPE_DOUBLE:
+        r.value.dbl = (double)r;
+        break;
+    default:
+        return false;
+    }
+
+    r.set_from(NULL);
+    r.type = to;
+
+    return true;
+}
+
+bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
+{
+    return vm_conv_impl(vm, r, to);
 }
 
 func::func(const code_t* p, int64_t c, int64_t e, int64_t s, int32_t i, const regvm_src_location* l) :
@@ -263,14 +293,10 @@ bool func::run(struct regvm* vm, int64_t start)
     const code_t* cur = codes + offset;
     while (rest > 0)
     {
-        int next = 0;
-        if (step(vm, cur->id, cur->reg, cur->ex, offset, rest, &next, cur + 1) == false)
+        int next = step(vm, *cur, offset, rest, cur + 1);
+        if (unlikely(next == 0))
         {
-            return false;
-        }
-        if (next == 0)
-        {
-            return true;
+            return ! vm->fatal;
         }
 
         cur += next;
@@ -280,7 +306,7 @@ bool func::run(struct regvm* vm, int64_t start)
 
     if (rest < 0)
     {
-        VM_ERROR(ERR_RUNTIME, 0, 0, 0, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
+        VM_ERROR(ERR_RUNTIME, code_t{0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
     }
 
     auto& r = vm->reg.id(0);
@@ -290,7 +316,7 @@ bool func::run(struct regvm* vm, int64_t start)
 
 bool func::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
 {
-    return step(vm, code.id, code.reg, code.ex, 0, max, next, extra);
+    return step(vm, code, 0, max, extra);
 }
 
 #undef UNSUPPORT_TYPE

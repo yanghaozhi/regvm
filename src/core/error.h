@@ -11,13 +11,13 @@
 #include "frame.h"
 
 #ifdef DEBUG
-#define VM_ERROR(e, c, r, x, o, fmt, ...)                                       \
+#define VM_ERROR(e, c, o, fmt, ...)                                             \
     vm->err.self.line = __LINE__;                                               \
     vm->err.self.file = __FILE__;                                               \
     vm->err.self.func = __func__;                                               \
-    vm->err.set(vm, e, c, r, x, o, fmt, ##__VA_ARGS__);
+    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #else
-#define VM_ERROR(e, c, r, x, o, fmt, ...)    vm->err.set(vm, e, c, r, x, o, fmt, ##__VA_ARGS__);
+#define VM_ERROR(e, c, o, fmt, ...)    vm->err.set(vm, e, c, o, fmt, ##__VA_ARGS__);
 #endif
 
 namespace core
@@ -38,7 +38,7 @@ public:
 
     char                reason[1024];
 
-    void set(regvm* vm, int errcode, int code, int reg, int ex, int offset, const char* fmt, ...);
+    void set(regvm* vm, int errcode, code_t code, int offset, const char* fmt, ...);
 
     //void print_stack();
 
@@ -72,7 +72,7 @@ public:
     template <typename T> static void reg_info(const reg& reg, T cb, regvm_reg_info* info)
     {
         //cb(reg.values[i].value.num, reg.values[i].from, reg.values[i].type);
-        for (int i = 0; i < reg::size; i++)
+        for (int i = 0; i < reg::SIZE; i++)
         {
             info->id = i;
             info->ref = (reg.values[i].from != NULL) ? reg.values[i].from->ref : -1;

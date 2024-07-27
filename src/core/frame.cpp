@@ -11,8 +11,8 @@
 
 using namespace core;
 
-frame::frame(frame& cur, func* f, int c, int r, int e, int o) :
-    depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm), code(c), reg(r), ex(e), offset(o)
+frame::frame(frame& cur, func* f, code_t c, int o) :
+    depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm), code(c), offset(o)
 {
     up = vm->call_stack;
     down = NULL;
@@ -20,31 +20,31 @@ frame::frame(frame& cur, func* f, int c, int r, int e, int o) :
 
     vm->call_stack = this;
 
-    if (vm->vm_call(code, reg, ex, offset, id) == false)
+    if (vm->vm_call(code, offset, id) == false)
     {
-        VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, c, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 }
 
-frame::frame(regvm* v, func* f, int c, int r, int e, int o) :
-    depth(0), running(f), id(gen_id()), vm(v), code(c), reg(r), ex(e), offset(o)
+frame::frame(regvm* v, func* f, code_t c, int o) :
+    depth(0), running(f), id(gen_id()), vm(v), code(c), offset(o)
 {
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    if (vm->vm_call(code, reg, ex, offset, id) == false)
+    if (vm->vm_call(code, offset, id) == false)
     {
-        VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 }
 
 frame::~frame()
 {
-    if (vm->vm_call(code, reg, ex, offset, -id) == false)
+    if (vm->vm_call(code, offset, -id) == false)
     {
-        VM_ERROR(ERR_FUNCTION_CALL, code, reg, ex, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
     }
 

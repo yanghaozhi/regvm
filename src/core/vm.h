@@ -16,7 +16,7 @@
 #include <map>
 
 
-typedef int (*vm_op_t)(regvm* vm, int code, int reg, int ex, int offset);
+typedef int (*vm_op_t)(regvm* vm, code_t inst, int offset, const void* extra);
 
 struct regvm
 {
@@ -32,14 +32,14 @@ struct regvm
     std::map<int32_t, core::func>   funcs;
     std::map<int64_t, const char*>  strs;
 
-    vm_op_t         ops[16];
+    vm_op_t         ops[256 - CODE_TRAP];
 
     regvm();
     virtual ~regvm();
 
     bool run(const code_t* start, int count);
-    bool call(int64_t id, int code, int reg, int ex, int offset);
-    bool call(core::reg::v& addr, int code, int reg, int ex, int offset);
+    bool call(int64_t id, code_t code, int offset);
+    bool call(core::reg::v& addr, code_t code, int offset);
 
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
     virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))    {return 0;};
@@ -48,8 +48,15 @@ struct regvm
     CRTP_FUNC(vm_exit,  bool, 0);
     CRTP_FUNC(vm_var,   core::var*, 1, int);
     CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
-    CRTP_FUNC(vm_call,  bool, 5, int, int, int, int, int64_t);
+    CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
 
 #undef CRTP_FUNC
+
+#ifdef DEBUG
+    const char* code_names[256];
+#define CODE_NAME(x)    vm->code_names[x]
+#else
+#define CODE_NAME(x)    ""
+#endif
 };
 

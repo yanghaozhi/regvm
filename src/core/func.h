@@ -9,6 +9,8 @@
 
 #include "reg.h"
 
+#define UNSUPPORT_TYPE(op, t, c, o, ...) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+
 namespace core
 {
 
@@ -24,7 +26,7 @@ union extend_args
     };
 };
 
-typedef int (*vm_sub_op_t)(regvm* vm, reg::v& r, reg::v& v, const extend_args& args);
+typedef int (*vm_sub_op_t)(regvm* vm, int a, int b, int c, int offset);
 
 class func
 {

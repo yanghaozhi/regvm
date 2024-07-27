@@ -13,7 +13,7 @@ namespace ext
 {
 
 
-class var : public core::var_crtp<var>
+class var : public core::var
 {
 private:
     friend class scope;
@@ -31,11 +31,11 @@ public:
     static var* create(uint8_t type, const char* name);
     static uint32_t calc_hash(const char* name, const int len);
 
-    bool set_val(const core::regv<var>& reg);
-    bool set_reg(const core::regv<var>* reg) const;
+    bool set_val(const core::regv& reg);
+    bool set_reg(const core::regv* reg) const;
     bool release(void) const;
 
-    bool store_from(core::regv<var>& v);
+    bool store_from(core::regv& v);
 
     bool cmp(uint32_t key, const char* name, int len);
 };

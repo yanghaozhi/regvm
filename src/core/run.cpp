@@ -9,11 +9,10 @@
 #include "reg.h"
 #include "func.h"
 
-#define UNSUPPORT_TYPE(op, t, c, r, e, o) VM_ERROR(ERR_TYPE_MISMATCH, c, r, e, o, "UNSUPPORT %s value type : %d", op, t); 
 
 using namespace core;
 
-bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
+extern bool vm_conv_type(struct regvm* vm, reg::v& r, int to);
 
 extern "C"
 {
@@ -38,49 +37,27 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 
 int regvm_code_len(code_t code)
 {
-    int count = 1;
-    switch (code.id)
-    {
-    case CODE_NOP:
-        count += code.ex;
-        break;
-    case CODE_EXIT:
-        break;
-    default:
-        if (code.id >= 224)
-        {
-            count += 4;
-        }
-        else if (code.id >= 192)
-        {
-            count += 2;
-        }
-        else if (code.id >= 128)
-        {
-            count += 1;
-        }
-        break;
-    }
-    return count;
+    return 1;
 }
 
 }   //extern C
 
 
-int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_NOP(regvm* vm, code_t code, int offset)
 {
-    return 1 + ex;
+    return 1;
 }
 
-int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_TRAP(regvm* vm, code_t code, int offset)
 {
     //*next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
     return 1;
 }
 
-int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_CLEAR(regvm* vm, code_t code, int offset)
 {
-    auto& r = vm->reg.id(reg);
+    auto& r = vm->reg.id(code.a);
+    const int ex = code.b;
     if (r.write(0, ex, true) == false)
     {
         return 0;
@@ -101,227 +78,180 @@ int vm_CODE_CLEAR(regvm* vm, int code, int reg, int ex, int offset)
     return 1;
 }
 
-int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_LOAD(regvm* vm, code_t code, int offset)
 {
     return 0;
 }
 
-int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_STORE(regvm* vm, code_t code, int offset)
 {
     return 0;
 }
 
-int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_GLOBAL(regvm* vm, code_t code, int offset)
 {
     return 0;
 }
 
-int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_NEW(regvm* vm, code_t code, int offset)
 {
     return 0;
 }
 
-int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_BLOCK(regvm* vm, code_t code, int offset)
 {
     return 0;
 }
 
-int vm_CODE_CONV(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CODE_CONV(regvm* vm, code_t code, int offset)
 {
-    auto& r = vm->reg.id(reg);
-    if (vm_conv_impl(vm, r, ex) == false)
+    const auto& src = vm->reg.id(code.b);
+    auto& res = vm->reg.id(code.a);
+    res.copy(src);
+    if (vm_conv_type(vm, res, code.c) == false)
     {
-        UNSUPPORT_TYPE("conv", ex, code, reg, ex, offset);
+        UNSUPPORT_TYPE("conv", code.c, code, offset);
         return 0;
     }
     return 1;
 }
 
-int vm_CODE_CHG(regvm* vm, int code, int reg, int ex, int offset)
+int vm_CHG_MINUS(regvm* vm, int a, int b, int c, int offset)
 {
-    auto& r = vm->reg.id(reg);
-    switch (ex)
+    auto& r = vm->reg.id(a);
+    if (a != b)
     {
-    case 0: //clear
-        r.value.uint = 0;
-        return 1;
-    case 1: //minus
-        switch (r.type)
-        {
-        case TYPE_UNSIGNED:
-        case TYPE_SIGNED:
-            r.value.sint = 0 - r.value.sint;
-            break;
-        case TYPE_DOUBLE:
-            r.value.dbl = 0 - r.value.dbl;
-            break;
-        default:
-            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
-            return 0;
-        }
-        return 1;
-    case 2: //reciprocal
-        switch (r.type)
-        {
-        case TYPE_UNSIGNED:
-        case TYPE_SIGNED:
-            if (vm_conv_impl(vm, r, TYPE_DOUBLE) == false)
-            {
-                UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
-                return 0;
-            }
-            [[fallthrough]];
-        case TYPE_DOUBLE:
-            r.value.dbl = 1 / r.value.dbl;
-            break;
-        default:
-            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
-            return 0;
-        }
-        return 1;
-    case 3: //NOT
-        if (r.type == TYPE_UNSIGNED)
-        {
-            r.value.uint = ~r.value.uint;
-            return 1;
-        }
-        else
-        {
-            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
-            return 0;
-        }
-    case 4: //malloc
-        if (r.type == TYPE_STRING)
-        {
-            //r.value.uint = ~r.value.uint;
-            if (r.need_free == false)
-            {
-                r.set_from(NULL);
-                char* p = strdup(r.value.str);
-                r.value.str = p;
-                r.need_free = true;
-            }
-            return 1;
-        }
-        else
-        {
-            UNSUPPORT_TYPE("chg", r.type, code, reg, ex, offset);
-            return 0;
-        }
-    default:
-        UNSUPPORT_TYPE("chg", ex, code, reg, ex, offset);
-        return 0;
+        r.copy(vm->reg.id(b));
     }
-}
-
-int vm_CODE_CMP(regvm* vm, int code, int reg, int ex, int offset)
-{
-    auto& r = vm->reg.id(reg);
-    r.set_from(NULL);
-    switch (ex)
-    {
-#define CMP(k, cmp)                             \
-    case k:                                     \
-        vm_conv_impl(vm, r, TYPE_SIGNED);       \
-        r.value.sint = (r.value.sint cmp 0);    \
-        return 1;
-        CMP(0, ==);
-        CMP(1, !=);
-        CMP(2, >);
-        CMP(3, >=);
-        CMP(4, <);
-        CMP(5, <=);
-#undef CMP
-    default:
-        UNSUPPORT_TYPE("cmp", ex, code, reg, ex, offset);
-        break;
-    }
-    return 0;
-}
-
-int vm_CODE_JUMP(regvm* vm, int code, int reg, int ex, int offset)
-{
-    auto& e = vm->reg.id(ex);
-    switch (e.type)
-    {
-    case TYPE_SIGNED:
-        return (int64_t)e;
-    case TYPE_ADDR:
-        return e.conv_i(TYPE_UNSIGNED) - offset;
-    default:
-        return 0;
-    }
-}
-
-int vm_CODE_CALL(regvm* vm, int code, int reg, int ex, int offset)
-{
-    auto& r = vm->reg.id(reg);
-    if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
-    {
-        return 0;
-    }
-    if (vm->exit == true)
-    {
-        return 1;
-    }
-    return 1;
-}
-
-
-bool vm_set(struct regvm* vm, int code, int reg, int ex, int offset, int64_t value)
-{
-    auto& r = vm->reg.id(reg);
-    if ((ex == TYPE_STRING) && (value & 0x01))
-    {
-        //auto it = vm->strs.find(value);
-        //if (it == vm->strs.end())
-        //{
-        //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-        //    return false;
-        //}
-        //value = (intptr_t)it->second;
-        auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-        if (it.func == NULL)
-        {
-            VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-            return false;
-        }
-        value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
-        if (value == 0)
-        {
-            VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
-            return false;
-        }
-    }
-    return r.write(value, ex, (ex != r.type));
-}
-
-bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
-{
-    if (r.type == to) return true;
-
-    switch (to)
+    switch (r.type)
     {
     case TYPE_UNSIGNED:
-        r.value.uint = (uint64_t)r;
-        break;
+        vm_conv_type(vm, r, TYPE_SIGNED);
+        [[fallthrough]];
     case TYPE_SIGNED:
-        r.value.sint = (int64_t)r;
+        r.value.sint = 0 - r.value.sint;
         break;
     case TYPE_DOUBLE:
-        r.value.dbl = (double)r;
+        r.value.dbl = 0 - r.value.dbl;
         break;
     default:
-        return false;
+        UNSUPPORT_TYPE("chg", r.type, code_t{b}, offset);
+        return 0;
     }
+    return 1;
+};
 
-    r.set_from(NULL);
-    r.type = to;
-
-    return true;
+int vm_CHG_RECIPROCAL(regvm* vm, int a, int b, int c, int offset)
+{
+    auto& r = vm->reg.id(a);
+    if (a != b)
+    {
+        const auto& s = vm->reg.id(b);
+        r.write(1.0 / (double)s, TYPE_DOUBLE, true);
+    }
+    else
+    {
+        vm_conv_type(vm, r, TYPE_DOUBLE);
+        r.value.dbl = 1.0 / r.value.dbl;
+    }
+    return 1;
 }
 
-void vm_cmd_echo_var(const reg::v& v)
+int vm_CHG_NOT(regvm* vm, int a, int b, int c, int offset)
+{
+    auto& s = vm->reg.id(b);
+    if (s.type != TYPE_UNSIGNED)
+    {
+        return 0;
+    }
+    if (a != b)
+    {
+        auto& r = vm->reg.id(a);
+        r.write(~s.value.uint, TYPE_UNSIGNED, true);
+    }
+    else
+    {
+        s.value.uint = ~s.value.uint;
+    }
+    return 1;
+}
+
+int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
+{
+    auto& s = vm->reg.id(b);
+    if (s.type != TYPE_STRING)
+    {
+        return 0;
+    }
+
+    auto& r = (a != b) ? vm->reg.id(a) : s;
+    if (r.need_free == false)
+    {
+        r.set_from(NULL);
+        char* p = strdup(r.value.str);
+        r.value.str = p;
+        r.need_free = true;
+    }
+    return 1;
+}
+
+int vm_CODE_CALL(regvm* vm, code_t code, int offset)
+{
+    //auto& r = vm->reg.id(reg);
+    //if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
+    //{
+    //    return 0;
+    //}
+    //if (vm->exit == true)
+    //{
+    //    return 1;
+    //}
+    return 1;
+}
+
+
+int vm_CODE_SET(regvm* vm, code_t code, int offset, const void* extra)
+{
+    uint64_t v = code.c;
+    int shift = 8;
+    int next = 1;
+    code_t* p = (code_t*)extra;
+    while (p->id == CODE_DATA)
+    {
+        uint64_t vv = (unsigned int)p->a3;
+        v += vv << shift;
+        shift += 24;
+        next += 1;
+    }
+    auto& r = vm->reg.id(code.a);
+    r.write(v, code.b, (code.b != r.type));
+    return next;
+    //if ((ex == TYPE_STRING) && (value & 0x01))
+    //{
+    //    //auto it = vm->strs.find(value);
+    //    //if (it == vm->strs.end())
+    //    //{
+    //    //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
+    //    //    return false;
+    //    //}
+    //    //value = (intptr_t)it->second;
+    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
+    //    if (it.func == NULL)
+    //    {
+    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
+    //        return false;
+    //    }
+    //    value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
+    //    if (value == 0)
+    //    {
+    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
+    //        return false;
+    //    }
+    //}
+    //return r.write(value, ex, (ex != r.type));
+}
+
+inline void vm_cmd_echo_var(const reg::v& v)
 {
     switch (v.type)
     {
@@ -342,24 +272,17 @@ void vm_cmd_echo_var(const reg::v& v)
     }
 }
 
-int vm_cmd_echo(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_ECHO(regvm* vm, code_t code, int offset, const void* extra)
 {
-    switch (v.idx)
+    switch (code.a)
     {
-    case 3:
-        vm_cmd_echo_var(vm->reg.id(args.a2));
-        printf("\t");
-        vm_cmd_echo_var(vm->reg.id(args.a3));
-        printf("\t");
-        vm_cmd_echo_var(vm->reg.id(args.a4));
-        break;
     case 2:
-        vm_cmd_echo_var(vm->reg.id(args.a2));
+        vm_cmd_echo_var(vm->reg.id(code.b));
         printf("\t");
-        vm_cmd_echo_var(vm->reg.id(args.a3));
+        vm_cmd_echo_var(vm->reg.id(code.c));
         break;
     case 1:
-        vm_cmd_echo_var(vm->reg.id(args.a2));
+        vm_cmd_echo_var(vm->reg.id(code.b));
         break;
     case 0:
         break;
@@ -367,10 +290,10 @@ int vm_cmd_echo(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
         return __LINE__;
     }
     printf("\n");
-    r.write(v.idx, TYPE_SIGNED, true);
     return 0;
 }
 
+#if 0
 int vm_str_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
     int len = strlen(v.value.str);
@@ -637,38 +560,46 @@ int vm_dict_items(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 
 #undef CHECK_DICT
 
-#undef UNSUPPORT_TYPE
+#endif  //if 0
 
-vm_sub_op_t  cmd_ops[16]    =
+vm_sub_op_t  CHG_OPS[16] =
 {
-    vm_cmd_echo,
+    vm_CHG_MINUS,
+    vm_CHG_RECIPROCAL,
+    vm_CHG_NOT,
+    vm_CHG_MALLOC,
 };
 
-vm_sub_op_t  str_ops[16]    =
-{
-    vm_str_len,
-    vm_str_substr,
-};
-
-vm_sub_op_t  list_ops[16]   =
-{
-    vm_list_len,
-    vm_list_at,
-    vm_list_push,
-    vm_list_pop,
-    vm_list_insert,
-    vm_list_erase,
-    vm_list_set,
-};
-
-vm_sub_op_t  dict_ops[16]   =
-{
-    vm_dict_len,
-    vm_dict_set,
-    vm_dict_get,
-    vm_dict_del,
-    vm_dict_has,
-    vm_dict_items,
-};
+//vm_sub_op_t  cmd_ops[16]    =
+//{
+//    vm_cmd_echo,
+//};
+//
+//vm_sub_op_t  str_ops[16]    =
+//{
+//    vm_str_len,
+//    vm_str_substr,
+//};
+//
+//vm_sub_op_t  list_ops[16]   =
+//{
+//    vm_list_len,
+//    vm_list_at,
+//    vm_list_push,
+//    vm_list_pop,
+//    vm_list_insert,
+//    vm_list_erase,
+//    vm_list_set,
+//};
+//
+//vm_sub_op_t  dict_ops[16]   =
+//{
+//    vm_dict_len,
+//    vm_dict_set,
+//    vm_dict_get,
+//    vm_dict_del,
+//    vm_dict_has,
+//    vm_dict_items,
+//};
 
 
