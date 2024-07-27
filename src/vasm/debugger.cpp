@@ -32,7 +32,7 @@ void debugger::reg_info(const regvm_reg_info* info)
     case -1:
         break;
     default:
-        if ((cur.ex == 0) || (cur.reg == info->id))
+        if (cur.reg == info->id)
         {
             printf(" %d\t%d\t%d\t%p\t", info->id, info->type, info->ref, info->from);
             regvm_debug_uvalue_print(info->type, info->value);

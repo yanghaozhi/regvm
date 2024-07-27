@@ -59,7 +59,7 @@ uint32_t var::calc_hash(const char* name, const int len)
     return hash;
 }
 
-bool var::set_val(const core::regv<var>& reg)
+bool var::set_val(const core::regv& reg)
 {
     if (type != reg.type)
     {
@@ -100,7 +100,7 @@ bool var::set_val(const core::regv<var>& reg)
     return true;
 }
 
-bool var::set_reg(const core::regv<var>* new_reg) const
+bool var::set_reg(const core::regv* new_reg) const
 {
     if (new_reg == reg) return true;
 
@@ -142,7 +142,7 @@ bool var::release(void) const
     return false;
 }
 
-bool var::store_from(core::regv<var>& r)
+bool var::store_from(core::regv& r)
 {
     if (reg == &r) return r.store();
 
