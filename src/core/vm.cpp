@@ -45,11 +45,9 @@ regvm::regvm() : reg(), ops{NULL}
 #define SET_NAME(x)
 #endif
 
-#define SET_1(name)     ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;
+#define SET_1(name)             ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;
 #define SET_0(name)
-#define SET_OPS(func, name)                                 \
-    MLIB_CAT(SET_, func)(name);
-    SET_NAME(name)
+#define SET_OPS(func, name)     MLIB_CAT(SET_, func)(name); SET_NAME(name);
 
     SET_OPS(0, NOP);
     SET_OPS(0, DATA);

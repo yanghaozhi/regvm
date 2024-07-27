@@ -214,21 +214,23 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
     case CODE_RET:
         return 0;
     default:
-        if (likely(code < (int)(sizeof(vm->ops) / sizeof(vm->ops[0]))))
+        if (likely(code >= CODE_TRAP))
         {
-            int r = vm->ops[code](vm, inst, offset, extra);
-            if (unlikely(r == 0))
+            auto f = vm->ops[code - CODE_TRAP];
+            if (likely(f != NULL))
             {
-                VM_ERROR(ERR_RUNTIME, inst, offset, "run code ERROR : %8s - 0x%02X", CODE_NAME(code), inst.value);
+                int r = f(vm, inst, offset, extra);
+                if (unlikely(r == 0))
+                {
+                    VM_ERROR(ERR_RUNTIME, inst, offset, "run code ERROR : %8s - 0x%02X", CODE_NAME(code), inst.value);
+                }
+                return r;
             }
-            return r;
         }
-        else
-        {
-            VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
-            fprintf(stderr, "code %d is NOT SUPPORT YET", code);
-            return 0;
-        }
+
+        VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
+        fprintf(stderr, "code %d is NOT SUPPORT YET", code);
+        return 0;
     };
 
     if (likely(vm->fatal == false))
