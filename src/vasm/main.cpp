@@ -5,6 +5,7 @@
 #include "log.h"
 #include "mem_run.h"
 #include "bin_file.h"
+#include "inst.h"
 
 using namespace vasm;
 
@@ -62,52 +63,55 @@ options:
 
 int main(int argc, char** argv)
 {
-    if (argc == 1)
-    {
-        printf("Need input code file\n");
-        return 0;
-    }
+    std::vector<inst>   insts;
+    INST(ADD, 10, 11, 12);
+    INST(JUMP, 2000);
+    //if (argc == 1)
+    //{
+    //    printf("Need input code file\n");
+    //    return 0;
+    //}
 
-    const char* file = argv[1];
+    //const char* file = argv[1];
 
-    OP* op = NULL;
-    const char* opts = "c:rsbhv";
-    int opt = 0;
-    while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
-    {
-        switch (opt)
-        {
-        case 'r':
-            {
-                auto p = new TOP<mem_2_run>();
-                //p->op.set_dbg(new vasm::debugger());
-                op = p;
-            }
-            break;
-        case 's':
-            //o = new step();
-            break;
-        case 'c':
-            op = new TOP<bin_file>(optarg);
-            //o = new compile_2_file(optarg);
-            break;
-        case 'b':
-            op = new TOP<bin_file>(file);
-            //o = new bin();
-            break;
-        case 'v':
-            break;
-        case 'h':
-            printf("%s\n", HELP);
-            return 0;
-        }
-    }
+    //OP* op = NULL;
+    //const char* opts = "c:rsbhv";
+    //int opt = 0;
+    //while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
+    //{
+    //    switch (opt)
+    //    {
+    //    case 'r':
+    //        {
+    //            auto p = new TOP<mem_2_run>();
+    //            //p->op.set_dbg(new vasm::debugger());
+    //            op = p;
+    //        }
+    //        break;
+    //    case 's':
+    //        //o = new step();
+    //        break;
+    //    case 'c':
+    //        op = new TOP<bin_file>(optarg);
+    //        //o = new compile_2_file(optarg);
+    //        break;
+    //    case 'b':
+    //        op = new TOP<bin_file>(file);
+    //        //o = new bin();
+    //        break;
+    //    case 'v':
+    //        break;
+    //    case 'h':
+    //        printf("%s\n", HELP);
+    //        return 0;
+    //    }
+    //}
 
-    if (op == NULL) return 0;
+    //if (op == NULL) return 0;
 
-    op->go(file);
+    //op->go(file);
 
-    delete op;
+    //delete op;
 
     return 0;
 }

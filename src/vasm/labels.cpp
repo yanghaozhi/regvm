@@ -46,27 +46,28 @@ void labels::pass1::comment(const char* line)
 
 bool labels::pass1::setc(code_t& code, intptr_t* next, const char* str)
 {
-    std::string label;
-    if (data.find_label(str, label) == false)
-    {
-        return false;
-    }
-    code.ex = TYPE_ADDR;
-    code.id = CODE_SETL;
+    //std::string label;
+    //if (data.find_label(str, label) == false)
+    //{
+    //    return false;
+    //}
+    //code.ex = TYPE_ADDR;
+    //code.id = CODE_SETL;
     return true;
 }
 
 bool labels::pass1::line(const code_t* code, int max_bytes, const char* orig)
 {
-    LOGD("%d - %d - %d", code->id, code->reg, code->ex);
-    int bytes = regvm_code_len(*code) << 1;
-    if (bytes > max_bytes)
-    {
-        LOGE("not enough bytes of code %d, want %d, got %d", code->id, bytes, max_bytes);
-        return false;
-    }
-    code_size += bytes;
-    return (bytes == write_code(code, bytes)) ? true : false;
+    return true;
+    //LOGD("%d - %d - %d", code->id, code->reg, code->ex);
+    //int bytes = regvm_code_len(*code) << 1;
+    //if (bytes > max_bytes)
+    //{
+    //    LOGE("not enough bytes of code %d, want %d, got %d", code->id, bytes, max_bytes);
+    //    return false;
+    //}
+    //code_size += bytes;
+    //return (bytes == write_code(code, bytes)) ? true : false;
 }
 
 labels::pass2::pass2(labels& o) : pass(o), data(o)
@@ -96,28 +97,28 @@ void labels::pass2::comment(const char* line)
 
 bool labels::pass2::setc(code_t& code, intptr_t* next, const char* str)
 {
-    std::string label;
-    if (data.find_label(str, label) == true)
-    {
-        code.ex = TYPE_ADDR;
-        code.id = CODE_SETL;
-        auto it = data.label_ids.find(label);
-        if (it == data.label_ids.end())
-        {
-            LOGE("Can not find id of label : %s", label.c_str());
-            return false;
-        }
-        int64_t id = it->second;
-        auto it2 = data.label_infos.find(id);
-        if (it2 == data.label_infos.end())
-        {
-            LOGE("Can not find label info of label : %lld - %s", (long long)id, label.c_str());
-            return false;
-        }
-        *(uint64_t*)next= (uint64_t)it2->second.pos;
-        LOGD("write %lld as %s ", (long long)it2->second.pos, label.c_str());
-        return true;
-    }
+    //std::string label;
+    //if (data.find_label(str, label) == true)
+    //{
+    //    code.ex = TYPE_ADDR;
+    //    code.id = CODE_SETL;
+    //    auto it = data.label_ids.find(label);
+    //    if (it == data.label_ids.end())
+    //    {
+    //        LOGE("Can not find id of label : %s", label.c_str());
+    //        return false;
+    //    }
+    //    int64_t id = it->second;
+    //    auto it2 = data.label_infos.find(id);
+    //    if (it2 == data.label_infos.end())
+    //    {
+    //        LOGE("Can not find label info of label : %lld - %s", (long long)id, label.c_str());
+    //        return false;
+    //    }
+    //    *(uint64_t*)next= (uint64_t)it2->second.pos;
+    //    LOGD("write %lld as %s ", (long long)it2->second.pos, label.c_str());
+    //    return true;
+    //}
     return false;
 }
 

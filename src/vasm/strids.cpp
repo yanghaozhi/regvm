@@ -11,18 +11,19 @@ bool strids::pass1::setc(code_t& code, intptr_t* next, const char* str)
         return true;
     }
 
-    code.id = CODE_SETL;
-    code.ex = TYPE_STRING;
-    auto it = data.str_tab.find(str);
-    if (it == data.str_tab.end())
-    {
-        auto id = ++data.str_id;
-        it = data.str_tab.try_emplace(str, (id << 1) + 1).first;
+    //TODO
+    //code.id = CODE_SETL;
+    //code.ex = TYPE_STRING;
+    //auto it = data.str_tab.find(str);
+    //if (it == data.str_tab.end())
+    //{
+    //    auto id = ++data.str_id;
+    //    it = data.str_tab.try_emplace(str, (id << 1) + 1).first;
 
-        code.ex = TYPE_STRING;
-        calc_id_len(it->second, code, next);
-    }
-    *next = (intptr_t)it->first.c_str();
+    //    code.ex = TYPE_STRING;
+    //    calc_id_len(it->second, code, next);
+    //}
+    //*next = (intptr_t)it->first.c_str();
     return true;
 }
 
@@ -49,36 +50,38 @@ strids::pass2::pass2(strids& o) : labels::pass2(o), data(o)
 
 bool strids::pass2::setc(code_t& code, intptr_t* next, const char* str)
 {
-    if (labels::pass2::setc(code, next, str) == false)
-    {
-        auto it = data.str_tab.find(str);
-        if (it == data.str_tab.end())
-        {
-            return false;
-        }
+    //TODO
+    //if (labels::pass2::setc(code, next, str) == false)
+    //{
+    //    auto it = data.str_tab.find(str);
+    //    if (it == data.str_tab.end())
+    //    {
+    //        return false;
+    //    }
 
-        code.ex = TYPE_STRING;
-        calc_id_len(it->second, code, next);
-    }
+    //    code.ex = TYPE_STRING;
+    //    calc_id_len(it->second, code, next);
+    //}
     return true;
 }
 
 bool strids::calc_id_len(uint64_t id, code_t& code, intptr_t* next)
 {
-    if (id <= 0x7FFF)
-    {
-        code.id = CODE_SETS;
-        *next = (uint16_t)id;
-    }
-    else if (id <= 0x7FFFFFFF)
-    {
-        code.id = CODE_SETI;
-        *next = (uint32_t)id;
-    }
-    else
-    {
-        code.id = CODE_SETL;
-        *next = (uint64_t)id;
-    }
+    //TODO
+    //if (id <= 0x7FFF)
+    //{
+    //    code.id = CODE_SETS;
+    //    *next = (uint16_t)id;
+    //}
+    //else if (id <= 0x7FFFFFFF)
+    //{
+    //    code.id = CODE_SETI;
+    //    *next = (uint32_t)id;
+    //}
+    //else
+    //{
+    //    code.id = CODE_SETL;
+    //    *next = (uint64_t)id;
+    //}
     return true;
 }

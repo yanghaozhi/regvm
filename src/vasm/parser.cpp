@@ -40,45 +40,46 @@ bool parser::open(char* d, int64_t s)
     size = s;
     if (ids.empty() == true)
     {
-#define SET_KEY(k) ids.emplace(#k, CODE_##k);
-        SET_KEY(NOP);
-        SET_KEY(TRAP);
-        SET_KEY(SETS);
-        SET_KEY(SETI);
-        SET_KEY(SETL);
-        SET_KEY(MOVE);
-        SET_KEY(CLEAR);
-        SET_KEY(LOAD);
-        SET_KEY(STORE);
-        SET_KEY(GLOBAL);
-        SET_KEY(NEW);
-        SET_KEY(BLOCK);
-        SET_KEY(CALL);
-        SET_KEY(RET);
-        SET_KEY(INC);
-        SET_KEY(DEC);
-        SET_KEY(ADD);
-        SET_KEY(SUB);
-        SET_KEY(MUL);
-        SET_KEY(DIV);
-        SET_KEY(MOD);
-        SET_KEY(AND);
-        SET_KEY(OR);
-        SET_KEY(XOR);
-        SET_KEY(CONV);
-        SET_KEY(TYPE);
-        SET_KEY(CHG);
-        SET_KEY(CMP);
-        SET_KEY(SHR);
-        SET_KEY(SHL);
-        SET_KEY(JUMP);
-        SET_KEY(JNZ);
-        SET_KEY(CMD);
-        SET_KEY(STR);
-        SET_KEY(LIST);
-        SET_KEY(DICT);
-        SET_KEY(EXIT);
-#undef SET_KEY
+        //TODO
+//#define SET_KEY(k) ids.emplace(#k, CODE_##k);
+//        SET_KEY(NOP);
+//        SET_KEY(TRAP);
+//        SET_KEY(SETS);
+//        SET_KEY(SETI);
+//        SET_KEY(SETL);
+//        SET_KEY(MOVE);
+//        SET_KEY(CLEAR);
+//        SET_KEY(LOAD);
+//        SET_KEY(STORE);
+//        SET_KEY(GLOBAL);
+//        SET_KEY(NEW);
+//        SET_KEY(BLOCK);
+//        SET_KEY(CALL);
+//        SET_KEY(RET);
+//        SET_KEY(INC);
+//        SET_KEY(DEC);
+//        SET_KEY(ADD);
+//        SET_KEY(SUB);
+//        SET_KEY(MUL);
+//        SET_KEY(DIV);
+//        SET_KEY(MOD);
+//        SET_KEY(AND);
+//        SET_KEY(OR);
+//        SET_KEY(XOR);
+//        SET_KEY(CONV);
+//        SET_KEY(TYPE);
+//        SET_KEY(CHG);
+//        SET_KEY(CMP);
+//        SET_KEY(SHR);
+//        SET_KEY(SHL);
+//        SET_KEY(JUMP);
+//        SET_KEY(JNZ);
+//        SET_KEY(CMD);
+//        SET_KEY(STR);
+//        SET_KEY(LIST);
+//        SET_KEY(DICT);
+//        SET_KEY(EXIT);
+//#undef SET_KEY
     }
     return true;
 }
@@ -129,78 +130,79 @@ bool parser::pass::scan(void)
 
         memset(&inst, 0, sizeof(inst));
 
-        inst.code.ex = ex;
-        inst.code.reg = reg;
-        auto it = src.ids.find(id.s);
-        if (it != src.ids.end())
-        {
-            inst.code.id = it->second;
+        //TODO
+        //inst.code.ex = ex;
+        //inst.code.reg = reg;
+        //auto it = src.ids.find(id.s);
+        //if (it != src.ids.end())
+        //{
+        //    inst.code.id = it->second;
 
-            switch (inst.code.id)
-            {
-            case CODE_SETS:
-                {
-                    int v = 0;
-                    sscanf(data, "%d", &v);
-                    *(int16_t*)(&inst.code + 1) = v;
-                }
-                break;
-            case CODE_SETI:
-                sscanf(data, "%d", (int32_t*)(&inst.code + 1));
-                break;
-            case CODE_SETL:
-                inst.code.id = CODE_SETL;
-                sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
-                break;
-            case CODE_EXIT:
-                break;
-            default:
-                if (inst.code.id >= 128)
-                {
-                    int argv[4] = {0};
-                    sscanf(data, "%d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
-                    union
-                    {
-                        struct
-                        {
-                            uint16_t    a1 : 4;
-                            uint16_t    a2 : 4;
-                            uint16_t    a3 : 4;
-                            uint16_t    a4 : 4;
-                        };
-                        uint16_t        v;
-                    }   args = {argv[0], argv[1], argv[2], argv[3]};
-                    *(int16_t*)(&inst.code + 1) = args.v;
-                }
-                break;
-            }
-        }
-        else
-        {
-            switch (id.v)
-            {
-            case 0x44544553:    //SETD
-                inst.code.id = CODE_SETL;
-                sscanf(data, "%lf", (double*)(&inst.code + 1));
-                break;
-            case 0x43544553:    //SETC
-                if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
-                {
-                    LOGE("--- setc ERROR : %s", buf);
-                    return false;
-                }
-                break;
-            default:
-                LOGE("--- 0x%llx : %s - %d", (unsigned long long)id.v, id.s, (int)buf[0]);
-                continue;
-            }
-        }
+        //    switch (inst.code.id)
+        //    {
+        //    case CODE_SETS:
+        //        {
+        //            int v = 0;
+        //            sscanf(data, "%d", &v);
+        //            *(int16_t*)(&inst.code + 1) = v;
+        //        }
+        //        break;
+        //    case CODE_SETI:
+        //        sscanf(data, "%d", (int32_t*)(&inst.code + 1));
+        //        break;
+        //    case CODE_SETL:
+        //        inst.code.id = CODE_SETL;
+        //        sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
+        //        break;
+        //    case CODE_EXIT:
+        //        break;
+        //    default:
+        //        if (inst.code.id >= 128)
+        //        {
+        //            int argv[4] = {0};
+        //            sscanf(data, "%d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
+        //            union
+        //            {
+        //                struct
+        //                {
+        //                    uint16_t    a1 : 4;
+        //                    uint16_t    a2 : 4;
+        //                    uint16_t    a3 : 4;
+        //                    uint16_t    a4 : 4;
+        //                };
+        //                uint16_t        v;
+        //            }   args = {argv[0], argv[1], argv[2], argv[3]};
+        //            *(int16_t*)(&inst.code + 1) = args.v;
+        //        }
+        //        break;
+        //    }
+        //}
+        //else
+        //{
+        //    switch (id.v)
+        //    {
+        //    case 0x44544553:    //SETD
+        //        inst.code.id = CODE_SETL;
+        //        sscanf(data, "%lf", (double*)(&inst.code + 1));
+        //        break;
+        //    case 0x43544553:    //SETC
+        //        if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
+        //        {
+        //            LOGE("--- setc ERROR : %s", buf);
+        //            return false;
+        //        }
+        //        break;
+        //    default:
+        //        LOGE("--- 0x%llx : %s - %d", (unsigned long long)id.v, id.s, (int)buf[0]);
+        //        continue;
+        //    }
+        //}
 
-        if (line(&inst.code, sizeof(inst), buf) == false)
-        {
-            LOGE("--- scan ERROR : %s", buf);
-            return false;
-        }
+        //if (line(&inst.code, sizeof(inst), buf) == false)
+        //{
+        //    LOGE("--- scan ERROR : %s", buf);
+        //    return false;
+        //}
     };
 
     after();

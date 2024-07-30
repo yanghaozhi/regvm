@@ -61,10 +61,10 @@ public:
 
     inline void acquire(void)                   {++ref;};
 
-    virtual bool set_val(const regv& r);
-    virtual bool set_reg(const regv* r) const;
-    virtual int type(void) const;
-    virtual void release();
+    virtual bool set_val(const regv& r)         {return false;};
+    virtual bool set_reg(const regv* r) const   {return false;};
+    virtual int type(void) const                {return 0;};
+    virtual void release()                      {};
 };
 
 struct regv

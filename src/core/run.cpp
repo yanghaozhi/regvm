@@ -43,18 +43,18 @@ int regvm_code_len(code_t code)
 }   //extern C
 
 
-int vm_CODE_NOP(regvm* vm, code_t code, int offset)
+int vm_CODE_NOP(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 1;
 }
 
-int vm_CODE_TRAP(regvm* vm, code_t code, int offset)
+int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra)
 {
     //*next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
     return 1;
 }
 
-int vm_CODE_CLEAR(regvm* vm, code_t code, int offset)
+int vm_CODE_CLEAR(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
     const int ex = code.b;
@@ -78,32 +78,32 @@ int vm_CODE_CLEAR(regvm* vm, code_t code, int offset)
     return 1;
 }
 
-int vm_CODE_LOAD(regvm* vm, code_t code, int offset)
+int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 0;
 }
 
-int vm_CODE_STORE(regvm* vm, code_t code, int offset)
+int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 0;
 }
 
-int vm_CODE_GLOBAL(regvm* vm, code_t code, int offset)
+int vm_CODE_GLOBAL(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 0;
 }
 
-int vm_CODE_NEW(regvm* vm, code_t code, int offset)
+int vm_CODE_NEW(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 0;
 }
 
-int vm_CODE_BLOCK(regvm* vm, code_t code, int offset)
+int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra)
 {
     return 0;
 }
 
-int vm_CODE_CONV(regvm* vm, code_t code, int offset)
+int vm_CODE_CONV(regvm* vm, code_t code, int offset, const void* extra)
 {
     const auto& src = vm->reg.id(code.b);
     auto& res = vm->reg.id(code.a);
@@ -195,7 +195,7 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
     return 1;
 }
 
-int vm_CODE_CALL(regvm* vm, code_t code, int offset)
+int vm_CODE_CALL(regvm* vm, code_t code, int offset, const void* extra)
 {
     //auto& r = vm->reg.id(reg);
     //if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
@@ -206,6 +206,11 @@ int vm_CODE_CALL(regvm* vm, code_t code, int offset)
     //{
     //    return 1;
     //}
+    return 1;
+}
+
+int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra)
+{
     return 1;
 }
 

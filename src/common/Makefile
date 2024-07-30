@@ -3,12 +3,12 @@ OBJS += $(patsubst %.cpp, %.o, $(SRCS))
 LIBS += $(patsubst ./%.cpp, lib%.a, $(shell find -iname '*.cpp' | grep -v main))
 
 ROOT=$(CURDIR)/../../
-NAME=vasm
+NAME=common
 OUT=$(ROOT)/out
 
 EXT=mem
 
-DEPS=$(OUT)/libcore.a $(OUT)/lib$(EXT).a $(OUT)/libcommon.a
+DEPS= 
 
 all: $(NAME)
 
@@ -16,10 +16,8 @@ tt:
 	@echo $(SRCS)
 	@echo $(LIBS)
 	@echo $(OBJS)
-	@echo $(LDFLAGS)
 
-
-INC=-I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/core -I$(ROOT)/src/$(EXT)
+INC=-I./ -I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/$(EXT)
 OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=mem -DLOG_LEVEL=10
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
@@ -30,9 +28,7 @@ CXX=g++
 #CC=clang
 #CXX=clang++
 
-
 cov: CXXFLAGS=-std=c++17 $(OPTS) $(INC) $(GCOV)
-cov: LDFLAGS=-lgcov
 
 cov:$(NAME)
 
@@ -42,16 +38,12 @@ clean:
 lib:$(LIBS)
 
 $(OBJS) : %.o : %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $*.o -MMD $<
+	$(CXX) $(CXXFLAGS) -c -MMD $<
 
 
-$(NAME):$(OBJS) $(DEPS)
-	echo $(LDFLAGS)
-	echo $(CXXDFLAGS)
+$(NAME):$(OBJS)
 	mkdir -p $(OUT)
-	ar rcs $(OUT)/lib$(NAME).a  $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(OUT)/$(NAME) $(OBJS) $(DEPS) -lfmt $(LDFLAGS)
-	ln -sf $(OUT)/$(NAME) $(NAME)
+	ar rcs $(OUT)/lib$(NAME).a  $(OBJS) $(DEPS)
 
 
 -include *.d
