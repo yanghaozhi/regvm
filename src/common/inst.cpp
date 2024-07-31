@@ -62,24 +62,27 @@ instv<CODE_SET>::instv(const char* n, int r, double v) : inst(CODE_SET, n)
 
 bool instv<CODE_SET>::scan(const char* s)
 {
-    char buf[1024];
-    if (sscanf(s, "%d %d %1024[^\n]", &reg, &type, buf) != 3) return false;
-    buf[1024 - 1] = '\0';
+    char* e = NULL;
+    const char* p = s;
+    reg = strtol(p, &e, 10);
+    p = e;
+    type = strtol(p, &e, 10);
+    p = e;
 
     bool r = false;
     switch (type)
     {
-#define SCAN_V(k, fmt, t)                       \
-    case k:                                     \
-        r = sscanf(buf, fmt, &ex.t) == 1;       \
-        c = set_datas(ex.t, 1);                 \
+#define SCAN_V(k, f, t)                 \
+    case k:                             \
+        ex.t = f(p, &e, 10);            \
+        c = set_datas(ex.t, 1);         \
         return r;
-        SCAN_V(TYPE_SIGNED, "%ld", sint);
-        SCAN_V(TYPE_UNSIGNED, "%lu", uint);
-        SCAN_V(TYPE_DOUBLE, "%lf", dbl);
+        SCAN_V(TYPE_SIGNED, strtoll, sint);
+        SCAN_V(TYPE_UNSIGNED, strtoull, uint);
+        SCAN_V(TYPE_DOUBLE, strtod, dbl);
 #undef SCAN_V
     case TYPE_STRING:
-        str = buf;
+        str = p;
         c = set_datas((uintptr_t)str.c_str(), 1);
         return true;
     default:

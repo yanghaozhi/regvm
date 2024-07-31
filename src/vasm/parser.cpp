@@ -11,16 +11,19 @@ using namespace vasm;
 
 parser::~parser()
 {
+    for (auto& it : insts)
+    {
+        delete it;
+    }
 }
 
-bool parser::finish()
+bool parser::finish(FILE* fp)
 {
     if (fd >= 0)
     {
-        munmap(data, size);
+        munmap((void*)data, size);
         close(fd);
     }
-    //return scan(comment2, setc2, line2);
     return true;
 }
 
@@ -40,200 +43,145 @@ bool parser::open(char* d, int64_t s)
     size = s;
     if (ids.empty() == true)
     {
-        //TODO
-//#define SET_KEY(k) ids.emplace(#k, CODE_##k);
-//        SET_KEY(NOP);
-//        SET_KEY(TRAP);
-//        SET_KEY(SETS);
-//        SET_KEY(SETI);
-//        SET_KEY(SETL);
-//        SET_KEY(MOVE);
-//        SET_KEY(CLEAR);
-//        SET_KEY(LOAD);
-//        SET_KEY(STORE);
-//        SET_KEY(GLOBAL);
-//        SET_KEY(NEW);
-//        SET_KEY(BLOCK);
-//        SET_KEY(CALL);
-//        SET_KEY(RET);
-//        SET_KEY(INC);
-//        SET_KEY(DEC);
-//        SET_KEY(ADD);
-//        SET_KEY(SUB);
-//        SET_KEY(MUL);
-//        SET_KEY(DIV);
-//        SET_KEY(MOD);
-//        SET_KEY(AND);
-//        SET_KEY(OR);
-//        SET_KEY(XOR);
-//        SET_KEY(CONV);
-//        SET_KEY(TYPE);
-//        SET_KEY(CHG);
-//        SET_KEY(CMP);
-//        SET_KEY(SHR);
-//        SET_KEY(SHL);
-//        SET_KEY(JUMP);
-//        SET_KEY(JNZ);
-//        SET_KEY(CMD);
-//        SET_KEY(STR);
-//        SET_KEY(LIST);
-//        SET_KEY(DICT);
-//        SET_KEY(EXIT);
-//#undef SET_KEY
+#define SET_KEY(k) ids.emplace(#k, new instv<CODE_##k>(#k));
+        SET_KEY(NOP);
+        SET_KEY(DATA);
+        SET_KEY(MOVE);
+        SET_KEY(CHG);
+        SET_KEY(CMP);
+        SET_KEY(TYPE);
+        SET_KEY(INC);
+        SET_KEY(ADD);
+        SET_KEY(SUB);
+        SET_KEY(MUL);
+        SET_KEY(DIV);
+        SET_KEY(MOD);
+        SET_KEY(AND);
+        SET_KEY(OR);
+        SET_KEY(XOR);
+        SET_KEY(SHL);
+        SET_KEY(SHR);
+        SET_KEY(SHIFT);
+        SET_KEY(JUMP);
+        SET_KEY(JEQ);
+        SET_KEY(JNE);
+        SET_KEY(JGT);
+        SET_KEY(JGE);
+        SET_KEY(JLT);
+        SET_KEY(JLE);
+        SET_KEY(TRAP);
+        SET_KEY(SET);
+        SET_KEY(LOAD);
+        SET_KEY(CLEAR);
+        SET_KEY(STORE);
+        SET_KEY(BLOCK);
+        SET_KEY(CONV);
+        SET_KEY(CALL);
+        SET_KEY(RET);
+        SET_KEY(ECHO);
+        SET_KEY(SLEN);
+        SET_KEY(LLEN);
+        SET_KEY(LAT);
+        SET_KEY(LSET);
+        SET_KEY(LPUSH);
+        SET_KEY(LPOP);
+        SET_KEY(LERASE);
+        SET_KEY(DLEN);
+        SET_KEY(DGET);
+        SET_KEY(DSET);
+        SET_KEY(DDEL);
+        SET_KEY(DHAS);
+        SET_KEY(DITEMS);
+        SET_KEY(EXIT);
+#undef SET_KEY
     }
     return true;
 }
 
-bool parser::pass::scan(void)
+bool parser::go()
 {
-    union 
+    const char* e = NULL;
+
+    const char* p = data;
+    while ((p = next_token(p)) != NULL)
     {
-        char        data[10];
-        code_t      code;
-    }               inst;
-
-    union
-    {
-        char        s[8];
-        uint64_t    v;
-    }               id;
-    int             ex;
-    int             reg;
-
-    before();
-
-    char* end = NULL;
-    const char* buf = NULL;
-    char data[1024];
-
-    while ((buf = src.next_line(&end)) != NULL)
-    {
-        cur_line += 1;
-        id.v = 0;
-        switch (buf[0])
+        switch (*p)
         {
         case '#':
-            comment(buf);
+            e = strchr(p, '\n');
+            if (e == NULL) return true;
+            comment(p, e - p);
             continue;
-        case '\0':
         case '\n':
         case '\r':
+            lineno += 1;
+            [[fallthrough]];
+        case '\0':
             continue;
         default:
             break;
         }
 
-        data[0] = '\0';
+        e = strchr(p, ' ');
+        if (e == NULL)
+        {
+            return true;
+        }
 
-        sscanf(buf, "%7s %d %d %1024[^\n]", id.s, &reg, &ex, data);
-        data[sizeof(data) - 1] = '\0';
+        std::string_view k(p, e - p);
+        auto it = ids.find(k);
+        if (it == ids.end())
+        {
+            LOGE("%d : find INVALID inst : %s !!!", lineno, std::string(k).c_str());
+            return false;
+        }
 
-        memset(&inst, 0, sizeof(inst));
-
-        //TODO
-        //inst.code.ex = ex;
-        //inst.code.reg = reg;
-        //auto it = src.ids.find(id.s);
-        //if (it != src.ids.end())
-        //{
-        //    inst.code.id = it->second;
-
-        //    switch (inst.code.id)
-        //    {
-        //    case CODE_SETS:
-        //        {
-        //            int v = 0;
-        //            sscanf(data, "%d", &v);
-        //            *(int16_t*)(&inst.code + 1) = v;
-        //        }
-        //        break;
-        //    case CODE_SETI:
-        //        sscanf(data, "%d", (int32_t*)(&inst.code + 1));
-        //        break;
-        //    case CODE_SETL:
-        //        inst.code.id = CODE_SETL;
-        //        sscanf(data, "%ld", (int64_t*)(&inst.code + 1));
-        //        break;
-        //    case CODE_EXIT:
-        //        break;
-        //    default:
-        //        if (inst.code.id >= 128)
-        //        {
-        //            int argv[4] = {0};
-        //            sscanf(data, "%d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
-        //            union
-        //            {
-        //                struct
-        //                {
-        //                    uint16_t    a1 : 4;
-        //                    uint16_t    a2 : 4;
-        //                    uint16_t    a3 : 4;
-        //                    uint16_t    a4 : 4;
-        //                };
-        //                uint16_t        v;
-        //            }   args = {argv[0], argv[1], argv[2], argv[3]};
-        //            *(int16_t*)(&inst.code + 1) = args.v;
-        //        }
-        //        break;
-        //    }
-        //}
-        //else
-        //{
-        //    switch (id.v)
-        //    {
-        //    case 0x44544553:    //SETD
-        //        inst.code.id = CODE_SETL;
-        //        sscanf(data, "%lf", (double*)(&inst.code + 1));
-        //        break;
-        //    case 0x43544553:    //SETC
-        //        if (setc(inst.code, (intptr_t*)(&inst.code + 1), data) == false)
-        //        {
-        //            LOGE("--- setc ERROR : %s", buf);
-        //            return false;
-        //        }
-        //        break;
-        //    default:
-        //        LOGE("--- 0x%llx : %s - %d", (unsigned long long)id.v, id.s, (int)buf[0]);
-        //        continue;
-        //    }
-        //}
-
-        //if (line(&inst.code, sizeof(inst), buf) == false)
-        //{
-        //    LOGE("--- scan ERROR : %s", buf);
-        //    return false;
-        //}
+        if (line(p, it->second) == false)
+        {
+            LOGE("%d : parse line ERROR !!!", lineno);
+            return false;
+        }
     };
-
-    after();
 
     return true;
 }
 
-const char* parser::next_line(char** end) const
+bool parser::line(const char* str, inst* orig)
 {
-    const char k = '\n';
-    char* s = data;
-    if (*end != NULL)
+    insts.emplace_back(orig->copy());
+    if (insts.back()->scan(str) == false)
     {
-        if (*end - data >= size)
-        {
-            return NULL;
-        }
-
-        **end = k;
-        s = *end + 1;
+        LOGE("%d : scan %s ERROR", lineno, insts.back()->name);
+        return false;
     }
-    char* p = strchr(s, k);
-    if (p == NULL)
-    {
-        *end = data + size;
-        return s;
-    }
-    else
-    {
-        *p = k;
-        *end = p;
-        return s;
-    }
+    return true;
 }
+
+bool parser::comment(const char* line, int size)
+{
+    return true;
+}
+
+const char* parser::next_token(const char* src) const
+{
+    if (src == NULL) return NULL;
+
+    const char* p = src;
+    do
+    {
+        switch (*p)
+        {
+        case ' ':
+        case '\t':
+            continue;
+        case '\n':
+            return p;
+        case 0:
+            return NULL;
+        default:
+            return p;
+        }
+    } while (*p++ != '\0');
+    return NULL;
+}
+

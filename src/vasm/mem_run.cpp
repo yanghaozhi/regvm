@@ -60,28 +60,28 @@ bool mem_2_run::finish()
     return r;
 }
 
-mem_2_run::pass1::pass1(mem_2_run& o) : strs::pass1(o), data(o)
-{
-}
-
-int mem_2_run::pass1::write_code(const code_t* code, int bytes)
-{
-    data.code_bytes += bytes;
-    return bytes;
-}
-
-mem_2_run::pass2::pass2(mem_2_run& o) : strs::pass2(o), data(o)
-{
-    data.buf = malloc(data.code_bytes);
-    cur = data.codes;
-}
-
-int mem_2_run::pass2::write_code(const code_t* code, int bytes)
-{
-    memcpy(cur, code, bytes);
-    cur += (bytes >> 1);
-    return bytes;
-}
+//mem_2_run::pass1::pass1(mem_2_run& o) : strs::pass1(o), data(o)
+//{
+//}
+//
+//int mem_2_run::pass1::write_code(const code_t* code, int bytes)
+//{
+//    data.code_bytes += bytes;
+//    return bytes;
+//}
+//
+//mem_2_run::pass2::pass2(mem_2_run& o) : strs::pass2(o), data(o)
+//{
+//    data.buf = malloc(data.code_bytes);
+//    cur = data.codes;
+//}
+//
+//int mem_2_run::pass2::write_code(const code_t* code, int bytes)
+//{
+//    memcpy(cur, code, bytes);
+//    cur += (bytes >> 1);
+//    return bytes;
+//}
 
 //bool mem_2_run::debug_reg(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
 //{

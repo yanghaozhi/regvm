@@ -7,26 +7,26 @@
 namespace vasm
 {
 
-class strs : public labels
+class strs //: public labels
 {
 public:
-    struct pass1 : public labels::pass1
-    {
-        pass1(strs& o) : labels::pass1(o)   {};
-        virtual bool setc(code_t& code, intptr_t* next, const char* str);
-    };
+    //struct pass1 : public labels::pass1
+    //{
+    //    pass1(strs& o) : labels::pass1(o)   {};
+    //    virtual bool setc(code_t& code, intptr_t* next, const char* str);
+    //};
 
-    struct pass2 : public labels::pass2
-    {
-        pass2(strs& o);
+    //struct pass2 : public labels::pass2
+    //{
+    //    pass2(strs& o);
 
-        virtual int write_code(const code_t* code, int bytes)     = 0;
+    //    virtual int write_code(const code_t* code, int bytes)     = 0;
 
-        virtual bool setc(code_t& code, intptr_t* next, const char* str);
+    //    virtual bool setc(code_t& code, intptr_t* next, const char* str);
 
-    private:
-        strs& data;
-    };
+    //private:
+    //    strs& data;
+    //};
 
 
 protected:

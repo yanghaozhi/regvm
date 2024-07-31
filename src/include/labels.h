@@ -10,31 +10,24 @@
 template <typename T> class labels
 {
 public:
-    labels(std::deque<inst*>& i) : insts(i)  {}
+    labels()  {}
 
-    void set_jump(const T& label, const char* name, int code)
+    void set_jump(const T& label, inst* code, int pos)
     {
-        insts.emplace_back(new instv<code>(n));
-        js.emplace_back(jump{insts.back(), label, (int)insts.size() + 1, -1});
-    }
-    void set_jump(const T& label, const char* name, int code, int a, int b)
-    {
-        insts.emplace_back(new instv<code>(n, a, b));
-        js.emplace_back(jump{insts.back(), label, (int)insts.size() + 1, -1});
+        js.emplace_back(jump{code, label, pos + 1, -1});
     }
 
-    void set_label(const T& label)
+    void set_label(const T& label, int pos)
     {
-        int64_t cur = insts.size();
-        if (cur < label_min)
+        if (pos < label_min)
         {
-            label_min = cur;
+            label_min = pos;
         }
-        if (cur > label_max)
+        if (pos > label_max)
         {
-            label_max = cur;
+            label_max = pos;
         }
-        ls.emplace(label, cur);
+        ls.emplace(label, pos);
     }
     bool finish()
     {
@@ -82,21 +75,20 @@ private:
     int64_t     label_min = 0xFFFFFFFFFF;
     int64_t     label_max = -1;
 
-    std::deque<inst*>&  insts;
     std::vector<jump>   js;
     std::map<T, int>    ls;
 
     int calc_bytes(int begin, int end)
     {
         int r = 0;
-        auto b = insts.begin() + begin;
-        auto e = insts.begin() + end;
-        for (auto& p = b; p != e; ++p)
-        {
-            LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
-            r += p->bytes;
-        }
-        LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
+        //auto b = insts.begin() + begin;
+        //auto e = insts.begin() + end;
+        //for (auto& p = b; p != e; ++p)
+        //{
+        //    LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
+        //    r += p->bytes;
+        //}
+        //LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
         return r;
     }
 };
