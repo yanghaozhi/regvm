@@ -63,7 +63,7 @@ options:
 
 int main(int argc, char** argv)
 {
-    std::vector<inst>   insts;
+    std::vector<inst*>   insts;
     INST(ADD, 10, 11, 12);
     INST(JUMP, 2000);
     //if (argc == 1)
