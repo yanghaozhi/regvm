@@ -14,7 +14,7 @@ namespace vasm
 class mem_run : public parser
 {
 public:
-    mem_run(const char*);
+    mem_run();
     virtual ~mem_run();
 
     //void set_dbg(debugger* d);

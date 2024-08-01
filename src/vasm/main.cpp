@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "log.h"
 #include "mem_run.h"
@@ -9,53 +12,13 @@
 
 using namespace vasm;
 
-struct OP
-{
-    virtual ~OP()   {}
-    virtual bool go(const char* name)   = 0;
-};
-
-
-template <typename T> struct TOP : public OP
-{
-    TOP(const char* opt = NULL) : op(opt)  {}
-
-    T   op;
-
-    virtual bool go(const char* name)
-    {
-        if (op.open(name) == false)
-        {
-            return false;
-        }
-
-        typename T::pass1 s1(op);
-        if (s1.scan() == false)
-        {
-            return false;
-        }
-
-        typename T::pass2 s2(op);
-        if (s2.scan() == false)
-        {
-            return false;
-        }
-
-        if (op.finish() == false)
-        {
-            return false;
-        }
-
-        return true;
-    }
-};
 
 const char* HELP = R"(tester for regvm
 USAGE tester [file] [-r] [-v] [-c out]
 options:
     -f {file}       input file
     -r              run code file
-    -s              run code file line by line
+    -s              show run code
     -b              run binrary code file
     -c {out}        compile to binary code
     -v              verbose mode
@@ -63,55 +26,72 @@ options:
 
 int main(int argc, char** argv)
 {
-    std::vector<inst*>   insts;
-    INST(ADD, 10, 11, 12);
-    INST(JUMP, 2000);
-    //if (argc == 1)
-    //{
-    //    printf("Need input code file\n");
-    //    return 0;
-    //}
+    if (argc == 1)
+    {
+        printf("Need input code file\n");
+        return 0;
+    }
 
-    //const char* file = argv[1];
+    const char* file = argv[1];
 
-    //OP* op = NULL;
-    //const char* opts = "c:rsbhv";
-    //int opt = 0;
-    //while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
-    //{
-    //    switch (opt)
-    //    {
-    //    case 'r':
-    //        {
-    //            auto p = new TOP<mem_2_run>();
-    //            //p->op.set_dbg(new vasm::debugger());
-    //            op = p;
-    //        }
-    //        break;
-    //    case 's':
-    //        //o = new step();
-    //        break;
-    //    case 'c':
-    //        op = new TOP<bin_file>(optarg);
-    //        //o = new compile_2_file(optarg);
-    //        break;
-    //    case 'b':
-    //        op = new TOP<bin_file>(file);
-    //        //o = new bin();
-    //        break;
-    //    case 'v':
-    //        break;
-    //    case 'h':
-    //        printf("%s\n", HELP);
-    //        return 0;
-    //    }
-    //}
+    parser* obj = NULL;
+    void (inst::*op)(FILE*) const = &inst::print;
+    FILE* fp = stdout;
 
-    //if (op == NULL) return 0;
+    const char* opts = "c:rsbhv";
+    int opt = 0;
+    while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
+    {
+        switch (opt)
+        {
+        case 'r':
+            obj = new mem_run();
+            op = &inst::print_bin;
+            break;
+        case 's':
+            obj = new mem_run();
+            op = &inst::print_asm;
+            break;
+        case 'c':
+            //op = new TOP<bin_file>(optarg);
+            //o = new compile_2_file(optarg);
+            break;
+        case 'b':
+            //op = new TOP<bin_file>(file);
+            //o = new bin();
+            break;
+        case 'v':
+            break;
+        case 'h':
+            printf("%s\n", HELP);
+            return 0;
+        }
+    }
 
-    //op->go(file);
+    if (obj == NULL)
+    {
+        LOGW("Does NOT find input file !!!");
+        return 0;
+    }
 
-    //delete op;
+
+    int fd = open(file, O_RDONLY);
+    struct stat st;
+    fstat(fd, &st);
+    auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+    if (obj->go(d) == false)
+    {
+        LOGE("parse file : %s ERROR !!!", file);
+        return 1;
+    }
+
+    munmap((void*)d, st.st_size);
+    close(fd);
+
+    obj->finish(fp, op);
+
+    delete obj;
 
     return 0;
 }

@@ -48,7 +48,7 @@ template <int N> struct instv : public inst
     }
     virtual void print(FILE* fp) const
     {
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%d\n", name, id, a, b, c);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
     }
     virtual void print_bin(FILE* fp) const
     {
@@ -61,7 +61,7 @@ template <int N> struct instv : public inst
     }
     virtual void print_asm(FILE* fp) const
     {
-        fprintf(fp, "%8s\t%d\t%d\t%d\n", name, a, b, c);
+        fprintf(fp, "%-8s %d\t%d\t%d\n", name, a, b, c);
     }
     virtual inst* copy() const
     {

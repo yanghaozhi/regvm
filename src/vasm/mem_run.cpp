@@ -7,7 +7,7 @@
 
 using namespace vasm;
 
-mem_run::mem_run(const char*) : parser()
+mem_run::mem_run() : parser()
 {
 }
 
@@ -34,7 +34,8 @@ bool mem_run::line(const char* str, inst* orig)
     {
     case TYPE_STRING:
         {
-            auto it = strs.emplace(v->ex.str);
+            const char* p = strchr(v->ex.str, '\n');
+            auto it = (p != NULL) ? strs.emplace(std::string(v->ex.str, p - v->ex.str)) : strs.emplace(std::string(v->ex.str));
             return v->change_str(it.first->c_str());
         }
         break;

@@ -16,7 +16,7 @@ bool instv<CODE_JUMP>::scan(const char* str)
 
 void instv<CODE_JUMP>::print(FILE* fp) const
 {
-    fprintf(fp, "%8s\t%02X\t%d\n", name, id, offset);
+    fprintf(fp, "%-8s %02X\t%d\n", name, id, offset);
 }
 
 void instv<CODE_JUMP>::print_bin(FILE* fp) const
@@ -29,7 +29,7 @@ void instv<CODE_JUMP>::print_bin(FILE* fp) const
 
 void instv<CODE_JUMP>::print_asm(FILE* fp) const
 {
-    fprintf(fp, "%8s\t%d\n", name, offset);
+    fprintf(fp, "%-8s %d\n", name, offset);
 }
 
 
@@ -70,14 +70,13 @@ bool instv<CODE_SET>::scan(const char* s)
     type = strtol(p, &e, 10);
     p = e;
 
-    bool r = false;
     switch (type)
     {
 #define SCAN_V(k, t, f, ...)            \
     case k:                             \
         ex.t = f(p, &e, ##__VA_ARGS__); \
         c = set_datas(ex.t, 1);         \
-        return r;
+        return true;
         SCAN_V(TYPE_SIGNED, sint, strtoll, 10);
         SCAN_V(TYPE_UNSIGNED, uint, strtoull, 10);
         SCAN_V(TYPE_DOUBLE, dbl, strtod);
@@ -94,16 +93,16 @@ void instv<CODE_SET>::print(FILE* fp) const
     switch (type)
     {
     case TYPE_SIGNED:
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%ld\n", name, id, reg, type, ex.sint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%ld\n", name, id, reg, type, ex.sint);
         return;
     case TYPE_UNSIGNED:
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
         return;
     case TYPE_DOUBLE:
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
         return;
     case TYPE_STRING:
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
         return;
     default:
         assert(0);
@@ -147,7 +146,7 @@ void instv<CODE_SET>::print_asm(FILE* fp) const
         break;
     }
 
-    fprintf(fp, "%8s\t%d\t%d\t%d\n", name, reg, type, c);
+    fprintf(fp, "%-8s %d\t%d\t%d\n", name, reg, type, c);
     for (auto& it : datas)
     {
         fprintf(fp, "DATA    \t%d\n", it);
@@ -167,6 +166,8 @@ inst::inst(int i, const char* n) : id(i), name(n)
 
 int instex::set_datas(uint64_t v, int header)
 {
+    datas.clear();
+
     int h = 0;
     switch (header)
     {

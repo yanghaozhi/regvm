@@ -34,21 +34,21 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #define CALC(i, op)                                                         \
     case CODE_##i:                                                          \
         {                                                                   \
-            const auto& a = vm->reg.id(inst.a);                             \
+            auto& r = vm->reg.id(inst.a);                                   \
             const auto& b = vm->reg.id(inst.b);                             \
-            auto& r = vm->reg.id(inst.c);                                   \
-            int t = (a.type > b.type) ? a.type : b.type;                    \
+            const auto& c = vm->reg.id(inst.c);                             \
+            int t = (b.type > c.type) ? b.type : c.type;                    \
             vm_conv_impl(vm, r, t);                                         \
             switch (t)                                                      \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)a op (int64_t)b;                    \
+                r.value.sint = (int64_t)b op (int64_t)c;                    \
                 break;                                                      \
             case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
                 break;                                                      \
             case TYPE_DOUBLE:                                               \
-                r.value.dbl = (double)a op (double)b;                       \
+                r.value.dbl = (double)b op (double)c;                       \
                 break;                                                      \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, t, inst, offset);                        \
@@ -65,13 +65,13 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #define ONLY_UNSIGNED(i, op)                                                \
     case CODE_##i:                                                          \
         {                                                                   \
-            const auto& a = vm->reg.id(inst.a);                             \
+            auto& r = vm->reg.id(inst.a);                                   \
             const auto& b = vm->reg.id(inst.b);                             \
-            auto& r = vm->reg.id(inst.c);                                   \
+            const auto& c = vm->reg.id(inst.c);                             \
             vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
-            if ((a.type == TYPE_UNSIGNED) && (b.type == TYPE_UNSIGNED))     \
+            if ((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED))     \
             {                                                               \
-                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
             }                                                               \
             else                                                            \
             {                                                               \
@@ -87,17 +87,17 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #define ONLY_INTEGER(i, op)                                                 \
     case CODE_##i:                                                          \
         {                                                                   \
-            const auto& a = vm->reg.id(inst.a);                             \
+            auto& r = vm->reg.id(inst.a);                                   \
             const auto& b = vm->reg.id(inst.b);                             \
-            auto& r = vm->reg.id(inst.c);                                   \
-            vm_conv_impl(vm, r, a.type);                                    \
+            const auto& c = vm->reg.id(inst.c);                             \
+            vm_conv_impl(vm, r, b.type);                                    \
             switch (r.type)                                                 \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)a op (int64_t)b;                    \
+                r.value.sint = (int64_t)b op (int64_t)c;                    \
                 break;                                                      \
             case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)a op (uint64_t)b;                  \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
                 break;                                                      \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
@@ -113,17 +113,17 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #define B_LITERALLY(i, op)                                                  \
     case CODE_##i:                                                          \
         {                                                                   \
-            const auto& a = vm->reg.id(inst.a);                             \
-            const int b = inst.bs;                                          \
-            auto& r = vm->reg.id(inst.c);                                   \
-            vm_conv_impl(vm, r, a.type);                                    \
+            auto& r = vm->reg.id(inst.b);                                   \
+            const auto& b = vm->reg.id(inst.b);                             \
+            const int c = inst.cs;                                          \
+            vm_conv_impl(vm, r, b.type);                                    \
             switch (r.type)                                                 \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)a op b;                             \
+                r.value.sint = (int64_t)b op c;                             \
                 break;                                                      \
             case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)a op b;                            \
+                r.value.uint = (uint64_t)b op c;                            \
                 break;                                                      \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \

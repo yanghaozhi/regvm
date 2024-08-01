@@ -25,19 +25,16 @@ class parser
 public:
     std::string     file;
 
+    parser();
     virtual ~parser();
-
-    virtual bool open(char* data, int64_t size);
-    //virtual bool open(const char* name);
 
     virtual bool go(const char* src);
 
-    //virtual bool finish(FILE* fp);
+    virtual bool finish(FILE* fp, void (inst::*op)(FILE*) const);
 
     int             lineno  = 0;
 
 protected:
-    std::unordered_map<std::string_view, inst*> ids;
     std::deque<inst*>                           insts;
     labels<std::string_view>                    label;
 
