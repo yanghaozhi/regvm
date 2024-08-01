@@ -28,11 +28,11 @@ public:
     virtual ~parser();
 
     virtual bool open(char* data, int64_t size);
-    virtual bool open(const char* name);
+    //virtual bool open(const char* name);
 
-    virtual bool go();
+    virtual bool go(const char* src);
 
-    virtual bool finish(FILE* fp);
+    //virtual bool finish(FILE* fp);
 
     int             lineno  = 0;
 
@@ -46,7 +46,6 @@ protected:
 
 private:
     int             fd      = -1;
-    const char*     data    = NULL;
     int64_t         size    = -1;
 
     const char* next_token(const char* str) const;

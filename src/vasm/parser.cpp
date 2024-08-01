@@ -17,29 +17,28 @@ parser::~parser()
     }
 }
 
-bool parser::finish(FILE* fp)
-{
-    if (fd >= 0)
-    {
-        munmap((void*)data, size);
-        close(fd);
-    }
-    return true;
-}
-
-bool parser::open(const char* name)
-{
-    file = name;
-    int fd = ::open(name, O_RDONLY);
-    struct stat st;
-    fstat(fd, &st);
-    auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    return open(d, st.st_size);
-}
+//bool parser::finish(FILE* fp)
+//{
+//    if (fd >= 0)
+//    {
+//        munmap((void*)data, size);
+//        close(fd);
+//    }
+//    return true;
+//}
+//
+//bool parser::open(const char* name)
+//{
+//    file = name;
+//    int fd = ::open(name, O_RDONLY);
+//    struct stat st;
+//    fstat(fd, &st);
+//    auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+//    return open(d, st.st_size);
+//}
 
 bool parser::open(char* d, int64_t s)
 {
-    data = d;
     size = s;
     if (ids.empty() == true)
     {
@@ -98,11 +97,11 @@ bool parser::open(char* d, int64_t s)
     return true;
 }
 
-bool parser::go()
+bool parser::go(const char* src)
 {
     const char* e = NULL;
 
-    const char* p = data;
+    const char* p = src;
     while ((p = next_token(p)) != NULL)
     {
         switch (*p)

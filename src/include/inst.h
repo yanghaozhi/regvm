@@ -76,10 +76,9 @@ template <> struct instv<CODE_SET> : public inst, public instex
     int             type;
     int             c;
     core::uvalue    ex;
-    std::string     str;
 
     instv(const char* n) : inst(CODE_SET, n)   {}
-    instv(const char* n, int r, const std::string_view& v);
+    instv(const char* n, int r, const char* v);
     instv(const char* n, int r, uint64_t v);
     instv(const char* n, int r, int64_t v);
     instv(const char* n, int r, double v);
@@ -90,6 +89,7 @@ template <> struct instv<CODE_SET> : public inst, public instex
     virtual void print_bin(FILE* fp) const;
     virtual void print_asm(FILE* fp) const;
     virtual inst* copy() const          { return new instv<CODE_SET>(name); }
+    bool change_str(const char* n);
 };
 template struct instv<CODE_SET>;
 

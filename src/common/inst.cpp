@@ -14,12 +14,12 @@ bool instv<CODE_JUMP>::scan(const char* str)
     return sscanf(str, "%d", &offset);
 }
 
-void instv<CODE_JUMP>::print(FILE* fp)
+void instv<CODE_JUMP>::print(FILE* fp) const
 {
     fprintf(fp, "%8s\t%02X\t%d\n", name, id, offset);
 }
 
-void instv<CODE_JUMP>::print_bin(FILE* fp)
+void instv<CODE_JUMP>::print_bin(FILE* fp) const
 {
     code_t code;
     code.id = CODE_JUMP;
@@ -27,16 +27,17 @@ void instv<CODE_JUMP>::print_bin(FILE* fp)
     fwrite(&code, sizeof(code_t), 1, fp);
 }
 
-void instv<CODE_JUMP>::print_asm(FILE* fp)
+void instv<CODE_JUMP>::print_asm(FILE* fp) const
 {
     fprintf(fp, "%8s\t%d\n", name, offset);
 }
 
 
-instv<CODE_SET>::instv(const char* n, int r, const std::string_view& v) : inst(CODE_SET, n)
-    ,reg(r), type(TYPE_STRING), str(v)
+instv<CODE_SET>::instv(const char* n, int r, const char* v) : inst(CODE_SET, n)
+    ,reg(r), type(TYPE_STRING)
 {
-    c = set_datas((uintptr_t)str.c_str(), 1);
+    ex.str = v;
+    c = set_datas((uintptr_t)ex.str, 1);
 }
 
 instv<CODE_SET>::instv(const char* n, int r, uint64_t v) : inst(CODE_SET, n)
@@ -72,25 +73,23 @@ bool instv<CODE_SET>::scan(const char* s)
     bool r = false;
     switch (type)
     {
-#define SCAN_V(k, f, t)                 \
+#define SCAN_V(k, t, f, ...)            \
     case k:                             \
-        ex.t = f(p, &e, 10);            \
+        ex.t = f(p, &e, ##__VA_ARGS__); \
         c = set_datas(ex.t, 1);         \
         return r;
-        SCAN_V(TYPE_SIGNED, strtoll, sint);
-        SCAN_V(TYPE_UNSIGNED, strtoull, uint);
-        SCAN_V(TYPE_DOUBLE, strtod, dbl);
+        SCAN_V(TYPE_SIGNED, sint, strtoll, 10);
+        SCAN_V(TYPE_UNSIGNED, uint, strtoull, 10);
+        SCAN_V(TYPE_DOUBLE, dbl, strtod);
 #undef SCAN_V
     case TYPE_STRING:
-        str = p;
-        c = set_datas((uintptr_t)str.c_str(), 1);
-        return true;
+        return change_str(p);
     default:
         return false;
     }
 }
 
-void instv<CODE_SET>::print(FILE* fp)
+void instv<CODE_SET>::print(FILE* fp) const
 {
     switch (type)
     {
@@ -104,7 +103,7 @@ void instv<CODE_SET>::print(FILE* fp)
         fprintf(fp, "%8s\t%02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
         return;
     case TYPE_STRING:
-        fprintf(fp, "%8s\t%02X\t%d\t%d\t%s\n", name, id, reg, type, str.c_str());
+        fprintf(fp, "%8s\t%02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
         return;
     default:
         assert(0);
@@ -112,7 +111,7 @@ void instv<CODE_SET>::print(FILE* fp)
     }
 }
 
-void instv<CODE_SET>::print_bin(FILE* fp)
+void instv<CODE_SET>::print_bin(FILE* fp) const
 {
     code_t code;
     code.a = reg;
@@ -128,7 +127,7 @@ void instv<CODE_SET>::print_bin(FILE* fp)
     }
 }
 
-void instv<CODE_SET>::print_asm(FILE* fp)
+void instv<CODE_SET>::print_asm(FILE* fp) const
 {
     switch (type)
     {
@@ -142,7 +141,7 @@ void instv<CODE_SET>::print_asm(FILE* fp)
         fprintf(fp, "# %.17g\n", ex.dbl);
         break;
     case TYPE_STRING:
-        fprintf(fp, "# %s\n", str.c_str());
+        fprintf(fp, "# %s\n", ex.str);
         break;
     default:
         break;
@@ -155,6 +154,12 @@ void instv<CODE_SET>::print_asm(FILE* fp)
     }
 }
 
+bool instv<CODE_SET>::change_str(const char* n)
+{
+    ex.str = n;
+    c = set_datas((uintptr_t)ex.str, 1);
+    return true;
+}
 
 inst::inst(int i, const char* n) : id(i), name(n)
 {

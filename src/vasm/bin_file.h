@@ -6,12 +6,10 @@
 #include <regvm.h>
 #include <debug.h>
 
-#include "strids.h"
-
 namespace vasm
 {
 
-class bin_file : public strids
+class bin_file //: public strids
 {
 public:
     bin_file(const char* n) : bin(n)    {};
