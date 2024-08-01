@@ -17,5 +17,15 @@ time python3 ./pi.py
 
 echo
 echo
+echo quickjs
+time qjs ./pi.js
+
+echo
+echo
+echo node.js
+time node ./pi.js
+
+echo
+echo
 echo vasm
 time ../out/vasm ./pi.vasm -r
