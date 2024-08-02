@@ -2,7 +2,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+//#include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -10,7 +10,7 @@
 #include <debug.h>
 #include <irq.h>
 
-#include <regvm_ext.h>
+//#include <regvm_ext.h>
 
 
 using namespace vasm;

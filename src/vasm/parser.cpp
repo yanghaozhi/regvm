@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+//#include <sys/mman.h>
 
 #include <code.h>
 
@@ -14,7 +14,7 @@ struct IDS
     IDS();
     ~IDS();
 
-    std::unordered_map<std::string_view, inst*> insts;
+    std::unordered_map<std::string_view, inst* (*)(const char*)> insts;
 };
 static IDS  ids;
 
@@ -79,7 +79,7 @@ bool parser::go(const char* src)
             return false;
         }
 
-        if (line(next_token(e), it->second) == false)
+        if (line(next_token(e), it->second(it->first.data())) == false)
         {
             LOGE("%d : parse line ERROR !!!", lineno);
             return false;
@@ -91,12 +91,12 @@ bool parser::go(const char* src)
     return true;
 }
 
-bool parser::line(const char* str, inst* orig)
+bool parser::line(const char* str, inst* code)
 {
-    insts.emplace_back(orig->copy());
-    if (insts.back()->scan(str) == false)
+    insts.emplace_back(code);
+    if (code->scan(str) == false)
     {
-        LOGE("%d : scan %s ERROR", lineno, insts.back()->name);
+        LOGE("%d : scan %s ERROR", lineno, code->name);
         return false;
     }
     return true;
@@ -132,7 +132,7 @@ const char* parser::next_token(const char* src) const
 
 IDS::IDS()
 {
-#define SET_KEY(k) insts.emplace(#k, new instv<CODE_##k>(#k));
+#define SET_KEY(k) insts.emplace(#k, &create_inst<CODE_##k>);
     SET_KEY(NOP);
     SET_KEY(DATA);
     SET_KEY(MOVE);
@@ -187,8 +187,4 @@ IDS::IDS()
 
 IDS::~IDS()
 {
-    for (auto& it : insts)
-    {
-        delete it.second;
-    }
 }

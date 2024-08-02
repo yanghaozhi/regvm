@@ -21,15 +21,15 @@ bool mem_run::comment(const char* line, int size)
     return true;
 }
 
-bool mem_run::line(const char* str, inst* orig)
+bool mem_run::line(const char* str, inst* code)
 {
-    auto r = parser::line(str, orig);
-    if (orig->id != CODE_SET)
+    auto r = parser::line(str, code);
+    if (code->id != CODE_SET)
     {
         return r;
     }
 
-    auto v = static_cast<instv<CODE_SET>*>(insts.back());
+    auto v = static_cast<instv<CODE_SET>*>(code);
     switch (v->type)
     {
     case TYPE_STRING:

@@ -9,6 +9,67 @@
 #include <limits>
 
 
+static void data_print(FILE* fp, int v)
+{
+    fprintf(fp, "DATA    \t0x%06X\n", v);
+}
+
+static void data_print_bin(FILE* fp, int v)
+{
+    code_t code;
+    code.id = CODE_DATA;
+    code.a3 = v;
+    fwrite(&code, sizeof(code_t), 1, fp);
+}
+
+bool instj::scan(const char* str)
+{
+    return sscanf(str, "%d %d %d", &a, &b, &offset) == 3;
+}
+
+int instj::count(void) const
+{
+    return ((-127 <= offset) && (offset <= 127)) ? 1 : 2;
+}
+
+void instj::print(FILE* fp) const
+{
+    if ((-127 <= offset) && (offset <= 127))
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, offset);
+    }
+    else
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\t0\n", name, id, a, b);
+        data_print(fp, offset);
+    }
+}
+
+void instj::print_bin(FILE* fp) const
+{
+    code_t code;
+    code.id = id;
+    code.a = a;
+    code.b = b;
+    if ((-127 <= offset) && (offset <= 127))
+    {
+        code.c = offset;
+        fwrite(&code, sizeof(code_t), 1, fp);
+    }
+    else
+    {
+        code.c = 0;
+        fwrite(&code, sizeof(code_t), 1, fp);
+        data_print_bin(fp, offset);
+    }
+}
+
+void instj::print_asm(FILE* fp) const
+{
+    fprintf(fp, "%-8s %d\t%d\t%d\n", name, a, b, offset);
+}
+
+
 bool instv<CODE_JUMP>::scan(const char* str)
 {
     return sscanf(str, "%d", &offset);
@@ -93,20 +154,29 @@ void instv<CODE_SET>::print(FILE* fp) const
     switch (type)
     {
     case TYPE_SIGNED:
+        fprintf(fp, "# %lld\n", (long long)ex.sint);
         fprintf(fp, "%-8s %02X\t%d\t%d\t%ld\n", name, id, reg, type, ex.sint);
-        return;
-    case TYPE_UNSIGNED:
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
-        return;
-    case TYPE_DOUBLE:
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
-        return;
-    case TYPE_STRING:
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
-        return;
-    default:
-        assert(0);
         break;
+    case TYPE_UNSIGNED:
+        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        break;
+    case TYPE_DOUBLE:
+        fprintf(fp, "# %.17g\n", ex.dbl);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
+        break;
+    case TYPE_STRING:
+        fprintf(fp, "# %s\n", ex.str);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
+        break;
+    default:
+        break;
+    }
+
+    fprintf(fp, "%-8s %d\t%d\t%d\n", name, reg, type, c);
+    for (auto& it : datas)
+    {
+        data_print(fp, it);
     }
 }
 
@@ -120,9 +190,7 @@ void instv<CODE_SET>::print_bin(FILE* fp) const
 
     for (auto& it : datas)
     {
-        code.id = CODE_DATA;
-        code.a3 = it;
-        fwrite(&code, sizeof(code_t), 1, fp);
+        data_print_bin(fp, it);
     }
 }
 
@@ -131,25 +199,20 @@ void instv<CODE_SET>::print_asm(FILE* fp) const
     switch (type)
     {
     case TYPE_SIGNED:
-        fprintf(fp, "# %lld\n", (long long)ex.sint);
-        break;
+        fprintf(fp, "%-8s %d\t%d\t%ld\n", name, reg, type, ex.sint);
+        return;
     case TYPE_UNSIGNED:
-        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        break;
+        fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
+        return;
     case TYPE_DOUBLE:
-        fprintf(fp, "# %.17g\n", ex.dbl);
-        break;
+        fprintf(fp, "%-8s %d\t%d\t%f\n", name, reg, type, ex.dbl);
+        return;
     case TYPE_STRING:
-        fprintf(fp, "# %s\n", ex.str);
-        break;
+        fprintf(fp, "%-8s %d\t%d\t%s\n", name, reg, type, ex.str);
+        return;
     default:
+        assert(0);
         break;
-    }
-
-    fprintf(fp, "%-8s %d\t%d\t%d\n", name, reg, type, c);
-    for (auto& it : datas)
-    {
-        fprintf(fp, "DATA    \t%d\n", it);
     }
 }
 

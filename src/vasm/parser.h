@@ -39,7 +39,7 @@ protected:
     labels<std::string_view>                    label;
 
     virtual bool comment(const char* line, int size);
-    virtual bool line(const char* str, inst* orig);
+    virtual bool line(const char* str, inst* code);
 
 private:
     int             fd      = -1;
