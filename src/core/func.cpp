@@ -17,6 +17,7 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
+inline bool vm_jump_dest(int c, const void* extra, int& next);
 
 
 inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
@@ -27,7 +28,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 
     int code = inst.id;
 
-    LOGT("%d : code %8s - 0x%02X - 0x%02X", offset, CODE_NAME(code), code, inst.value);
+    LOGT("%4d : code %8s - 0x%02X - 0x%08X", offset, CODE_NAME(code), code, inst.value);
 
     switch (code)
     {
@@ -141,16 +142,16 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         {                                                                   \
             const auto& a = vm->reg.id(inst.a);                             \
             const auto& b = vm->reg.id(inst.b);                             \
-            const auto& dest = vm->reg.id(inst.c);                          \
+            int dest = vm_jump_dest(inst.cs, extra, next);                  \
             int t = (a.type > b.type) ? a.type : b.type;                    \
             switch (t)                                                      \
             {                                                               \
             case TYPE_SIGNED:                                               \
-                return ((int64_t)a cmp (int64_t)b) ? (int64_t)dest : 1;     \
+                return ((int64_t)a cmp (int64_t)b) ? dest : next;           \
             case TYPE_UNSIGNED:                                             \
-                return ((uint64_t)a cmp (uint64_t)b) ? (int64_t)dest : 1;   \
+                return ((uint64_t)a cmp (uint64_t)b) ? dest : next;         \
             case TYPE_DOUBLE:                                               \
-                return ((double)a cmp (double)b) ? (int64_t)dest : 1;       \
+                return ((double)a cmp (double)b) ? dest : next;             \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, t, inst, offset);                        \
                 break;                                                      \
@@ -164,6 +165,9 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         JUMPS(JLT, <);
         JUMPS(JLE, <=);
 #undef JUMPS
+
+    case CODE_JUMP:
+        return inst.a3;
 
 #define WRITE(i, ...)                                                       \
     case CODE_##i:                                                          \
@@ -247,25 +251,40 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
 {
     if (r.type == to) return true;
 
-    switch (to)
+    if (likely(r.type != 0))
     {
-    case TYPE_UNSIGNED:
-        r.value.uint = (uint64_t)r;
-        break;
-    case TYPE_SIGNED:
-        r.value.sint = (int64_t)r;
-        break;
-    case TYPE_DOUBLE:
-        r.value.dbl = (double)r;
-        break;
-    default:
-        return false;
+        switch (to)
+        {
+        case TYPE_UNSIGNED:
+            r.value.uint = (uint64_t)r;
+            break;
+        case TYPE_SIGNED:
+            r.value.sint = (int64_t)r;
+            break;
+        case TYPE_DOUBLE:
+            r.value.dbl = (double)r;
+            break;
+        default:
+            return false;
+        }
     }
 
     r.set_from(NULL);
     r.type = to;
 
     return true;
+}
+
+inline bool vm_jump_dest(int c, const void* extra, int& next)
+{
+    if (likely(c != 0))
+    {
+        return c;
+    }
+
+    code_t* p = (code_t*)extra;
+    next = 2;
+    return p->a3;
 }
 
 bool vm_conv_type(struct regvm* vm, reg::v& r, int to)

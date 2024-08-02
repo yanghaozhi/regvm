@@ -41,14 +41,14 @@ struct regvm
     bool call(int64_t id, code_t code, int offset);
     bool call(core::reg::v& addr, code_t code, int offset);
 
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
-    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))    {return 0;};
+#define CRTP_FUNC(name, ret, val, argc, ...)                                \
+    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))    {return val;};
 
-    CRTP_FUNC(vm_init,  bool, 0);
-    CRTP_FUNC(vm_exit,  bool, 0);
-    CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
-    CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
+    CRTP_FUNC(vm_init,  bool, true, 0);
+    CRTP_FUNC(vm_exit,  bool, true, 0);
+    CRTP_FUNC(vm_call,  bool, true, 3, code_t, int, int64_t);
+    CRTP_FUNC(vm_var,   core::var*, NULL, 1, int);
+    CRTP_FUNC(vm_var,   core::var*, NULL, 2, int, const char*);
 
 #undef CRTP_FUNC
 

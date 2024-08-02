@@ -30,6 +30,16 @@ parser::~parser()
     }
 }
 
+int64_t parser::size(void) const
+{
+    int64_t s = 0;
+    for (auto& it : insts)
+    {
+        s += it->count();
+    }
+    return s * 4;
+}
+
 bool parser::finish(FILE* fp, void (inst::*op)(FILE*) const)
 {
     for (auto& it : insts)
@@ -57,10 +67,10 @@ bool parser::go(const char* src)
         case '\n':
         case '\r':
             lineno += 1;
-            [[fallthrough]];
-        case '\0':
             p += 1;
             continue;
+        case '\0':
+            return true;
         default:
             break;
         }

@@ -30,6 +30,8 @@ public:
 
     virtual bool go(const char* src);
 
+    virtual int64_t size(void) const;
+
     virtual bool finish(FILE* fp, void (inst::*op)(FILE*) const);
 
     int             lineno  = 0;
@@ -42,9 +44,6 @@ protected:
     virtual bool line(const char* str, inst* code);
 
 private:
-    int             fd      = -1;
-    int64_t         size    = -1;
-
     const char* next_token(const char* str) const;
 };
 

@@ -227,6 +227,7 @@ int vm_CODE_SET(regvm* vm, code_t code, int offset, const void* extra)
         v += vv << shift;
         shift += 24;
         next += 1;
+        p += 1;
     }
     auto& r = vm->reg.id(code.a);
     r.write(v, code.b, (code.b != r.type));
@@ -295,7 +296,7 @@ int vm_CODE_ECHO(regvm* vm, code_t code, int offset, const void* extra)
         return __LINE__;
     }
     printf("\n");
-    return 0;
+    return (code.a <= 2) ? 1 : 2;
 }
 
 #if 0

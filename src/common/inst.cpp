@@ -136,7 +136,7 @@ bool instv<CODE_SET>::scan(const char* s)
 #define SCAN_V(k, t, f, ...)            \
     case k:                             \
         ex.t = f(p, &e, ##__VA_ARGS__); \
-        c = set_datas(ex.t, 1);         \
+        c = set_datas(ex.uint, 1);      \
         return true;
         SCAN_V(TYPE_SIGNED, sint, strtoll, 10);
         SCAN_V(TYPE_UNSIGNED, uint, strtoull, 10);

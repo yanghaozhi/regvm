@@ -28,7 +28,7 @@ typedef union
     };
     struct
     {
-        int8_t     id3      : 8;
+        int32_t    id3      : 8;
         int32_t    a3       : 24;
     };
 } code_t;
