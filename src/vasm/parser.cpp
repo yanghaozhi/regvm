@@ -149,7 +149,7 @@ IDS::IDS()
     SET_KEY(CHG);
     SET_KEY(CMP);
     SET_KEY(TYPE);
-    SET_KEY(INC);
+    SET_KEY(CALC);
     SET_KEY(ADD);
     SET_KEY(SUB);
     SET_KEY(MUL);
@@ -160,7 +160,6 @@ IDS::IDS()
     SET_KEY(XOR);
     SET_KEY(SHL);
     SET_KEY(SHR);
-    SET_KEY(SHIFT);
     SET_KEY(JUMP);
     SET_KEY(JEQ);
     SET_KEY(JNE);

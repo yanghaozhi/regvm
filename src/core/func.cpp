@@ -18,6 +18,7 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
 inline bool vm_jump_dest(int c, const void* extra, int& next);
+inline int vm_equivalent(struct regvm* vm, int a, int b, int c);
 
 
 inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
@@ -70,7 +71,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
             const auto& b = vm->reg.id(inst.b);                             \
             const auto& c = vm->reg.id(inst.c);                             \
             vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
-            if ((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED))     \
+            if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
             {                                                               \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
             }                                                               \
@@ -111,32 +112,6 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         ONLY_INTEGER(MOD, %);
 #undef ONLY_INTEGER
 
-#define B_LITERALLY(i, op)                                                  \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.b);                                   \
-            const auto& b = vm->reg.id(inst.b);                             \
-            const int c = inst.cs;                                          \
-            vm_conv_impl(vm, r, b.type);                                    \
-            switch (r.type)                                                 \
-            {                                                               \
-            case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)b op c;                             \
-                break;                                                      \
-            case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)b op c;                            \
-                break;                                                      \
-            default:                                                        \
-                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
-                break;                                                      \
-            }                                                               \
-        }                                                                   \
-        break;
-        B_LITERALLY(INC, +);
-        //B_LITERALLY(SHR, >>);
-        //B_LITERALLY(MOD, %);
-#undef B_LITERALLY
-
 #define JUMPS(i, cmp)                                                       \
     case CODE_##i:                                                          \
         {                                                                   \
@@ -168,6 +143,9 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 
     case CODE_JUMP:
         return inst.a3;
+
+    case CODE_CALC:
+        return vm_equivalent(vm, inst.a, inst.b, inst.c);
 
 #define WRITE(i, ...)                                                       \
     case CODE_##i:                                                          \
@@ -285,6 +263,59 @@ inline bool vm_jump_dest(int c, const void* extra, int& next)
     code_t* p = (code_t*)extra;
     next = 2;
     return p->a3;
+}
+
+inline int vm_equivalent(struct regvm* vm, int a, int b, int c)
+{
+    auto& v = vm->reg.id(a);
+
+#define ALL(k, op)                                                      \
+    case k:                                                             \
+        switch (v.type)                                                 \
+        {                                                               \
+        case TYPE_SIGNED:                                               \
+            v.value.sint op b;                                          \
+            break;                                                      \
+        case TYPE_UNSIGNED:                                             \
+            v.value.uint op b;                                          \
+            break;                                                      \
+        case TYPE_DOUBLE:                                               \
+            v.value.dbl op b;                                           \
+            break;                                                      \
+        default:                                                        \
+            return 0;                                                   \
+        }                                                               \
+        break;
+
+#define INT(k, op)                                                      \
+    case k:                                                             \
+        switch (v.type)                                                 \
+        {                                                               \
+        case TYPE_SIGNED:                                               \
+            v.value.sint op b;                                          \
+            break;                                                      \
+        case TYPE_UNSIGNED:                                             \
+            v.value.uint op b;                                          \
+            break;                                                      \
+        default:                                                        \
+            return 0;                                                   \
+        }                                                               \
+        break;
+    switch (c)
+    {
+        ALL(0, +=);
+        ALL(1, -=);
+        ALL(2, *=);
+        ALL(3, /=);
+        INT(4, %=);
+        INT(5, <<=);
+        INT(6, >>=);
+    default:
+        return 0;
+    }
+#undef INT
+#undef ALL
+    return 1;
 }
 
 bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
