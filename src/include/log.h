@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LOG_TRACE   5
-#define LOG_DEBUG   4
-#define LOG_INFO    3
-#define LOG_WARN    2
-#define LOG_ERROR   1
+#define LOG_LTRACE   5
+#define LOG_LDEBUG   4
+#define LOG_LINFO    3
+#define LOG_LWARN    2
+#define LOG_LERROR   1
 
 #ifdef LOG_LEVEL
 #define LOG_ACTIVE  LOG_LEVEL
@@ -56,9 +56,9 @@ inline const char* only_file_name(const char* f)
 #define LOG_CYAN    36
 
 
-#define LOGT(fmt, ...) LOG_COLOR(TRACE, LOG_BLUE, fmt, ##__VA_ARGS__)
-#define LOGD(fmt, ...) LOG_COLOR(DEBUG, LOG_CYAN, fmt, ##__VA_ARGS__)
-#define LOGI(fmt, ...) LOG_COLOR(INFO,  LOG_GREEN, fmt, ##__VA_ARGS__)
-#define LOGW(fmt, ...) LOG_COLOR(WARN,  LOG_YELLOW, fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) LOG_COLOR(ERROR, LOG_RED, fmt, ##__VA_ARGS__)
+#define LOGT(fmt, ...) LOG_COLOR(LTRACE, LOG_BLUE, fmt, ##__VA_ARGS__)
+#define LOGD(fmt, ...) LOG_COLOR(LDEBUG, LOG_CYAN, fmt, ##__VA_ARGS__)
+#define LOGI(fmt, ...) LOG_COLOR(LINFO,  LOG_GREEN, fmt, ##__VA_ARGS__)
+#define LOGW(fmt, ...) LOG_COLOR(LWARN,  LOG_YELLOW, fmt, ##__VA_ARGS__)
+#define LOGE(fmt, ...) LOG_COLOR(LERROR, LOG_RED, fmt, ##__VA_ARGS__)
 

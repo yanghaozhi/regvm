@@ -31,7 +31,7 @@ bool mem_2_run::finish()
     int j = 0;
     const unsigned char* p = (const unsigned char*)buf;
     LOGI("total %lld bytes of codes", (long long)code_bytes);
-    if LOG_IS_ENBALE(DEBUG)
+    if LOG_IS_ENBALE(LDEBUG)
     {
         for (int i = 0; i < code_bytes; i++)
         {

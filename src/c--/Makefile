@@ -10,7 +10,18 @@ EXT=mem
 
 DEPS=$(OUT)/libcore.a $(OUT)/lib$(EXT).a
 
+all: EXTRA := -O0 -g -DLOG_LEVEL=10 -DDEBUG
+
 all: $(NAME)
+
+release: EXTRA := -O3
+
+release: $(NAME)
+
+cov: EXTRA := -O0 -g -fprofile-arcs -ftest-coverage
+cov: LDFLAGS=-lgcov
+
+cov:$(NAME)
 
 tt:
 	@echo $(SRCS)
@@ -20,10 +31,9 @@ tt:
 
 
 INC=-I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/core -I$(ROOT)/src/$(EXT)
-OPTS=-O3 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=mem
+OPTS=-fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=$(EXT)
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++17 $(OPTS) $(INC)
-GCOV=-fprofile-arcs -ftest-coverage
 
 CC=gcc
 CXX=g++
@@ -31,10 +41,6 @@ CXX=g++
 #CXX=clang++
 
 
-cov: CXXFLAGS=-std=c++17 $(OPTS) $(INC) $(GCOV)
-cov: LDFLAGS=-lgcov
-
-cov:$(NAME)
 
 clean:
 	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))
@@ -42,7 +48,7 @@ clean:
 lib:$(LIBS)
 
 $(OBJS) : %.o : %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $*.o -MMD $<
+	$(CXX) $(EXTRA) $(CXXFLAGS) -c -o $*.o -MMD $<
 
 
 $(NAME):$(OBJS) $(DEPS)
@@ -50,7 +56,7 @@ $(NAME):$(OBJS) $(DEPS)
 	echo $(CXXDFLAGS)
 	mkdir -p $(OUT)
 	ar rcs $(OUT)/lib$(NAME).a  $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(OUT)/$(NAME) $(OBJS) $(DEPS) -lfmt $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(OUT)/$(NAME) $(OBJS) $(DEPS) $(LDFLAGS)
 	ln -sf $(OUT)/$(NAME) $(NAME)
 
 

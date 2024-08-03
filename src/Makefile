@@ -1,14 +1,15 @@
+SUBDIRS=common core mem vasm
+
 .PHONY:all
 
-all:
-	make -j4 -C core
-	make -j4 -C mem
-	make -j4 -C vasm
-	make -j4 -C c--
+all: 
+	@ for i in $(SUBDIRS) ; do make -j4 -C $$i ; done
+
+release: 
+	@ for i in $(SUBDIRS) ; do make release -j4 -C $$i ; done
+
+cov: 
+	@ for i in $(SUBDIRS) ; do make cov -j4 -C $$i ; done
 
 clean:
-	make clean -C core
-	make clean -C mem
-	make clean -C vasm
-	make clean -C c--
-
+	@ for i in $(SUBDIRS) ; do make clean -C $$i ; done
