@@ -14,26 +14,25 @@ CLEAR   5   1   0
 # $6 = $5(i) * $3
 MUL     6   5   3
 # $6 += 1
-INC     6   6   1
+CALC    6   1   0
 # $6 = 1 / $6
 CHG     6   6   1
 # $7 = $5(i) % $3
 MOD     7   5   3
 # if ($7 != $4) jump 3
 JNE     7   4   3
-$1(pi) += $6
+# $1(pi) += $6
 ADD     1   1   6
 JUMP    2
-$1(pi) -= $6
+# $1(pi) -= $6
 SUB     1   1   6
 # $5(i) += 1
-INC     5   5   1
+CALC    5   1   0
+ECHO    2   5   0
 # if ($5(i) < $0(n)) jump -9
-JLT     5   0   -9
+JLT     5   0   -10
 
-# $8 = 4
-SET     8   1   4
-# $9 = $1(pi) * $8
-MUL     9   1   8
+# $1(pi) *= 4
+CALC    1   4   2
 # echo($9)
-ECHO    1   9   0
+ECHO    1   1   0

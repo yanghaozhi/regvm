@@ -34,7 +34,7 @@ public:
 
     virtual bool finish(FILE* fp, void (inst::*op)(FILE*) const);
 
-    int             lineno  = 0;
+    int             lineno  = 1;
 
 protected:
     std::deque<inst*>                           insts;

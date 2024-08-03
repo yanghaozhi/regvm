@@ -17,7 +17,7 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
-inline bool vm_jump_dest(int c, const void* extra, int& next);
+inline int vm_jump_dest(int c, const void* extra, int& next);
 inline int vm_equivalent(struct regvm* vm, int a, int b, int c);
 
 
@@ -253,7 +253,7 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
     return true;
 }
 
-inline bool vm_jump_dest(int c, const void* extra, int& next)
+inline int vm_jump_dest(int c, const void* extra, int& next)
 {
     if (likely(c != 0))
     {

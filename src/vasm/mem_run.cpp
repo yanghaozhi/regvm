@@ -7,6 +7,8 @@
 
 using namespace vasm;
 
+std::set<std::string>   mem_run::strs;
+
 mem_run::mem_run() : parser()
 {
 }

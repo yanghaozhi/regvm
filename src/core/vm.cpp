@@ -55,7 +55,7 @@ regvm::regvm() : reg(), ops{NULL}
     SET_OPS(0, CHG);
     SET_OPS(0, CMP);
     SET_OPS(0, TYPE);
-    SET_OPS(0, INC);
+    SET_OPS(0, CALC);
     SET_OPS(0, ADD);
     SET_OPS(0, SUB);
     SET_OPS(0, MUL);
@@ -66,7 +66,6 @@ regvm::regvm() : reg(), ops{NULL}
     SET_OPS(0, XOR);
     SET_OPS(0, SHL);
     SET_OPS(0, SHR);
-    SET_OPS(0, SHIFT);
     SET_OPS(0, JUMP);
     SET_OPS(0, JEQ);
     SET_OPS(0, JNE);

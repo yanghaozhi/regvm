@@ -37,6 +37,8 @@ int main(int argc, char** argv)
     parser* obj = NULL;
     void (inst::*op)(FILE*) const = &inst::print;
     FILE* fp = stdout;
+    char* buf = NULL;
+    size_t size = 0;
 
     const char* opts = "c:rsbhv";
     int opt = 0;
@@ -47,6 +49,7 @@ int main(int argc, char** argv)
         case 'r':
             obj = new mem_run();
             op = &inst::print_bin;
+            fp = open_memstream(&buf, &size);
             break;
         case 's':
             obj = new mem_run();
@@ -70,7 +73,7 @@ int main(int argc, char** argv)
 
     if (obj == NULL)
     {
-        LOGW("Does NOT find input file !!!");
+        LOGW("Does NOT find input object !!!");
         return 0;
     }
 
@@ -89,9 +92,48 @@ int main(int argc, char** argv)
     munmap((void*)d, st.st_size);
     close(fd);
 
-    obj->finish(fp, op);
+    if (obj->finish(fp, op) == false)
+    {
+        LOGE("finish ERROR : %p", fp);
+        return 1;
+    }
 
     delete obj;
+
+    if (fp != stdout)
+    {
+        fclose(fp);
+
+        LOGI("total %d bytes to run", (int)size);
+
+        if LOG_IS_ENBALE(DEBUG)
+        {
+            const int line = 16;
+            int j = 0;
+            const unsigned char* p = (const unsigned char*)buf;
+            for (int i = 0; i < (int)size; i++)
+            {
+                if (j++ >= line)
+                {
+                    printf("\n");
+                    j = 1;
+                }
+                printf("%02X ", p[i]);
+            }
+            printf("\n\n");
+        }
+
+        auto vm = regvm_init();
+
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, (code_t*)buf, size >> 2, &exit);
+
+        regvm_exit(vm);
+
+        LOGI("run : %d\n", r);
+
+        free(buf);
+    }
 
     return 0;
 }

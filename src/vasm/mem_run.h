@@ -22,7 +22,7 @@ public:
     //virtual bool finish();
 
 protected:
-    std::set<std::string>   strs;
+    static std::set<std::string>   strs;
 
     virtual bool comment(const char* line, int size);
     virtual bool line(const char* str, inst* code);

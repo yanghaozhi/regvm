@@ -183,6 +183,7 @@ void instv<CODE_SET>::print(FILE* fp) const
 void instv<CODE_SET>::print_bin(FILE* fp) const
 {
     code_t code;
+    code.id = CODE_SET;
     code.a = reg;
     code.b = type;
     code.c = c;
