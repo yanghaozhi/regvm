@@ -190,7 +190,8 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         }
         break;
     case CODE_EXIT:
-        vm->exit_code = ((int)inst.a2 != -1) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
+        //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
+        vm->exit_code = inst.b2;
         vm->exit = true;
         return 0;
     case CODE_RET:

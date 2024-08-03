@@ -31,7 +31,7 @@ static int64_t irq_TRAP(struct regvm* vm, void* arg, code_t code, int offset, vo
 //发生内部错误时发起
 static int64_t irq_ERROR(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
 {
-    uint32_t c = *(uint16_t*)&code;
+    uint32_t c = *(uint32_t*)&code;
     printf("\e[31m%X @ %d - %p \e[0m\n", c, offset, extra);
 
     if (extra != NULL)
