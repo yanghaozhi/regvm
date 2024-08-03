@@ -15,14 +15,17 @@ ADD     0   1
 #TRAP    0   3
 # $1 -= 1
 DEC     1   1
-#TRAP    0   4
+#TRAP    1   4
 # $2 = -6
 #SETS    2   8   -7
 SETC    2   9   #LABEL:  aaa
 #TRAP    0   5
-# if ($1 > 0) jump $2
-CMP     1   2
-JNZ     1   2
+# $3 = $1
+MOVE    3   1
+#TRAP    1   5
+# if ($3 > 0) jump $2
+CMP     3   2
+JNZ     3   2
 TRAP    1   6
 # $0 += 10
 INC     0   10
@@ -36,6 +39,8 @@ TEST(mix, loop)
             int match = 0;
             CHECK_REG(key, 1, 1, N, TYPE_SIGNED, 12, -1, 0);
             CHECK_REG(key, 2, 0, N, TYPE_SIGNED, 0,  -1, 0);
+            //CHECK_REG(key, 4, 1, N, TYPE_SIGNED, 1000, -1, 0);
+            //CHECK_REG(key, 5, 3, N, TYPE_SIGNED, 1000, -1, 0);
             CHECK_REG(key, 6, 0, N, TYPE_SIGNED, 78, -1, 0);
             CHECK_REG(key, 7, 0, N, TYPE_SIGNED, 88, -1, 0);
             return match;

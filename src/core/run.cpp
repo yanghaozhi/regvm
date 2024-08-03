@@ -74,7 +74,8 @@ int vm_CODE_NOP(regvm* vm, int code, int reg, int ex, int offset)
 
 int vm_CODE_TRAP(regvm* vm, int code, int reg, int ex, int offset)
 {
-    //*next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
+    vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src);
+    //vm->idt.call(vm, IRQ_ERROR, code, reg, ex, offset, &err);
     return 1;
 }
 

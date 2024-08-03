@@ -58,11 +58,11 @@ private:
     scope                   globals;
     std::list<context>      frames;
 
-    int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset);
 };
 
 }

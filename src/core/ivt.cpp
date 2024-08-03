@@ -113,7 +113,7 @@ bool ivt::set(uint32_t id, regvm_irq_handler func, void* arg)
     return true;
 }
 
-int64_t ivt::call(struct regvm* vm, int id, int code, int reg, int ex, int offset, void* args, int64_t defval)
+int64_t ivt::call(struct regvm* vm, int id, int code, int reg, int ex, int offset, void* args)
 {
     isr& it = isrs[id];
     int64_t r = it.call(vm, id, code, reg, ex, offset, args);
@@ -126,6 +126,6 @@ int64_t ivt::call(struct regvm* vm, int id, int code, int reg, int ex, int offse
 
 int64_t ivt::isr::call(struct regvm* vm, int id, int code, int reg, int ex, int offset, void* extra)
 {
-    return func(vm, arg, code_t{code, reg, ex}, offset, extra);
+    return func(vm, arg, code_t{code, ex, reg}, offset, extra);
 }
 

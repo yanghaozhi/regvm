@@ -11,6 +11,8 @@
 
 using namespace ext;
 
+#define VM static_cast<regvm_mem*>(vm)
+
 bool regvm_mem::vm_init()
 {
     return true;
@@ -57,7 +59,7 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& e = vm->reg.id(ex);
     auto& r = vm->reg.id(reg);
-    auto v = get(e.value.str, false);
+    auto v = VM->get(e.value.str, false);
     if (v == NULL)
     {
         //auto vm = this;
@@ -89,7 +91,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
         }
         else
         {
-            auto v = get(e.value.str, false);
+            auto v = VM->get(e.value.str, false);
             if (v != NULL)
             {
                 if (v->store_from(r) == true)
@@ -97,7 +99,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
                     return true;
                 }
             }
-            return add(e.value.str, r.type, false)->store_from(r);
+            return VM->add(e.value.str, r.type, false)->store_from(r);
         }
     }
     return true;
@@ -111,18 +113,18 @@ int regvm_mem::vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset)
 int regvm_mem::vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset)
 {
     auto& n = vm->reg.id(reg);
-    auto v = get(n.value.str, false);
+    auto v = VM->get(n.value.str, false);
     if (v != NULL)
     {
         return (v->type == ex) ? true : false;
     }
-    v = add(n.value.str, ex, false);
+    v = VM->add(n.value.str, ex, false);
     return (v != NULL) ? true : false;
 }
 
 int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
 {
-    if (frames.size() == 0)
+    if (VM->frames.size() == 0)
     {
         return false;
     }
@@ -130,10 +132,10 @@ int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
     switch (ex)
     {
     case 0:
-        frames.back().enter_block();
+        VM->frames.back().enter_block();
         break;
     case 1:
-        frames.back().leave_block();
+        VM->frames.back().leave_block();
         break;
     }
 
@@ -142,6 +144,11 @@ int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
 
 regvm_mem::regvm_mem() : globals(0)
 {
+    ops[CODE_LOAD]   = vm_CODE_LOAD ;
+    ops[CODE_STORE]  = vm_CODE_STORE;
+    ops[CODE_GLOBAL] = vm_CODE_GLOBAL;
+    ops[CODE_NEW]    = vm_CODE_NEW  ;
+    ops[CODE_BLOCK]  = vm_CODE_BLOCK;
 }
 
 var* regvm_mem::add(const char* name, const int type, bool global)

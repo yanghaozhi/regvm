@@ -18,7 +18,7 @@ release: EXTRA := -O3
 
 release: $(NAME)
 
-cov: EXTRA := -O0 -g -fprofile-arcs -ftest-coverage
+cov: EXTRA := -O0 -g -fprofile-arcs -ftest-coverage -DLOG_LEVEL=2
 cov: LDFLAGS=-lgcov
 
 cov:$(NAME)

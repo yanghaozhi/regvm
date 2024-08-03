@@ -34,6 +34,7 @@ void test_base::trap(regvm* vm, code_t code, int offset)
     //key = code.reg;
     //key <<= 4;
     //key += code.ex;
+
     key = code.ex;
     this->offset = offset;
     trap_arg arg;

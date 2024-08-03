@@ -31,7 +31,7 @@ struct ivt
 
     bool set(uint32_t id, regvm_irq_handler func, void* arg);
 
-    int64_t call(struct regvm* vm, int id, int c, int r, int e, int offset, void* args, int64_t defval = 0);
+    int64_t call(struct regvm* vm, int id, int c, int r, int e, int offset, void* args);
 };
 
 }
