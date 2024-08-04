@@ -4,22 +4,22 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.123
-SETC    4   4   abc
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.123
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    4   1
+TRAP    1   4   0
 # abc = $2
-STORE   2   4
+STORE   2   4   1
 # $2.from != NULL, $2.ref = 2
-TRAP    2   2
+TRAP    2   1   1
 # abc.reg == 2, abc.ref = 2
-SETS    2   1   456
+SET     2   1   456
 # $2.from == NULL, $2.ref = -1
 # abc.reg == -1, abc.ref = 1
-TRAP    2   3
-EXIT    0   0
+TRAP    3   1   1
+EXIT    0   0   0
 )";
 
 TEST(code, set)

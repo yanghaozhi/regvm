@@ -9,6 +9,9 @@
 
 #include "../core/vm.h"
 
+
+#define VM static_cast<regvm_mem*>(vm)
+
 using namespace ext;
 
 bool regvm_mem::vm_init()
@@ -35,7 +38,7 @@ core::var* regvm_mem::vm_var(int type, const char* name)
     return var::create(type, name); 
 }
 
-bool regvm_mem::vm_call(int code, int reg, int ex, int offset, int64_t id)
+bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 {
     if ((id > 0) || ((id == 0) && (frames.empty() == true)))
     {
@@ -53,11 +56,11 @@ bool regvm_mem::vm_call(int code, int reg, int ex, int offset, int64_t id)
     return true;
 }
 
-int regvm_mem::vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
+int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto& e = vm->reg.id(ex);
-    auto& r = vm->reg.id(reg);
-    auto v = get(e.value.str, false);
+    auto& e = vm->reg.id(code.b);
+    auto& r = vm->reg.id(code.a);
+    auto v = VM->get(e.value.str, false);
     if (v == NULL)
     {
         //auto vm = this;
@@ -70,70 +73,70 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset)
     }
 }
 
-int regvm_mem::vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset)
+int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto& r = vm->reg.id(reg);
-    if (ex == reg)
+    auto& r = vm->reg.id(code.a);
+    switch (code.c)
     {
+    case 0:     //原始加载的变量（如无，则无操作）
         return r.store();
-    }
-    else
-    {
-        auto& e = vm->reg.id(ex);
-        if (e.type != TYPE_STRING)
+    case 1:
         {
-            //auto vm = this;
-            //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
-            vm->fatal = true;
-            return false;
+            auto& e = vm->reg.id(code.b);
+            if (e.type != TYPE_STRING)
+            {
+                //auto vm = this;
+                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+                vm->fatal = true;
+                return false;
+            }
+            else
+            {
+                auto v = VM->get(e.value.str, false);
+                if (v != NULL)
+                {
+                    if (v->store_from(r) == true)
+                    {
+                        return true;
+                    }
+                }
+                return VM->add(e.value.str, r.type, false)->store_from(r);
+            }
         }
-        else
+        break;
+    case 2:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
         {
-            auto v = get(e.value.str, false);
+            auto& n = vm->reg.id(code.b);
+            auto v = VM->get(n.value.str, false);
             if (v != NULL)
             {
-                if (v->store_from(r) == true)
-                {
-                    return true;
-                }
+                return (v->type == code.a) ? true : false;
             }
-            return add(e.value.str, r.type, false)->store_from(r);
+            v = VM->add(n.value.str, code.a, false);
+            return (v != NULL) ? true : false;
         }
+    case 3:     //只在顶层scope（全局变量）中查找或新建
+        break;
+    default:
+        return 0;
     }
-    return true;
+    return 1;
 }
 
-int regvm_mem::vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset)
+int regvm_mem::vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra)
 {
-    return 0;
-}
-
-int regvm_mem::vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset)
-{
-    auto& n = vm->reg.id(reg);
-    auto v = get(n.value.str, false);
-    if (v != NULL)
-    {
-        return (v->type == ex) ? true : false;
-    }
-    v = add(n.value.str, ex, false);
-    return (v != NULL) ? true : false;
-}
-
-int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
-{
-    if (frames.size() == 0)
+    if (VM->frames.size() == 0)
     {
         return false;
     }
 
-    switch (ex)
+    switch (code.b)
     {
     case 0:
-        frames.back().enter_block();
+        VM->frames.back().enter_block();
         break;
     case 1:
-        frames.back().leave_block();
+        VM->frames.back().leave_block();
         break;
     }
 
@@ -142,6 +145,13 @@ int regvm_mem::vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset)
 
 regvm_mem::regvm_mem() : globals(0)
 {
+#define REG_OP(x)   ops[CODE_##x - CODE_TRAP] = vm_CODE_##x;
+    REG_OP(LOAD);
+    REG_OP(STORE);
+    //REG_OP(GLOBAL);
+    //REG_OP(NEW);
+    REG_OP(BLOCK);
+#undef REG_OP
 }
 
 var* regvm_mem::add(const char* name, const int type, bool global)

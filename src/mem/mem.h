@@ -32,13 +32,13 @@ public:
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
 #define CRTP_FUNC(name, ret, argc, ...)                                             \
-    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
+    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) override;
 
     CRTP_FUNC(vm_init,  bool, 0);
     CRTP_FUNC(vm_exit,  bool, 0);
+    CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
     CRTP_FUNC(vm_var,   core::var*, 1, int);
     CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
-    CRTP_FUNC(vm_call,  bool, 5, int, int, int, int, int64_t);
 
 #undef CRTP_FUNC
 
@@ -58,11 +58,9 @@ private:
     scope                   globals;
     std::list<context>      frames;
 
-    int vm_CODE_LOAD(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_STORE(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_GLOBAL(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_NEW(regvm* vm, int code, int reg, int ex, int offset);
-    int vm_CODE_BLOCK(regvm* vm, int code, int reg, int ex, int offset);
+    static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
 };
 
 }
