@@ -4,16 +4,12 @@ REPORT=./report.info
 TMP=${REPORT}.bak
 
 cd ../src
-
 make clean
-
 make cov 
-
 cd -
 
 make clean
-
-make cov
+make cov -j4
 
 ./gtester "$@"
 

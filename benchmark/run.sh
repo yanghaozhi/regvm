@@ -1,11 +1,12 @@
 #!/bin/bash
 
 FILE=pi
+OPT=${1:-release}
 
 cd ../src/
 
 make clean
-make release
+make ${OPT}
 
 cd -
 
