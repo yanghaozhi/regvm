@@ -215,12 +215,18 @@ enum DATA_TYPE
 //| LPOP    | CODE_LPOP     | list              | type              |                   |
 // (type == 0) ? $list.pop_back($value) : $list.pop_front($value)
 //+---------+---------------+-------------------+-------------------+-------------------+
+//| LINSERT | CODE_LPOP     | list              | pos               | value             |
+// $list.insert($pos, $value)
+//+---------+---------------+-------------------+-------------------+-------------------+
 //| LERASE  | CODE_LERASE   | list              | pos               |                   |
 // $list.erase($pos)
 //
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| DLEN    | CODE_DLEN     | result            | dict              |                   |
 // $result = $dict.size()
+//+---------+---------------+-------------------+-------------------+-------------------+
+//| DHAS    | CODE_DHAS     | result            | dict              | key               |
+// $result = $dict.contains($key)
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| DGET    | CODE_DGET     | result            | dict              | key               |
 // $result = $dict[$key]
@@ -230,9 +236,6 @@ enum DATA_TYPE
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| DDEL    | CODE_DDEL     | dict              | key               |                   |
 // $dict.erase($key)
-//+---------+---------------+-------------------+-------------------+-------------------+
-//| DHAS    | CODE_DHAS     | result            | dict              | key               |
-// $result = $dict.contains($key)
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| DITEMS  | CODE_DITEMS   | dict              | keys              | values            |
 // $keys = $dict.keys()
@@ -292,6 +295,7 @@ enum CODE_ID
     CODE_RET,
 
     CODE_ECHO,
+
     CODE_SLEN,
 
     CODE_LLEN,
@@ -299,6 +303,7 @@ enum CODE_ID
     CODE_LSET,
     CODE_LPUSH,
     CODE_LPOP,
+    CODE_LINSERT,
     CODE_LERASE,
 
     CODE_DLEN,

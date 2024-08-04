@@ -5,18 +5,6 @@
 #include "ext.h"
 
 
-extern int vm_CODE_NOP(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_SET(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_CLEAR(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_CONV(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_CALL(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra);
-extern int vm_CODE_ECHO(regvm* vm, code_t code, int offset, const void* extra);
-
 extern "C"
 {
 
@@ -45,7 +33,9 @@ regvm::regvm() : reg(), ops{NULL}
 #define SET_NAME(x)
 #endif
 
-#define SET_1(name)             ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;
+#define SET_1(name)                                                 \
+    extern int vm_CODE_##name(regvm*, code_t, int, const void*);    \
+    ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;
 #define SET_0(name)
 #define SET_OPS(func, name)     MLIB_CAT(SET_, func)(name); SET_NAME(name);
 
@@ -86,21 +76,22 @@ regvm::regvm() : reg(), ops{NULL}
 
     SET_OPS(1, ECHO);
 
-    SET_OPS(0, SLEN);
+    SET_OPS(1, SLEN);
 
-    SET_OPS(0, LLEN);
-    SET_OPS(0, LAT);
-    SET_OPS(0, LSET);
-    SET_OPS(0, LPUSH);
-    SET_OPS(0, LPOP);
-    SET_OPS(0, LERASE);
+    SET_OPS(1, LLEN);
+    SET_OPS(1, LAT);
+    SET_OPS(1, LSET);
+    SET_OPS(1, LPUSH);
+    SET_OPS(1, LPOP);
+    SET_OPS(1, LINSERT);
+    SET_OPS(1, LERASE);
 
-    SET_OPS(0, DLEN);
-    SET_OPS(0, DGET);
-    SET_OPS(0, DSET);
-    SET_OPS(0, DDEL);
-    SET_OPS(0, DHAS);
-    SET_OPS(0, DITEMS);
+    SET_OPS(1, DLEN);
+    SET_OPS(1, DGET);
+    SET_OPS(1, DSET);
+    SET_OPS(1, DDEL);
+    SET_OPS(1, DHAS);
+    SET_OPS(1, DITEMS);
 
     SET_OPS(0, EXIT);
 

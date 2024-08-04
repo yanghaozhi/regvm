@@ -55,28 +55,39 @@ int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra)
     return 1;
 }
 
+inline bool clear_reg(reg::v& r, const int type)
+{
+    switch (type)
+    {
+    case TYPE_LIST:
+        r.clear();
+        r.value.list_v = new uvalue::list_t();
+        r.need_free = true;
+        r.type = type;
+        return true;
+    case TYPE_DICT:
+        r.clear();
+        r.value.dict_v = new uvalue::dict_t();
+        r.need_free = true;
+        r.type = type;
+        return true;
+    case TYPE_SIGNED:
+    case TYPE_UNSIGNED:
+        return r.write(0, type, true);
+    case TYPE_DOUBLE:
+        r.clear();
+        r.type = type;
+        r.value.dbl = 0.0;
+        return true;
+    default:
+        return false;
+    }
+}
+
 int vm_CODE_CLEAR(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
-    const int ex = code.b;
-    if (r.write(0, ex, true) == false)
-    {
-        return 0;
-    }
-    switch (ex)
-    {
-    case TYPE_LIST:
-        r.value.list_v = new uvalue::list_t();
-        r.need_free = true;
-        break;
-    case TYPE_DICT:
-        r.value.dict_v = new uvalue::dict_t();
-        r.need_free = true;
-        break;
-    default:
-        break;
-    }
-    return 1;
+    return (int)clear_reg(r, code.b);
 }
 
 int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
@@ -313,14 +324,16 @@ int vm_CODE_ECHO(regvm* vm, code_t code, int offset, const void* extra)
     return (code.a <= 2) ? 1 : 2;
 }
 
-#if 0
-int vm_str_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_SLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
-    int len = strlen(v.value.str);
+    auto& r = vm->reg.id(code.a);
+    auto& s = vm->reg.id(code.b);
+    int len = strlen(s.value.str);
     r.write(len, TYPE_SIGNED, true);
-    return 0;
+    return 1;
 }
 
+#if 0
 int vm_str_substr(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 {
     auto& start = vm->reg.id(args.a2);
@@ -339,248 +352,240 @@ int vm_str_substr(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
 
     return 0;
 }
+#endif
 
-int vm_list_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+inline int list_idx(regvm* vm, uvalue::list_t* l, int pos)
 {
-    r.write(v.value.list_v->size(), TYPE_SIGNED, true);
-    return 0;
+    const int64_t idx = (int64_t)vm->reg.id(pos);
+    if (likely(idx >= 0))
+    {
+        return (idx < (int64_t)l->size()) ? idx : -1;
+    }
+    else
+    {
+        return l->size() + idx;
+    }
 }
 
-int vm_list_at(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_LLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto idx = (uint64_t)vm->reg.id(args.a2);
-    if (idx >= v.value.list_v->size())
+    auto& r = vm->reg.id(code.a);
+    auto& l = vm->reg.id(code.b);
+    r.write(l.value.list_v->size(), TYPE_SIGNED, true);
+    return 1;
+}
+
+int vm_CODE_LAT(regvm* vm, code_t code, int offset, const void* extra)
+{
+    auto& r = vm->reg.id(code.a);
+    auto& l = vm->reg.id(code.b);
+    const int idx = list_idx(vm, l.value.list_v, code.c);
+    if (unlikely(idx < 0))
     {
         r.write(0, TYPE_NULL, true);
     }
     else
     {
-        r.load(v.value.list_v->at(idx)->crtp<REGVM_IMPL>());
+        r.load(l.value.list_v->at(idx));
     }
-    return 0;
+    return 1;
 }
 
-int vm_list_push(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_LPUSH(regvm* vm, code_t code, int offset, const void* extra)
 {
-    switch (args.a2)
+    auto& l = vm->reg.id(code.a);
+    switch (code.b)
     {
     case 0:
-        v.value.list_v->push_back(CRTP_CALL(vm_var, args.a3));
+        l.value.list_v->push_back(CRTP_CALL(vm_var, code.c));
         break;
     case 1:
-        v.value.list_v->push_front(CRTP_CALL(vm_var, args.a3));
+        l.value.list_v->push_front(CRTP_CALL(vm_var, code.c));
         break;
     default:
-        return __LINE__;
-    }
-    r.write(1, TYPE_SIGNED, true);
-    return 0;
-}
-
-int vm_list_pop(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
-{
-    if (v.value.list_v->empty() == true)
-    {
-        r.write(0, TYPE_NULL, true);
         return 0;
     }
+    return 1;
+}
 
-    switch (args.a2)
+int vm_CODE_LPOP(regvm* vm, code_t code, int offset, const void* extra)
+{
+    auto& l = vm->reg.id(code.a);
+    if (unlikely(l.value.list_v->empty() == true))
+    {
+        LOGW("try to pop from an empty list");
+        return 1;
+    }
+
+    switch (code.b)
     {
     case 0:
-        r.load(v.value.list_v->back()->crtp<REGVM_IMPL>());
-        v.value.list_v->back()->crtp<REGVM_IMPL>()->release();
-        v.value.list_v->pop_back();
+        l.value.list_v->back()->release();
+        l.value.list_v->pop_back();
         break;
     case 1:
-        r.load(v.value.list_v->front()->crtp<REGVM_IMPL>());
-        v.value.list_v->front()->crtp<REGVM_IMPL>()->release();
-        v.value.list_v->pop_front();
+        l.value.list_v->front()->release();
+        l.value.list_v->pop_front();
         break;
     default:
-        return __LINE__;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
-int vm_list_insert(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_LINSERT(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto idx = (uint64_t)vm->reg.id(args.a2);
-    if (idx >= v.value.list_v->size())
+    auto& l = vm->reg.id(code.a);
+    const int idx = list_idx(vm, l.value.list_v, code.b);
+    if (likely(idx > 0))
     {
-        r.write(0, TYPE_SIGNED, true);
+        l.value.list_v->emplace(l.value.list_v->begin() + idx, CRTP_CALL(vm_var, code.c));
+        return 1;
     }
     else
     {
-        v.value.list_v->emplace(v.value.list_v->begin() + idx, CRTP_CALL(vm_var, args.a3));
-        r.write(1, TYPE_SIGNED, true);
+        return 0;
     }
-    return 0;
 }
 
-int vm_list_erase(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_LERASE(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto idx = (uint64_t)vm->reg.id(args.a2);
-    if (idx >= v.value.list_v->size())
+    auto& l = vm->reg.id(code.a);
+    const int idx = list_idx(vm, l.value.list_v, code.b);
+    if (unlikely(idx < 0))
     {
-        r.write(0, TYPE_SIGNED, true);
+        return 0;
     }
     else
     {
-        r.write(1, TYPE_SIGNED, true);
-        auto it = v.value.list_v->begin() + idx;
-        (*it)->crtp<REGVM_IMPL>()->release();
-        v.value.list_v->erase(it);
+        auto it = l.value.list_v->begin() + idx;
+        (*it)->release();
+        l.value.list_v->erase(it);
+        return 1;
     }
-    return 0;
 }
 
-int vm_list_set(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_LSET(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto idx = (uint64_t)vm->reg.id(args.a2);
-    bool result = false;
-    if (idx < v.value.list_v->size())
+    auto& l = vm->reg.id(code.a);
+    const int idx = list_idx(vm, l.value.list_v, code.b);
+    if (likely(idx >= 0))
     {
-        result = v.value.list_v->at(idx)->crtp<REGVM_IMPL>()->set_val(vm->reg.id(args.a3));
+        l.value.list_v->at(idx)->set_val(vm->reg.id(code.c));
+        return 1;
     }
-    r.write((result == true) ? 1 : 0, TYPE_SIGNED, true);
-    return 0;
+    else
+    {
+        return 0;
+    }
 }
 
-#define CHECK_DICT(var)                     \
-    auto var = vm->reg.id(args.a2);         \
+#define CHECK_DICT(var, arg)                \
+    auto var = vm->reg.id(code.arg);        \
     if (var.type != TYPE_STRING)            \
     {                                       \
-        return __LINE__;                    \
+        return 0;                           \
     }
 
-int vm_dict_len(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
+    auto& r = vm->reg.id(code.a);
+    auto& v = vm->reg.id(code.b);
     r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
-    return 0;
+    return 1;
 }
 
-int vm_dict_set(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DSET(regvm* vm, code_t code, int offset, const void* extra)
 {
-    CHECK_DICT(k);
-
+    CHECK_DICT(k, b);
+    auto& v = vm->reg.id(code.a);
     auto it = v.value.dict_v->find(k.value.str);
     if (it == v.value.dict_v->end())
     {
-        v.value.dict_v->emplace(k.value.str, CRTP_CALL(vm_var, args.a3));
+        v.value.dict_v->emplace(k.value.str, CRTP_CALL(vm_var, code.c));
     }
     else
     {
-        it->second->crtp<REGVM_IMPL>()->set_val(vm->reg.id(args.a3));
+        it->second->set_val(vm->reg.id(code.c));
     }
-    r.write(0, TYPE_SIGNED, true);
-    return 0;
+    return 1;
 }
 
-int vm_dict_get(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DGET(regvm* vm, code_t code, int offset, const void* extra)
 {
-    CHECK_DICT(k);
+    CHECK_DICT(k, c);
 
+    auto& r = vm->reg.id(code.a);
+    auto& v = vm->reg.id(code.b);
     auto it = v.value.dict_v->find(k.value.str);
-    if (it == v.value.dict_v->end())
+    if (unlikely(it == v.value.dict_v->end()))
     {
         r.write(0, TYPE_NULL, true);
     }
     else
     {
-        r.load(it->second->crtp<REGVM_IMPL>());
+        r.load(it->second);
     }
-    return 0;
+    return 1;
 }
 
-int vm_dict_del(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DDEL(regvm* vm, code_t code, int offset, const void* extra)
 {
-    CHECK_DICT(k);
+    CHECK_DICT(k, b);
 
+    auto& v = vm->reg.id(code.a);
     auto it = v.value.dict_v->find(k.value.str);
-    bool rr = false;
-    if (it != v.value.dict_v->end())
+    if (likely(it != v.value.dict_v->end()))
     {
-        it->second->crtp<REGVM_IMPL>()->release();
+        it->second->release();
         v.value.dict_v->erase(it);
-        rr = true;
     }
 
-    r.write(rr, TYPE_SIGNED, true);
-
-    return 0;
+    return 1;
 }
 
-int vm_dict_has(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DHAS(regvm* vm, code_t code, int offset, const void* extra)
 {
-    CHECK_DICT(k);
+    CHECK_DICT(k, c);
 
+    auto& r = vm->reg.id(code.a);
+    auto& v = vm->reg.id(code.b);
     auto it = v.value.dict_v->find(k.value.str);
     r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED, true);
-    return 0;
+    return 1;
 }
 
-int vm_dict_items(regvm* vm, reg::v& r, reg::v& v, const extend_args& args)
+int vm_CODE_DITEMS(regvm* vm, code_t code, int offset, const void* extra)
 {
-    r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
+    auto& v = vm->reg.id(code.a);
+    auto& ks = vm->reg.id(code.b);
+    auto& vs = vm->reg.id(code.c);
+
+    clear_reg(ks, TYPE_LIST);
+    clear_reg(vs, TYPE_LIST);
 
     if (v.value.dict_v->empty() == true)
     {
-        return 0;
+        return 1;
     }
 
-    core::uvalue::list_t* keys = NULL;
-    core::uvalue::list_t* values = NULL;
-
-#define INIT_LIST(arg, var)                             \
-    {                                                   \
-        auto& rr = vm->reg.id(arg);                     \
-        rr.clear();                                     \
-        rr.need_free = true;                            \
-        rr.type = TYPE_LIST;                            \
-        var = new core::uvalue::list_t();               \
-        rr.value.list_v = var;                          \
-    }
-
-    switch (args.a2)
-    {
-    case 0:
-        INIT_LIST(args.a3, keys);
-        break;
-    case 1:
-        INIT_LIST(args.a4, values);
-        break;
-    case 2:
-        INIT_LIST(args.a3, keys);
-        INIT_LIST(args.a4, values);
-        break;
-    default:
-        return __LINE__;
-    }
-
-#undef INIT_LIST
+    core::uvalue::list_t* keys = ks.value.list_v;
+    core::uvalue::list_t* values = vs.value.list_v;
 
     for (auto& it : *v.value.dict_v)
     {
-        if (keys != NULL)
-        {
-            auto k = CRTP_CALL(vm_var, TYPE_STRING, "");
-            *k = it.first.c_str();
-            keys->push_back(k);
-        }
-        if (values != NULL)
-        {
-            it.second->acquire();
-            values->push_back(it.second);
-        }
+        auto k = CRTP_CALL(vm_var, TYPE_STRING, "");
+        *k = it.first.c_str();
+        keys->push_back(k);
+
+        it.second->acquire();
+        values->push_back(it.second);
     }
 
-    return 0;
+    return 1;
 }
 
 #undef CHECK_DICT
-
-#endif  //if 0
 
 vm_sub_op_t  CHG_OPS[16] =
 {
@@ -590,36 +595,5 @@ vm_sub_op_t  CHG_OPS[16] =
     vm_CHG_MALLOC,
 };
 
-//vm_sub_op_t  cmd_ops[16]    =
-//{
-//    vm_cmd_echo,
-//};
-//
-//vm_sub_op_t  str_ops[16]    =
-//{
-//    vm_str_len,
-//    vm_str_substr,
-//};
-//
-//vm_sub_op_t  list_ops[16]   =
-//{
-//    vm_list_len,
-//    vm_list_at,
-//    vm_list_push,
-//    vm_list_pop,
-//    vm_list_insert,
-//    vm_list_erase,
-//    vm_list_set,
-//};
-//
-//vm_sub_op_t  dict_ops[16]   =
-//{
-//    vm_dict_len,
-//    vm_dict_set,
-//    vm_dict_get,
-//    vm_dict_del,
-//    vm_dict_has,
-//    vm_dict_items,
-//};
 
 

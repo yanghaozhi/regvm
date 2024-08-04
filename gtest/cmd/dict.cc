@@ -4,49 +4,49 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.123
-SETC    4   4   abc
-SETC    5   4   def
-SETC    6   4   qwer
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.123
+SET     4   4   abc
+SET     5   4   def
+SET     6   4   qwer
 # watch ：1/2/3/4
-TRAP    6   0
+TRAP    0   6   0
 
 # $7 = dict()
-CLEAR   7   5
-TRAP    1   1
+CLEAR   7   5   0
+TRAP    1   1   0
 
 # $7[$4] = $3
-DICT    0   1   7   4   3
-TRAP    2   2
+DSET    7   4   3
+TRAP    2   2   0
 
 # $7[$5] = $2
 # $7[$6] = $1
-DICT    0   1   7   5   2
-DICT    0   1   7   6   1
-TRAP    3   3
+DSET    7   5   2
+DSET    7   6   1
+TRAP    3   3   0
 
 # $0 = $7[$4]
-DICT    0   2   7   4
-TRAP    1   4
+DGET    0   7   4
+TRAP    4   1   0
 
 # $0 = $4 in $7
-DICT    0   4   7   4
-TRAP    1   5
+DHAS    0   7   4
+TRAP    5   1   0
 
 # $9, $10 = $7.items()
-DICT    8   5   7   2   9   10
-TRAP    3   6
+DITEMS  7   9   10
+TRAP    6   2   0
 
 # del $7[$4]
-DICT    0   3   7   4
-TRAP    2   7
+DDEL    7   4   0
+TRAP    7   2   0
 
-DICT    0   0   7
-TRAP    1   8
+DLEN    0   7   0
+TRAP    8   1   0
 
-EXIT    0   0
+EXIT    0   0   0
 )";
 
 TEST(cmd, dict)
@@ -74,7 +74,6 @@ TEST(cmd, dict)
 
             CHECK_REG(key, 5, 0, N, TYPE_SIGNED,    1,          -1, 0);
 
-            CHECK_REG(key, 6, 8, N, TYPE_SIGNED,    3,          -1, 0);
             CHECK_REG(key, 6, 9, N, TYPE_LIST,      3,          -1, 1);
             CHECK_REG(key, 6, 10, N, TYPE_LIST,     3,          -1, 1);
 
