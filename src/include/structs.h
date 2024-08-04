@@ -63,7 +63,7 @@ public:
 
     virtual bool set_val(const regv& r)         {return false;};
     virtual bool set_reg(const regv* r) const   {return false;};
-    virtual int type(void) const                {return 0;};
+    virtual int vtype(void) const               {return 0;};
     virtual void release()                      {};
 };
 
@@ -123,7 +123,7 @@ struct regv
             v->reg->clear();
         }
 
-        type = v->type();
+        type = v->vtype();
         value = v->value;
         set_from(v);
         need_free = false;

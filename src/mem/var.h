@@ -35,6 +35,8 @@ public:
     bool set_reg(const core::regv* reg) const;
     bool release(void) const;
 
+    virtual int vtype(void) const                {return type;}
+
     bool store_from(core::regv& v);
 
     bool cmp(uint32_t key, const char* name, int len);

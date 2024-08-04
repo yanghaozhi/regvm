@@ -4,65 +4,65 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.123
-SETC    4   4   abc
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.123
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    4   0
+TRAP    0   4   0
 
-STORE   1   4
+STORE   1   4   1
 # $1.value == 123, $1.ref == 2
 # $abc.value == 123, $abc.ref == 2
-TRAP    2   1
+TRAP    1   1   1
 
-LOAD    6   4
+LOAD    6   4   0
 # $1.value == 123, $1.ref == -1
 # $6.value == 123, $6.ref == 2
 # $abc.value == 123, $abc.ref == 2
-TRAP    3   2
+TRAP    2   2   1
 
-BLOCK   0   0
+BLOCK   0   0   0
 
 # $4 = "def"
-SETC    5   4   def
-STORE   3   5
+SET     5   4   def
+STORE   3   5   1
 # $3.ref == 2
 # $def.value == 321.123, $def.ref == 2
-TRAP    2   3
+TRAP    3   1   1
 
-STORE   2   4
+STORE   2   4   1
 # $abc.0.reg == 6, $abc.0.type == 2, $abc.0.ref == 2
 # $abc.1.value == 321, $abc.1.type == 2, $abc.1.ref == 2
 # $2.ref ==  2
 # $6.ref ==  2
-TRAP    4   4
+TRAP    4   2   2
 
-LOAD    7   4
+LOAD    7   4   0
 # $2.ref == -1
 # $7.value == 321, $7.ref == 2
 # $abc.0.ref == 2
 # $abc.1.ref == 2
-TRAP    4   5
+TRAP    5   2   2
 
-BLOCK   0   1
+BLOCK   0   1   0
 
 # $7.value == 321, $7.ref == -1
 # $3.value == 321.123, $7.ref == -1
 # $abc.0.reg == 6, $abc.0.type == 2, $abc.0.ref == 2
-TRAP    3   6
+TRAP    6   2   1
 
 # $abc.1 == NULL
 # $def.1 == NULL
-TRAP    0   7
+TRAP    7   0   0
 
-LOAD    8   4
+LOAD    8   4   0
 # $6.value == 123, $6.ref == -1
 # $8.value == 123, $8.ref == 2
 # $abc.value == 123, $abc.ref == 2
-TRAP    3   8
+TRAP    8   2   1
 
-EXIT    0   0
+EXIT    0   0   0
 )";
 
 TEST(code, load)

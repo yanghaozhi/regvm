@@ -4,38 +4,38 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.123
-SETC    4   4   abc
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.123
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    4   1
+TRAP    1   4   0
 
 # abc = $2
-STORE   2   4
+STORE   2   4   1
 # $2.from != NULL, $2.ref == 2
-TRAP    2   2
+TRAP    2   1   1
 
 # abc.reg == 2, abc.ref == 2
-SETS    2   2   456
+SET     2   2   456
 # $2.from != NULL, $2.ref == 2, $2.value == 456
 # $abc.reg == 2, $abc.ref == 2, $abc.value == 123
-TRAP    2   3
+TRAP    3   1   1
 
-STORE   2   2
+STORE   2   2   0
 # $2.from != NULL, $2.ref == 2, $2.value == 456
 # $abc.reg == 2, $abc.ref == 2, $abc.value == 456
-TRAP    2   4
+TRAP    4   1   1
 
-SETC    5   4   def
+SET     5   4   def
 # def = $2
-STORE   2   5
+STORE   2   5   1
 # $2.from != NULL, $2.ref = 2
 # $abc.reg == -1, $abc.ref = 1
 # $def.reg == 2, $def.ref = 2
-TRAP    3   5
+TRAP    5   1   2
 
-EXIT    0   0
+EXIT    0   0   0
 )";
 
 TEST(code, store)
