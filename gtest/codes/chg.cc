@@ -4,27 +4,24 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    0   1   456
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.12
-SETC    4   4   abc
+SET     0   1   456
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.12
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    5   0
+TRAP    0   5   0
 
-CHG     1   1
-CHG     3   1
-CHG     0   2
-CHG     2   3
-TRAP    4   1
+CHG     6   0   1
+CHG     7   1   0
+CHG     8   2   2
+CHG     9   3   0
+TRAP    1   8   0
 
-CHG     2   0
-TRAP    1   2
+CHG     5   4   3
+TRAP    2   1   0
 
-CHG     4   4
-TRAP    1   3
-
-EXIT    0   0
+EXIT    0   0   0
 )";
 
 TEST(code, chg)
@@ -38,14 +35,16 @@ TEST(code, chg)
             CHECK_REG(key, 0, 3, N, TYPE_DOUBLE,   321.12,  -1, 0);
             CHECK_REG(key, 0, 4, N, TYPE_STRING,   "abc",   -1, 0);
                                                       
-            CHECK_REG(key, 1, 0, N, TYPE_DOUBLE,   (double)1 / 456,     -1, 0);
-            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   -123,     -1, 0);
-            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, (uint64_t)-322,     -1, 0);
-            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   -321.12,  -1, 0);
+            CHECK_REG(key, 1, 0, N, TYPE_SIGNED,   456,     -1, 0);
+            CHECK_REG(key, 1, 1, N, TYPE_SIGNED,   123,     -1, 0);
+            CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 321,     -1, 0);
+            CHECK_REG(key, 1, 3, N, TYPE_DOUBLE,   321.12,  -1, 0);
+            CHECK_REG(key, 1, 6, N, TYPE_DOUBLE,   (double)1 / 456,     -1, 0);
+            CHECK_REG(key, 1, 7, N, TYPE_SIGNED,   -123,     -1, 0);
+            CHECK_REG(key, 1, 8, N, TYPE_UNSIGNED, (uint64_t)-322,     -1, 0);
+            CHECK_REG(key, 1, 9, N, TYPE_DOUBLE,   -321.12,  -1, 0);
 
-            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, 0,     -1, 0);
-
-            CHECK_REG(key, 3, 4, N, TYPE_STRING,   "abc",     -1, 1);
+            CHECK_REG(key, 2, 5, N, TYPE_STRING,   "abc",     -1, 1);
 
             return match;
         },

@@ -148,7 +148,9 @@ int vm_CHG_RECIPROCAL(regvm* vm, int a, int b, int c, int offset)
     if (a != b)
     {
         const auto& s = vm->reg.id(b);
-        r.write(1.0 / (double)s, TYPE_DOUBLE, true);
+        uvalue v;
+        v.dbl = 1.0 / (double)s;
+        r.write(v.uint, TYPE_DOUBLE, true);
     }
     else
     {
@@ -185,12 +187,23 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
         return 0;
     }
 
-    auto& r = (a != b) ? vm->reg.id(a) : s;
-    if (r.need_free == false)
+    if (a == b)
     {
+        if (s.need_free == true)
+        {
+            return 1;
+        }
+        //r.set_from(NULL);
+        char* p = strdup(s.value.str);
+        s.value.str = p;
+        s.need_free = true;
+    }
+    else
+    {
+        auto& r = vm->reg.id(a);
+        vm_conv_type(vm, r, TYPE_STRING);
         r.set_from(NULL);
-        char* p = strdup(r.value.str);
-        r.value.str = p;
+        r.value.str = strdup(s.value.str);
         r.need_free = true;
     }
     return 1;
