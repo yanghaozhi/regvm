@@ -7,6 +7,7 @@
 #include "vm.h"
 #include "ext.h"
 #include "reg.h"
+#include "log.h"
 #include "func.h"
 
 
@@ -50,7 +51,7 @@ int vm_CODE_NOP(regvm* vm, code_t code, int offset, const void* extra)
 
 int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra)
 {
-    //*next = vm->idt.call(vm, IRQ_TRAP, code, reg, ex, offset, &vm->call_stack->running->src, *next);
+    vm->idt.call(vm, IRQ_TRAP, code, offset, &vm->call_stack->running->src);
     return 1;
 }
 
@@ -223,8 +224,8 @@ int vm_CODE_SET(regvm* vm, code_t code, int offset, const void* extra)
     code_t* p = (code_t*)extra;
     while (p->id == CODE_DATA)
     {
-        uint64_t vv = (unsigned int)p->a3;
-        v += vv << shift;
+        uint64_t vv = (unsigned int)p->a3 & 0xFFFFFF;
+        v += (vv << shift);
         shift += 24;
         next += 1;
         p += 1;

@@ -76,6 +76,7 @@ private:
     };
     static void check_reg(void* arg, const regvm_reg_info* info);
     static void check_var(void* arg, const regvm_var_info* info);
+    static int64_t debug_trap(regvm* vm, void*, code_t code, int offset, void* extra);
 };
 
 template <typename R, typename V> class tester : public test_base

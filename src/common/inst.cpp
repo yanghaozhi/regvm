@@ -5,8 +5,12 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#include <iostream>
+
 #include <string>
 #include <limits>
+
+#include <log.h>
 
 
 static void data_print(FILE* fp, int v)
@@ -143,6 +147,10 @@ bool instv<CODE_SET>::scan(const char* s)
         SCAN_V(TYPE_DOUBLE, dbl, strtod);
 #undef SCAN_V
     case TYPE_STRING:
+        while ((*p == ' ') || (*p == '\t'))
+        {
+            p++;
+        }
         return change_str(p);
     default:
         return false;

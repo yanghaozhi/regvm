@@ -87,8 +87,6 @@ void debugger::trap(regvm* vm, code_t code, int offset)
 
 int64_t debugger::debug_trap(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
 {
-    auto d = (debugger*)arg;
-    d->trap(vm, code, offset);
     return 1;
 }
 

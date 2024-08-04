@@ -29,7 +29,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 
     int code = inst.id;
 
-    LOGT("%4d : code %8s - 0x%02X - 0x%08X", offset, CODE_NAME(code), code, inst.value);
+    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, inst.a, inst.b, inst.c);
 
     switch (code)
     {
