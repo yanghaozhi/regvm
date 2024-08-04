@@ -4,32 +4,32 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
+SET     1   1   123
 # $0 = 456
-SETL    0   2   456
+SET     0   2   456
 # $2 = 321
-SETI    2   2   321
+SET     2   2   321
 # $3 = "abc"
-SETC    3   4   abc
-TRAP    4   0
+SET     3   4   abc
+TRAP    0   4   0
 # abc = $0
-STORE   0   3
-TRAP    2   1
-BLOCK   0   0   
+STORE   0   3   1
+TRAP    1   1   1
+BLOCK   0   0   0
 # $4 = "def"
-SETC    4   4   def
+SET     4   4   def
 # def = $2
-STORE   2   4   
-TRAP    2   2
+STORE   2   4   1
+TRAP    2   1   1
 # $4 = "qwer"
-SETC    5   4   qwer
+SET     5   4   qwer
 # $6 = "abc"
-SETC    6   4   abc
+SET     6   4   abc
 # abc = $1
-STORE   1   3   
-TRAP    3   3
-BLOCK   0   1
-TRAP    2   4
+STORE   1   3   1
+TRAP    3   1   2
+BLOCK   0   1   0
+TRAP    4   1   1
 )";
 
 TEST(mix, vars)

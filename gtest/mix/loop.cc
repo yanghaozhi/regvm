@@ -4,29 +4,28 @@
 
 static char txt[] = R"(
 # $1 = 12
-SETS    1   1   12
-TRAP    1   1
+SET     1   1   12
+TRAP    1   1   0
 # $0 = 0
-CLEAR   0   1
-TRAP    1   2
+CLEAR   0   1   0
+TRAP    2   1   0
 # $0 += $1
 #LABEL: aaa
-ADD     0   1
+ADD     0   0   1
 #TRAP    0   3
 # $1 -= 1
-DEC     1   1
+CALC    1   1   1
 #TRAP    0   4
-# $2 = -6
-#SETS    2   8   -7
-SETC    2   9   #LABEL:  aaa
+# $2 = 0
+CLEAR    2   1   0
+#SETC    2   9   #LABEL:  aaa
 #TRAP    0   5
-# if ($1 > 0) jump $2
-CMP     1   2
-JNZ     1   2
-TRAP    1   6
+# if ($1 > $2) jump $2
+JGT     1   2   -3
+TRAP    6   1   0
 # $0 += 10
-INC     0   10
-TRAP    1   7
+CALC    0   10  0
+TRAP    7   1   0
 )";
 
 TEST(mix, loop)
