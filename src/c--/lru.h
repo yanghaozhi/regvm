@@ -14,14 +14,17 @@ public:
 
     T get()     {return used(0);}
 
-    bool add(T v)
+    T add(T v)  //if return >= 0 means it swap this old one
     {
         if (size >= max) 
         {
-            return false;
+            T r = datas[0];
+            datas[0] = v;
+            used(0);
+            return r;
         }
         datas[size++] = v;
-        return true;
+        return -1;
     }
 
     T remove(void)
