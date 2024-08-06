@@ -15,7 +15,7 @@
 #include "statements.h"
 
 
-parser::parser() : parser_list(new trie_tree())
+parser::parser() : parser_list(new trie_tree()), regs(), scopes(regs)
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
@@ -50,10 +50,12 @@ bool parser::go(const char* src, std::deque<inst>& out)
     while_loop          wl(this);
     for_loop            fl(this);
 
+    scopes.enter();
     while ((src != NULL) && (*src != '\0'))
     {
         src = statement(src);
     }
+    scopes.leave();
 
     out.swap(insts);
     return (src != NULL) ? true : false;
@@ -67,15 +69,15 @@ const char* parser::statement(const char* src, std::function<void (const token&)
     switch (tok.info.type)
     {
     case '}':
-        INST(BLOCK, 0, 1);
-        regs.cleanup(true);
+        scopes.leave();
+        INST(BLOCK, 0, 1, 0);
         [[fallthrough]];
     case 0:
     case ';':
         return src;
     case '{':
-        INST(BLOCK, 0, 0);
-        regs.cleanup(true);
+        scopes.enter();
+        INST(BLOCK, 0, 0, 0);
         while ((src != NULL) && (*src != '\0') && (*(src - 1) != '}'))
         {
             src = statement(src);
@@ -203,9 +205,9 @@ int parser::operator_level(int op) const
     }
 }
 
-select::reg parser::token_2_reg(const token& tok)
+selector::reg parser::token_2_reg(const token& tok)
 {
-    if (tok.reg.valid() == true)
+    if (regs.active(tok.reg) == true)
     {
         return tok.reg;
     }
@@ -215,7 +217,20 @@ select::reg parser::token_2_reg(const token& tok)
     case Num:
         {
             auto reg = regs.tmp();
-            INST(SETS, reg, tok.info.data_type, tok.info.value);
+            switch (tok.info.data_type)
+            {
+            case TYPE_SIGNED:
+                INST(SET, reg, tok.info.value.sint);
+                break;
+            case TYPE_UNSIGNED:
+                INST(SET, reg, tok.info.value.uint);
+                break;
+            case TYPE_DOUBLE:
+                INST(SET, reg, tok.info.value.dbl);
+                break;
+            default:
+                return selector::reg();
+            }
             return reg;
         }
         break;
@@ -226,15 +241,15 @@ select::reg parser::token_2_reg(const token& tok)
             //auto reg = regs.var(tok.name);
             //INST(LOAD, reg, n);
             std::string_view name = tok.name;
-            auto reg = regs.get(tok.name, [this, name]()
+            auto reg = scopes.find_var(tok.name, [this, name]()
                 {
                     auto n = regs.tmp();
-                    INST(SETC, n, name);
-                    auto reg = regs.var(name);
-                    INST(LOAD, reg, n);
+                    INST(SET, n, name);
+                    auto reg = scopes.new_var(name);
+                    INST(LOAD, reg, n, 0);
                     return reg;
                 });
-            //INST(LOAD, reg.get([](select::reg* r)
+            //INST(LOAD, reg.get([](selector::reg* r)
             //        {
             //            auto n = regs.get();
             //            INST(SETC, n, tok.name);
@@ -248,10 +263,10 @@ select::reg parser::token_2_reg(const token& tok)
         LOGE("%d : invalid expression %d - %s !!!", lineno, tok.info.type, std::string(tok.name).c_str());
         break;
     }
-    return select::reg();
+    return selector::reg();
 }
 
-template <typename T, typename O> select::reg parser::immediate_optimize(T& toks, O& ops)
+template <typename T, typename O> selector::reg parser::literally_optimize(T& toks, O& ops)
 {
     auto& tok = toks.back();
     if ((tok.info.type != Num) || (ops.size() == 0))
@@ -259,117 +274,125 @@ template <typename T, typename O> select::reg parser::immediate_optimize(T& toks
         return token_2_reg(tok);
     }
 
-    unsigned int v = tok.info.value.uint;
+    int v = tok.info.value.sint;
 
     switch (ops.back())
     {
-#define OPTIMIZE(k, op, vv, ...)                                \
+#define NOP(x)    x
+#define OPTIMIZE(k, op, vv, c, a, ...)                          \
     case k:                                                     \
-        if (v op vv)                                            \
+        if (c(v) op vv)                                         \
         {                                                       \
             toks.pop_back();                                    \
             ops.pop_back();                                     \
-            select::reg l = token_2_reg(toks.back());           \
+            auto l = token_2_reg(toks.back());                  \
+            auto r = a;                                         \
             INST(__VA_ARGS__);                                  \
-            return l;                                           \
+            return r;                                           \
         }                                                       \
         break;
-        OPTIMIZE(Add, <=, 16, INC, l, v);
-        OPTIMIZE(Sub, <=, 16, DEC, l, v);
-        OPTIMIZE(Eq, ==, 0, CMP, l, 0);
-        OPTIMIZE(Ne, ==, 0, CMP, l, 1);
-        OPTIMIZE(Gt, ==, 0, CMP, l, 2);
-        OPTIMIZE(Ge, ==, 0, CMP, l, 3);
-        OPTIMIZE(Lt, ==, 0, CMP, l, 4);
-        OPTIMIZE(Le, ==, 0, CMP, l, 5);
+        OPTIMIZE(Add,   <=, 16, abs, l, CALC, l, v, 0);
+        OPTIMIZE(Sub,   <=, 16, abs, l, CALC, l, v, 1);
+        OPTIMIZE(Mul,   <=, 16, abs, l, CALC, l, v, 2);
+        OPTIMIZE(Div,   <=, 16, abs, l, CALC, l, v, 3);
+        OPTIMIZE(Mod,   <=, 16, abs, l, CALC, l, v, 4);
+        OPTIMIZE(Shl,   <=, 16, abs, l, CALC, l, v, 5);
+        OPTIMIZE(Shr,   <=, 16, abs, l, CALC, l, v, 6);
+        OPTIMIZE(Eq, ==, 0, NOP, regs.tmp(), CMP, l, 0);
+        OPTIMIZE(Ne, ==, 0, NOP, regs.tmp(), CMP, l, 1);
+        OPTIMIZE(Gt, ==, 0, NOP, regs.tmp(), CMP, l, 2);
+        OPTIMIZE(Ge, ==, 0, NOP, regs.tmp(), CMP, l, 3);
+        OPTIMIZE(Lt, ==, 0, NOP, regs.tmp(), CMP, l, 4);
+        OPTIMIZE(Le, ==, 0, NOP, regs.tmp(), CMP, l, 5);
 #undef OPTIMIZE
+#undef NOP
     default:
         break;
     }
     return token_2_reg(tok);
 }
 
-template <typename T, typename O> select::reg parser::pop_and_calc(T& toks, O& ops)
+template <typename T, typename O> selector::reg parser::pop_and_calc(T& toks, O& ops)
 {
     if (toks.size() == 0)
     {
         LOGE("toks is empty");
-        return select::reg();
+        return selector::reg();
     }
     if (ops.size() != toks.size() - 1)
     {
         LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
-        return select::reg();
+        return selector::reg();
     }
 
-    auto r = immediate_optimize(toks, ops);
+    auto b = literally_optimize(toks, ops);
     toks.pop_back();
     if (ops.size() == 0)
     {
-        return r;
+        return b;
     }
 
     int op = -1;
-    select::reg l;
+    selector::reg r;
     const int level = operator_level(ops.back());
     do
     {
         op = ops.back();
         ops.pop_back();
-        l = token_2_reg(toks.back());
+        auto a = token_2_reg(toks.back());
         toks.pop_back();
 
         switch (op)
         {
         case Add:
-            INST(ADD, l, r);
+            INST(ADD, r, a, b);
             break;
         case Sub:
-            INST(SUB, l, r);
+            INST(SUB, r, a, b);
             break;
         case Mul:
-            INST(MUL, l, r);
+            INST(MUL, r, a, b);
             break;
         case Div:
-            INST(DIV, l, r);
+            INST(DIV, r, a, b);
             break;
         case Mod:
-            INST(MOD, l, r);
+            INST(MOD, r, a, b);
             break;
         case Eq:
-            INST(SUB, l, r);
-            INST(CMP, l, 0);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 0);
             break;
         case Ne:
-            INST(SUB, l, r);
-            INST(CMP, l, 1);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 1);
             break;
         case Gt:
-            INST(SUB, l, r);
-            INST(CMP, l, 2);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 2);
             break;
         case Ge:
-            INST(SUB, l, r);
-            INST(CMP, l, 3);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 3);
             break;
         case Lt:
-            INST(SUB, l, r);
-            INST(CMP, l, 4);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 4);
             break;
         case Le:
-            INST(SUB, l, r);
-            INST(CMP, l, 5);
+            INST(SUB, r, a, b);
+            INST(CMP, r, r, 5);
             break;
         default:
             LOGE("%d : UNKNOWN operator of expression %d - %c !!!", lineno, op, (char)op);
-            return select::reg();
+            return selector::reg();
         }
-        r = l;
+        b = r;
     } while ((ops.size() > 0) && (level <= operator_level(ops.back())));
-    return l;
+    return r;
 }
 
-const char* parser::call_func(const char* src, const token& name, std::vector<select::reg>& rets)
+const char* parser::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
 {
     if (name.info.type != Id)
     {
@@ -379,7 +402,7 @@ const char* parser::call_func(const char* src, const token& name, std::vector<se
     //TODO : need to check func name valid !!!
     if (name.name == "echo")
     {
-        std::vector<select::reg> args;
+        std::vector<selector::reg> args;
         src = comma(src, args);
         if (src == NULL)
         {
@@ -394,12 +417,13 @@ const char* parser::call_func(const char* src, const token& name, std::vector<se
             a.emplace_back((int)it);
         }
         rets.emplace_back(regs.lock());
-        INST(CMD, (int)(rets[0]), 0, a);
+        //TODO
+        //INST(ECHO, (int)(rets[0]), 0, a);
     }
     return src;
 }
 
-const char* parser::expression(const char* src, select::reg& reg, int* end)
+const char* parser::expression(const char* src, selector::reg& reg, int* end)
 {
     std::deque<token>   toks;
     std::deque<int>     ops;
@@ -448,7 +472,7 @@ const char* parser::expression(const char* src, select::reg& reg, int* end)
             return src;
         case '(':   //函数调用
             {
-                std::vector<select::reg> rets;
+                std::vector<selector::reg> rets;
                 src = call_func(src, toks.back(), rets);
                 if (rets.size() >= 1)
                 {
@@ -491,11 +515,11 @@ const char* parser::expression(const char* src, select::reg& reg, int* end)
     return src;
 }
 
-const char* parser::comma(const char* src, std::vector<select::reg>& rets)
+const char* parser::comma(const char* src, std::vector<selector::reg>& rets)
 {
     while ((src != NULL) && (*src != '\0'))
     {
-        select::reg reg; 
+        selector::reg reg; 
         int end = -1;
         src = expression(src, reg, &end);
         if (reg < 0)

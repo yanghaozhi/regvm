@@ -1,11 +1,11 @@
-#include "select.h"
+#include "selector.h"
 
 #include <log.h>
 
 #include "common.h"
 
 
-select::select()
+selector::selector()
 {
     for (int i = 0; i < 256; i++)
     {
@@ -13,24 +13,24 @@ select::select()
         datas[i].status = 0;
         datas[i].var = "";
         //datas[i].ref = 0;
-        datas[i].version = 1;
+        datas[i].ver = 1;
 
         frees.add(i);
     }
 }
 
-const selector::reg selector::bind(std::string_view& name)
+const selector::reg selector::bind(const std::string_view& name)
 {
     int v = frees.remove();
     data& r = datas[v];
     r.ver += 1;
     r.status = binded;
-    r.name = name;
+    r.var = name;
     int d = binds.add(v);
     if (d >= 0)
     {
-        d.ver += 1;
-        d.status = 0;
+        datas[d].ver += 1;
+        datas[d].status = 0;
         frees.add(d);
     }
     return reg(&r);
@@ -42,12 +42,12 @@ const selector::reg selector::lock(void)
     data& r = datas[v];
     r.ver += 1;
     r.status = binded;
-    r.name = "";
+    r.var = "";
     int d = locks.add(v);
     if (d >= 0)
     {
-        d.ver += 1;
-        d.status = 0;
+        datas[d].ver += 1;
+        datas[d].status = 0;
         frees.add(d);
     }
     return reg(&r);
@@ -63,7 +63,7 @@ const selector::reg selector::tmp(void)
 
 bool selector::active(const reg& r)
 {
-    if (r.ver != r->ptr.ver) return false;
+    if (r.ver != r.ptr->ver) return false;
 
     switch (r.ptr->status)
     {

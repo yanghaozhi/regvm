@@ -39,6 +39,8 @@ public:
 
         const uint32_t      ver;
         const data*         ptr;
+
+        operator int (void) const   { return ptr->id; }
     };
 
     const reg bind(const std::string_view& name);
@@ -46,7 +48,7 @@ public:
     const reg tmp(void);
 
     void release(const reg& r);
-    void active(const reg& r);
+    bool active(const reg& r);
 
     //reg get(const std::string_view& name, std::function<reg (void)>&& reload);
 

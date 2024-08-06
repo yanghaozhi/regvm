@@ -96,8 +96,8 @@ enum DATA_TYPE
 //| RET     | CODE_RET      | N/A               | return value count|                   |
 //  退出函数，ex表示返回值个数（方法如同CALL的参数）
 //+---------+---------------+-------------------+-------------------+-------------------+
-//| CALC    | CODE_CALC     | b                 | b                 | op                |
-//  $a op b ( -128 <= b <= 127 )
+//| CALC    | CODE_CALC     | a                 | b                 | op                |
+//  $a op b ( -127 <= b <= 127 )
 //     op   0 : +=
 //          1 : -=
 //          2 : *=
@@ -141,6 +141,22 @@ enum DATA_TYPE
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JUMP    | CODE_JUMP     | dest                                                      |
 //  无条件跳转，跳转目的地址为dest（正负表示跳转方向）
+//+---------+---------------+-------------------+-------------------+-------------------+
+//| JCMP    | CODE_JCMP     | a                 | b                 | op                |
+//  条件跳转，其后跟随一条CODE_DATA，其内容为真实的跳转偏移
+//  op 含义：
+//      0   : if ($a == b) jump dest
+//      1   : if ($a == $b) jump dest
+//      2   : if ($a != b) jump dest
+//      3   : if ($a != $b) jump dest
+//      4   : if ($a > b) jump dest
+//      5   : if ($a > $b) jump dest
+//      6   : if ($a >= b) jump dest
+//      7   : if ($a >= $b) jump dest
+//      8   : if ($a < b) jump dest
+//      9   : if ($a < $b) jump dest
+//      10  : if ($a <= b) jump dest
+//      11  : if ($a <= $b) jump dest
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JEQ      | CODE_JEQ     | a                 | b                 | dest              |
 //  if ($a == $b) jump dest
@@ -275,6 +291,7 @@ enum CODE_ID
     CODE_SHL,
     CODE_SHR,
     CODE_JUMP,
+    CODE_JCMP,
     CODE_JEQ,
     CODE_JNE,
     CODE_JGT,

@@ -47,7 +47,7 @@ public:
         return false;
     }
 
-    T active(T v)
+    int active(T v)
     {
         if constexpr (sizeof(T) == 1)
         {

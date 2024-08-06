@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     }
 
 
-    void (inst::*op)(FILE*) = &inst::print_txt;
+    void (inst::*op)(FILE*) const = &inst::print_asm;
     const char* opts = "rps";
     int opt = 0;
     FILE* fp = stdout;
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
             op = &inst::print;
             break;
         case 's':
-            op = &inst::print_txt;
+            op = &inst::print_asm;
             break;
         default:
             break;
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
     if (codes != NULL)
     {
-        if LOG_IS_ENBALE(DEBUG)
+        if LOG_ENBALE_D
         {
             const int line = 16;
             int j = 0;

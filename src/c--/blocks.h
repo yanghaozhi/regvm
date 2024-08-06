@@ -12,7 +12,22 @@ public:
     ~blocks();
 
     const selector::reg new_var(const std::string_view& name);
-    const selector::reg find_var(const std::string_view& name);
+    template <typename F> const selector::reg find_var(const std::string_view& name, F reload)
+    {
+        for (auto& it : stack)
+        {
+            auto v = it.vars.find(name);
+            if (v != it.vars.end())
+            {
+                if (sel.active(v->second) == false)
+                {
+                    return reload();
+                }
+                return v->second;
+            }
+        }
+        return selector::reg();
+    }
 
     bool enter();
     bool leave();

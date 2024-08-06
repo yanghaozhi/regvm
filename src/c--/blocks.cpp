@@ -14,24 +14,6 @@ const selector::reg blocks::new_var(const std::string_view& name)
     return v;
 }
 
-const selector::reg blocks::find_var(const std::string_view& name)
-{
-    for (auto& it : stack)
-    {
-        auto v = it.vars.find(name);
-        if (v != it.vars.end())
-        {
-            if (sel.active(v->second) == false)
-            {
-                //TODO : reload
-                return selector::reg();
-            }
-            return v->second;
-        }
-    }
-    return selector::reg();
-}
-
 bool blocks::enter()
 {
     stack.emplace_front(sel);
@@ -40,7 +22,7 @@ bool blocks::enter()
 
 bool blocks::leave()
 {
-    stack.pop_front(sel);
+    stack.pop_front();
     return true;
 }
 

@@ -7,8 +7,9 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "selector.h"
+#include "blocks.h"
 #include "common.h"
-#include "select.h"
 #include "inst.h"
 
 class parser
@@ -38,11 +39,11 @@ public:
 
     const char* statement(const char* src, std::function<void (const token&)> cb = {});
 
-    const char* expression(const char* src, select::reg& reg, int* end = NULL);
+    const char* expression(const char* src, selector::reg& reg, int* end = NULL);
 
-    const char* call_func(const char* src, const token& name, std::vector<select::reg>& rets);
+    const char* call_func(const char* src, const token& name, std::vector<selector::reg>& rets);
 
-    const char* comma(const char* src, std::vector<select::reg>& rets);
+    const char* comma(const char* src, std::vector<selector::reg>& rets);
 
 private:
     int                             depth      = 0;
@@ -57,9 +58,12 @@ private:
     trie_tree*                                  parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
 
-    select::reg token_2_reg(const token& tok);
+    selector::reg token_2_reg(const token& tok);
     int operator_level(int op) const;
-    template <typename T, typename O> select::reg immediate_optimize(T& toks, O& ops);
-    template <typename T, typename O> select::reg pop_and_calc(T& toks, O& ops);
+    template <typename T, typename O> selector::reg literally_optimize(T& toks, O& ops);
+    template <typename T, typename O> selector::reg pop_and_calc(T& toks, O& ops);
+
+    selector                        regs;
+    blocks                          scopes;
 };
 

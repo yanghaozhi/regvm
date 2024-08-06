@@ -98,6 +98,12 @@ void instv<CODE_JUMP>::print_asm(FILE* fp) const
 }
 
 
+instv<CODE_SET>::instv(const char* n, int r, const std::string_view& v) : inst(CODE_SET, n), str(v)
+{
+    ex.str = str.c_str();
+    c = set_datas((uintptr_t)ex.str, 1);
+}
+
 instv<CODE_SET>::instv(const char* n, int r, const char* v) : inst(CODE_SET, n)
     ,reg(r), type(TYPE_STRING)
 {

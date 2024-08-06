@@ -1,4 +1,4 @@
-SUBDIRS=common core mem vasm
+SUBDIRS=common core mem vasm c--
 
 .PHONY:all
 

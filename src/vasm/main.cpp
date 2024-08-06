@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 
         LOGI("total %d bytes to run", (int)size);
 
-        if LOG_IS_ENBALE(DEBUG)
+        if LOG_ENBALE_D
         {
             const int line = 16;
             int j = 0;
