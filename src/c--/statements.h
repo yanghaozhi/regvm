@@ -39,7 +39,7 @@ struct assign_var : public parser::op
 struct jumps : public parser::op
 {
     jumps(parser* p) : parser::op(p)    {};
-    virtual const char* jcmp(labels<int>& js);
+    virtual const char* jcmp(const char* src, labels<int>& js, int label);
 };
 
 struct if_else : public jumps

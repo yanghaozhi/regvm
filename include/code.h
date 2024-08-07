@@ -81,8 +81,9 @@ enum DATA_TYPE
 //  把$reg的数据回写到变量。attr的值含义：
 //      0   ：原始加载的变量（如无，则无操作）
 //      1   ：写入到变量中，变量名存于$name中（如改变量不存在，则在当前scope内创建新的变量）
-//      2   : 写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
-//      3   ：只在顶层scope（全局变量）中查找或新建
+//      2   : 把reg写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
+//      3   : 以reg为type，把空变量写入到新的变量中（规则如同2）
+//      4   ：只在顶层scope（全局变量）中查找或新建
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| BLOCK   | CODE_BLOCK    | N/A               | enter or leave    |                   |
 //  ex == 0 means enter block, ex == 1 means exit block
@@ -145,18 +146,16 @@ enum DATA_TYPE
 //| JCMP    | CODE_JCMP     | a                 | b                 | op                |
 //  条件跳转，其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //  op 含义：
-//      0   : if ($a == b) jump dest
-//      1   : if ($a == $b) jump dest
-//      2   : if ($a != b) jump dest
-//      3   : if ($a != $b) jump dest
-//      4   : if ($a > b) jump dest
-//      5   : if ($a > $b) jump dest
-//      6   : if ($a >= b) jump dest
-//      7   : if ($a >= $b) jump dest
-//      8   : if ($a < b) jump dest
-//      9   : if ($a < $b) jump dest
-//      10  : if ($a <= b) jump dest
-//      11  : if ($a <= $b) jump dest
+//      op & 0x01 == 1：b为即时数
+//      op & 0x02 == 1：a为即时数
+//      否则，a/b均为寄存器id
+//
+//      op & 0xFC == 0：if (a == b) jump dest
+//      op & 0xFC == 1：if (a != b) jump dest
+//      op & 0xFC == 2：if (a >  b) jump dest
+//      op & 0xFC == 3：if (a >= b) jump dest
+//      op & 0xFC == 4：if (a <  b) jump dest
+//      op & 0xFC == 5：if (a <= b) jump dest
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JEQ      | CODE_JEQ     | a                 | b                 | dest              |
 //  if ($a == $b) jump dest

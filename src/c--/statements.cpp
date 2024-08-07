@@ -37,7 +37,7 @@ const char* decl_var_only::go2(const char* src, const token* toks, int count, DA
 {
     auto n = p->regs.tmp();
     INST(SET, n, name);
-    //INST(NEW, n, type);
+    INST(STORE, type, n, 3);
     return src;
 }
 
@@ -55,9 +55,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
 
     auto n = p->regs.tmp();
     INST(SET, n, name);
-    //INST(NEW, n, type);
-    //INST(STORE, v, n);
-    //p->regs.bind(name, v);
+    INST(STORE, v, n, 2);
     return src;
 }
 
@@ -176,9 +174,70 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     return src;
 }
 
-const char* jumps::jcmp(labels<int>& js)
+const char* jumps::jcmp(const char* src, labels<int>& js, int label)
 {
-    return NULL;
+    token toks[3];
+    int end = 0;
+
+
+    token v;
+    src = p->next_token(src, v);
+    if (v.info.type != '(') return NULL;
+
+    src = p->expression(src, toks[0].reg, &end);
+    if (src == NULL) return NULL;
+
+    src = p->next_token(src, toks[1]);
+
+    src = p->expression(src, toks[2].reg, &end);
+
+    src = p->next_token(src, v);
+    if (v.info.type != ')') return NULL;
+
+
+    int op = 0;
+
+#define REG_OR_NUM(v, idx)                              \
+    int v = toks[idx].reg;                              \
+    if (toks[idx].info.type == Num)                     \
+    {                                                   \
+        v = toks[0].info.value.sint;                    \
+        if ((v <= 127) && (v >= -127))                  \
+        {                                               \
+            op &= 0x02;                                 \
+        }                                               \
+        else                                            \
+        {                                               \
+            auto n = p->regs.tmp();                     \
+            INST(SET, n, (int64_t)v);                   \
+            v = n;                                      \
+        }                                               \
+    }
+    REG_OR_NUM(a, 0);
+    REG_OR_NUM(b, 2);
+#undef REG_OR_NUM
+
+    switch (toks[1].info.type)
+    {
+#define CMP(k, v)                   \
+    case k:                         \
+        op += (v << 2);             \
+        break;
+        CMP(Eq, 0);
+        CMP(Ne, 1);
+        CMP(Gt, 2);
+        CMP(Ge, 3);
+        CMP(Lt, 4);
+        CMP(Le, 5);
+#undef CMP
+    default:
+        return NULL;
+    }
+
+    INST(JCMP, a, b, op);
+    js.jump(label, insts.back(), insts.size());
+
+    return src;
 }
 
 if_else::if_else(parser* p) : jumps(p)
@@ -191,30 +250,31 @@ const char* if_else::go(const char* src, const token* toks, int count)
     //selector::reg cmp;
     //src = p->expression(src, cmp);
 
-    //labels jump(insts);
+    labels<int> jump;
 
-    //SET_JUMP(jump, 0, JZ, cmp);
+    src = jcmp(src, jump, 0);
+    if (src == NULL) return NULL;
 
-    //src = p->statement(src);
+    src = p->statement(src);
 
-    //token tok;
-    //auto o = p->next_token(src, tok);
-    //if (tok.info.type == Else)
-    //{
-    //    SET_JUMP(jump, 1, JUMP, -1);
+    token tok;
+    auto o = p->next_token(src, tok);
+    if (tok.info.type == Else)
+    {
+        INST(JUMP, 0);
+        jump.jump(1, insts.back(), insts.size());
 
-    //    jump.set_label(0);
+        jump.label(0, insts.size());
 
-    //    src = p->statement(o);
+        src = p->statement(o);
 
-    //    jump.set_label(1);
-    //}
-    //else
-    //{
-    //    jump.set_label(0);
-    //}
-    //return (jump.finish() == true) ? src : NULL;
-    return 0;
+        jump.label(1, insts.size());
+    }
+    else
+    {
+        jump.label(0, insts.size());
+    }
+    return (jump.finish(p->insts) == true) ? src : NULL;
 }
 
 //do_while::do_while(parser* p) : parser::op(p)

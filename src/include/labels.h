@@ -5,6 +5,7 @@
 #include <deque>
 
 #include "inst.h"
+#include "log.h"
 
 
 template <typename T> class labels
@@ -12,12 +13,12 @@ template <typename T> class labels
 public:
     labels()  {}
 
-    void set_jump(const T& label, inst* code, int pos)
+    void jump(const T& label, inst* code, int pos)
     {
-        js.emplace_back(info{code, label, pos + 1, -1});
+        js.emplace_back(info{code, label, pos + 1});
     }
 
-    void set_label(const T& label, int pos)
+    void label(const T& label, int pos)
     {
         if (pos < label_min)
         {
@@ -29,36 +30,30 @@ public:
         }
         ls.emplace(label, pos);
     }
-    bool finish()
+    bool finish(insts_t& insts)
     {
-        //int64_t diff = (std::max(label_max, (int64_t)js.back().pos) - std::min(label_min, (int64_t)js.front().pos)) * 2;
+        for (auto& it : js)
+        {
+            auto l = ls.find(it.label);
+            if (l == ls.end())
+            {
+                LOGE("need to jump to label %d, but it is NOT exists !!!", it.label);
+                return false;
+            }
 
-        //for (auto& it : js)
-        //{
-        //    auto l = ls.find(it.label);
-        //    if (l == ls.end())
-        //    {
-        //        LOGE("need to jump to label %d, but it is NOT exists !!!", it.label);
-        //        return false;
-        //    }
-
-        //    it.code->val.sint = diff;
-        //    it.code->ex = TYPE_SIGNED;
-        //    it.code->recalc();
-        //    it.to = l->second;
-        //}
-
-        //for (auto& it : js)
-        //{
-        //    if (it.to > it.pos)
-        //    {
-        //        it.code->val.sint = (calc_bytes(it.pos, it.to) >> 1) + 1;
-        //    }
-        //    else
-        //    {
-        //        it.code->val.sint = -((calc_bytes(it.to, it.pos) - js.front().code->bytes) >> 1) - 1;
-        //    }
-        //}
+            if (l->second > it.pos)
+            {
+                static_cast<instv<CODE_JUMP>*>(it.code)->offset = (calc_counts(insts, it.pos, l->second) >> 1) + 1;
+            }
+            else
+            {
+                static_cast<instv<CODE_JUMP>*>(it.code)->offset = -((calc_counts(insts, l->second, it.pos) - js.front().code->count()) >> 1) - 1;
+            }
+            //it.code->val.sint = diff;
+            //it.code->ex = TYPE_SIGNED;
+            //it.code->recalc();
+            //it.to = ;
+        }
 
         return true;
     }
@@ -69,7 +64,7 @@ private:
         inst*   code;
         T       label;
         int     pos;
-        int     to;
+        //int     to;
     };
 
     int64_t     label_min = 0xFFFFFFFFFF;
@@ -78,17 +73,17 @@ private:
     std::vector<info>   js;
     std::map<T, int>    ls;
 
-    int calc_bytes(int begin, int end)
+    int calc_counts(insts_t& insts, int begin, int end)
     {
         int r = 0;
-        //auto b = insts.begin() + begin;
-        //auto e = insts.begin() + end;
-        //for (auto& p = b; p != e; ++p)
-        //{
-        //    LOGT("%s - %d : %d : %d", p->name, p->bytes >> 1, p->reg, p->ex);
-        //    r += p->bytes;
-        //}
-        //LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
+        inst* b = insts[begin];
+        inst* e = insts[end];
+        for (inst* p = b; p != e; ++p)
+        {
+            LOGT("%s - %d : %d", p->name, p->count(), p->id);
+            r += p->count();
+        }
+        LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
         return r;
     }
 };
