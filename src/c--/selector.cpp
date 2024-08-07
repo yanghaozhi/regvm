@@ -61,6 +61,27 @@ const selector::reg selector::tmp(void)
     return reg(&r);
 }
 
+bool selector::release(const reg& r)
+{
+    if (r.ver != r.ptr->ver) return false;
+
+    r.ptr->ver += 1;
+
+    switch (r.ptr->status)
+    {
+    case 0:
+        return true;
+    case 1:
+        binds.remove(r);
+        return frees.active(r) != -1;
+    case 2:
+        locks.remove(r);
+        return frees.add(r) != -1;
+    default:
+        return false;
+    }
+}
+
 bool selector::active(const reg& r)
 {
     if (r.ver != r.ptr->ver) return false;

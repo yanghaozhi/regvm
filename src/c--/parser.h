@@ -21,7 +21,7 @@ public:
     class op
     {
     public:
-        std::deque<inst>&  insts;
+        insts_t&            insts;
         parser*             p;
 
         op(parser* pp) : insts(pp->insts), p(pp)     {};
@@ -29,9 +29,11 @@ public:
     };
 
     int                     lineno      = 0;
-    std::deque<inst>        insts;
+    insts_t                 insts;
+    selector                regs;
+    blocks                  scopes;
 
-    bool go(const char* src, std::deque<inst>& insts);
+    bool go(const char* src, insts_t& insts);
 
     bool add(op* func, ...);
 
@@ -63,7 +65,5 @@ private:
     template <typename T, typename O> selector::reg literally_optimize(T& toks, O& ops);
     template <typename T, typename O> selector::reg pop_and_calc(T& toks, O& ops);
 
-    selector                        regs;
-    blocks                          scopes;
 };
 

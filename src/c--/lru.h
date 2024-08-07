@@ -12,9 +12,9 @@ public:
 
     int     size = 0;
 
-    T get()     {return used(0);}
+    int get()     {return used(0);}
 
-    T add(T v)  //if return >= 0 means it swap this old one
+    int add(T v)  //if return >= 0 means it swap this old one
     {
         if (size >= max) 
         {
@@ -27,7 +27,7 @@ public:
         return -1;
     }
 
-    T remove(void)
+    int remove(void)
     {
         T v = used(0);
         if (v >= 0)
@@ -70,7 +70,7 @@ public:
 private:
     T       datas[max];
 
-    T used(int id)
+    int used(int id)
     {
         if (size == 0) return -1;
         T v = datas[id];

@@ -28,7 +28,7 @@ public:
         uint8_t             id;
         uint8_t             status; //1 binds, 2 locks
         //uint16_t            ref;
-        uint32_t            ver;
+        mutable uint32_t    ver;
         std::string_view    var;
     };
 
@@ -37,7 +37,7 @@ public:
         reg(void) : ver(0), ptr(NULL)   {};
         reg(const data* d) : ver(d->ver), ptr(d) {}
 
-        const uint32_t      ver;
+        uint32_t            ver;
         const data*         ptr;
 
         operator int (void) const   { return ptr->id; }
@@ -47,7 +47,7 @@ public:
     const reg lock(void);
     const reg tmp(void);
 
-    void release(const reg& r);
+    bool release(const reg& r);
     bool active(const reg& r);
 
     //reg get(const std::string_view& name, std::function<reg (void)>&& reload);

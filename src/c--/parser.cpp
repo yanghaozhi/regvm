@@ -15,7 +15,7 @@
 #include "statements.h"
 
 
-parser::parser() : parser_list(new trie_tree()), regs(), scopes(regs)
+parser::parser() : regs(), scopes(regs), parser_list(new trie_tree())
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
@@ -34,7 +34,7 @@ parser::~parser()
     //TODO
 }
 
-bool parser::go(const char* src, std::deque<inst>& out)
+bool parser::go(const char* src, insts_t& out)
 {
     LOGD("%s", src);
 
@@ -46,9 +46,9 @@ bool parser::go(const char* src, std::deque<inst>& out)
     call_func_no_ret    cfnr(this);
     assign_var          avar(this);
     if_else             ie(this);
-    do_while            dw(this);
-    while_loop          wl(this);
-    for_loop            fl(this);
+    //do_while            dw(this);
+    //while_loop          wl(this);
+    //for_loop            fl(this);
 
     scopes.enter();
     while ((src != NULL) && (*src != '\0'))
@@ -291,19 +291,19 @@ template <typename T, typename O> selector::reg parser::literally_optimize(T& to
             return r;                                           \
         }                                                       \
         break;
-        OPTIMIZE(Add,   <=, 16, abs, l, CALC, l, v, 0);
-        OPTIMIZE(Sub,   <=, 16, abs, l, CALC, l, v, 1);
-        OPTIMIZE(Mul,   <=, 16, abs, l, CALC, l, v, 2);
-        OPTIMIZE(Div,   <=, 16, abs, l, CALC, l, v, 3);
-        OPTIMIZE(Mod,   <=, 16, abs, l, CALC, l, v, 4);
-        OPTIMIZE(Shl,   <=, 16, abs, l, CALC, l, v, 5);
-        OPTIMIZE(Shr,   <=, 16, abs, l, CALC, l, v, 6);
-        OPTIMIZE(Eq, ==, 0, NOP, regs.tmp(), CMP, l, 0);
-        OPTIMIZE(Ne, ==, 0, NOP, regs.tmp(), CMP, l, 1);
-        OPTIMIZE(Gt, ==, 0, NOP, regs.tmp(), CMP, l, 2);
-        OPTIMIZE(Ge, ==, 0, NOP, regs.tmp(), CMP, l, 3);
-        OPTIMIZE(Lt, ==, 0, NOP, regs.tmp(), CMP, l, 4);
-        OPTIMIZE(Le, ==, 0, NOP, regs.tmp(), CMP, l, 5);
+        OPTIMIZE(Add,   <=, 16, abs, l, CALC, r, v, 0);
+        OPTIMIZE(Sub,   <=, 16, abs, l, CALC, r, v, 1);
+        OPTIMIZE(Mul,   <=, 16, abs, l, CALC, r, v, 2);
+        OPTIMIZE(Div,   <=, 16, abs, l, CALC, r, v, 3);
+        OPTIMIZE(Mod,   <=, 16, abs, l, CALC, r, v, 4);
+        OPTIMIZE(Shl,   <=, 16, abs, l, CALC, r, v, 5);
+        OPTIMIZE(Shr,   <=, 16, abs, l, CALC, r, v, 6);
+        OPTIMIZE(Eq, ==, 0, NOP, regs.tmp(), CMP, r, l, 0);
+        OPTIMIZE(Ne, ==, 0, NOP, regs.tmp(), CMP, r, l, 1);
+        OPTIMIZE(Gt, ==, 0, NOP, regs.tmp(), CMP, r, l, 2);
+        OPTIMIZE(Ge, ==, 0, NOP, regs.tmp(), CMP, r, l, 3);
+        OPTIMIZE(Lt, ==, 0, NOP, regs.tmp(), CMP, r, l, 4);
+        OPTIMIZE(Le, ==, 0, NOP, regs.tmp(), CMP, r, l, 5);
 #undef OPTIMIZE
 #undef NOP
     default:

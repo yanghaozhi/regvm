@@ -14,7 +14,7 @@ public:
 
     void set_jump(const T& label, inst* code, int pos)
     {
-        js.emplace_back(jump{code, label, pos + 1, -1});
+        js.emplace_back(info{code, label, pos + 1, -1});
     }
 
     void set_label(const T& label, int pos)
@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    struct jump
+    struct info
     {
         inst*   code;
         T       label;
@@ -75,7 +75,7 @@ private:
     int64_t     label_min = 0xFFFFFFFFFF;
     int64_t     label_max = -1;
 
-    std::vector<jump>   js;
+    std::vector<info>   js;
     std::map<T, int>    ls;
 
     int calc_bytes(int begin, int end)

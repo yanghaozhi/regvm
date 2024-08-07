@@ -81,7 +81,7 @@ options:
 
 int main(int argc, char** argv)
 {
-    std::deque<inst> insts;
+    insts_t insts;
 
     const char* src = t1;
     int fd = -1;
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
 
     for (auto& it : insts)
     {
-        (it.*op)(fp);
+        (it->*op)(fp);
     }
 
     if (fp != stdout)
@@ -168,6 +168,11 @@ int main(int argc, char** argv)
     }
     //auto r = grammar(t2);
     //printf("grammar : %d\n", r);
+    //
+    for (auto& it : insts)
+    {
+        delete it;
+    }
 
     if (fd >= 0)
     {
