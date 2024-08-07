@@ -9,7 +9,7 @@ class blocks
 {
 public:
     blocks(selector& s) : sel(s)    {};
-    ~blocks();
+    ~blocks()                       {};
 
     const selector::reg new_var(const std::string_view& name);
     template <typename F> const selector::reg find_var(const std::string_view& name, F reload)

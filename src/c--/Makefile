@@ -8,7 +8,7 @@ OUT=$(ROOT)/out
 
 EXT=mem
 
-DEPS=$(OUT)/libcore.a $(OUT)/lib$(EXT).a
+DEPS=$(OUT)/libcore.a $(OUT)/lib$(EXT).a $(OUT)/libcommon.a
 
 all: EXTRA := -O0 -g -DLOG_LEVEL=10 -DDEBUG
 
