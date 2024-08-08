@@ -187,19 +187,26 @@ const char* jumps::jcmp(const char* src, labels<int>& js, int label)
 
 
     token v;
-    src = p->next_token(src, v);
-    if (v.info.type != '(') return NULL;
+    //src = p->next_token(src, v);
+    //if (v.info.type != '(') return NULL;
 
     src = p->expression(src, toks[0].reg, &end);
-    if (src == NULL) return NULL;
+    if (src == NULL)
+    {
+        LOGE("parse expr ERROR");
+        return NULL;
+    }
 
-    src = p->next_token(src, toks[1]);
+    //src = p->next_token(src, toks[1]);
 
-    src = p->expression(src, toks[2].reg, &end);
+    //src = p->expression(src, toks[2].reg, &end);
 
-    src = p->next_token(src, v);
-    if (v.info.type != ')') return NULL;
-
+    //src = p->next_token(src, v);
+    //if (v.info.type != ')')
+    //{
+    //    LOGE("cmp expr does NOT ended");
+    //    return NULL;
+    //}
 
     int op = 0;
 
@@ -259,7 +266,11 @@ const char* if_else::go(const char* src, const token* toks, int count)
     labels<int> jump;
 
     src = jcmp(src, jump, 0);
-    if (src == NULL) return NULL;
+    if (src == NULL)
+    {
+        LOGE("jcmp ERROR");
+        return NULL;
+    }
 
     src = p->statement(src);
 

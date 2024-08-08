@@ -429,7 +429,6 @@ const char* parser::call_func(const char* src, const token& name, std::vector<se
         {
             a.emplace_back((int)it);
         }
-        rets.emplace_back(regs.tmp());
         INST(ECHO, a);
     }
     return src;
