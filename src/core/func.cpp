@@ -349,6 +349,7 @@ bool func::run(struct regvm* vm, int64_t start)
         int next = step(vm, *cur, offset, rest, cur + 1);
         if (unlikely(next == 0))
         {
+            VM_ERROR(ERR_RUNTIME, *cur, offset, "run code ERROR at %lld : %s - %d - %d - %d", offset, CODE_NAME(cur->id), cur->a, cur->b, cur->c);
             return ! vm->fatal;
         }
 

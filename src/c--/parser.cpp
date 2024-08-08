@@ -126,7 +126,7 @@ const char* parser::statement(const char* src, std::function<void (const token&)
             continue;
         }
 
-        LOGD("%d %c", tok.info.type, (char)tok.info.orig);
+        //LOGD("%d %c", tok.info.type, (char)tok.info.orig);
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
@@ -337,6 +337,7 @@ template <typename T, typename O> selector::reg parser::pop_and_calc(T& toks, O&
     const int level = operator_level(ops.back());
     do
     {
+        r = regs.tmp();
         op = ops.back();
         ops.pop_back();
         auto a = token_2_reg(toks.back());
@@ -411,14 +412,12 @@ const char* parser::call_func(const char* src, const token& name, std::vector<se
         }
 
         std::vector<int> a;
-        a.push_back(args.size());
         for (auto& it : args)
         {
             a.emplace_back((int)it);
         }
         rets.emplace_back(regs.lock());
-        //TODO
-        //INST(ECHO, (int)(rets[0]), 0, a);
+        INST(ECHO, a);
     }
     return src;
 }

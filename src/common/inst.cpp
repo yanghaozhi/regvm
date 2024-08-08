@@ -98,7 +98,8 @@ void instv<CODE_JUMP>::print_asm(FILE* fp) const
 }
 
 
-instv<CODE_SET>::instv(const char* n, int r, const std::string_view& v) : inst(CODE_SET, n), str(v)
+instv<CODE_SET>::instv(const char* n, int r, const std::string_view& v) : inst(CODE_SET, n)
+    ,reg(r), type(TYPE_STRING), str(v)
 {
     ex.str = str.c_str();
     c = set_datas((uintptr_t)ex.str, 1);
@@ -279,4 +280,110 @@ int instex::set_datas(uint64_t v, int header)
 
     return h;
 }
+
+bool instv<CODE_ECHO>::scan(const char* src)
+{
+    char* e = NULL;
+    const char* p = src;
+    while ((p != NULL) && (*p != '\n') && (*p != '\r') && (*p != '\n'))
+    {
+        args.push_back(strtol(p, &e, 10));
+        p = e;
+    }
+    return true;
+}
+
+int instv<CODE_ECHO>::count(void) const
+{
+    int s = args.size() - 2;
+    return (s <= 0) ? 1 : (s / 3) + (int)(bool)(s % 3);
+}
+
+template <typename F> inline void cmd_args(const std::vector<int>& args, const int skip, F func)
+{
+    const int size = args.size() - skip;
+    for (int i = 0; i < size / 3; i++)
+    {
+        const int base = i * 3 + skip;
+        func(args[base + 0], args[base + 1], args[base + 2]);
+    }
+    switch (size % 3)
+    {
+    case 1:
+        func(args[args.size() - 1], 0, 0);
+        break;
+    case 2:
+        func(args[args.size() - 2], args[args.size() - 1], 0);
+        break;
+    }
+}
+
+void instv<CODE_ECHO>::print(FILE* fp) const
+{
+    fprintf(fp, "%-8s %02X\t%d\n", name, id, (int)args.size());
+    for (auto& it : args)
+    {
+        fprintf(fp, "\t%d", it);
+    }
+    fprintf(fp, "\n");
+}
+
+void instv<CODE_ECHO>::print_bin(FILE* fp) const
+{
+    code_t code = {0};
+    code.id = CODE_ECHO;
+    code.a = args.size();
+
+    switch (args.size())
+    {
+    case 0:
+        break;
+    case 2:
+        code.c = args[1];
+        [[fallthrough]];
+    case 1:
+        code.b = args[0];
+        fwrite(&code, sizeof(code_t), 1, fp);
+        break;
+    default:
+        code.b = args[0];
+        code.c = args[1];
+        fwrite(&code, sizeof(code_t), 1, fp);
+        cmd_args(args, 2, [fp, &code](int a, int b, int c)
+            {
+                code.id = CODE_DATA;
+                code.a = a;
+                code.b = b;
+                code.c = c;
+                fwrite(&code, sizeof(code_t), 1, fp);
+            });
+        break;
+    }
+}
+
+void instv<CODE_ECHO>::print_asm(FILE* fp) const
+{
+    fprintf(fp, "%-8s %d", name, (int)args.size());
+    switch (args.size())
+    {
+    case 0:
+        fprintf(fp, "\t%d\t%d\n", 0, 0);
+        break;
+    case 1:
+        fprintf(fp, "\t%d\t%d\n", args[0], 0);
+        break;
+    case 2:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+        break;
+    default:
+        cmd_args(args, 2, [fp](int a, int b, int c)
+            {
+                fprintf(fp, "DATA    %d\t%d\t%d\n", a, b, c);
+            });
+        break;
+    }
+}
+
+
+
 

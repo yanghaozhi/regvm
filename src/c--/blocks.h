@@ -3,6 +3,7 @@
 #include <list>
 #include <unordered_map>
 
+#include "common.h"
 #include "selector.h"
 
 class blocks
@@ -11,6 +12,7 @@ public:
     blocks(selector& s) : sel(s)    {};
     ~blocks()                       {};
 
+    bool bind_var(const std::string_view& name, const selector::reg& v);
     const selector::reg new_var(const std::string_view& name);
     template <typename F> const selector::reg find_var(const std::string_view& name, F reload)
     {
@@ -21,8 +23,10 @@ public:
             {
                 if (sel.active(v->second) == false)
                 {
+                    LOGW("find invalid result %d:%d for %s, need to reload it", (int)v->second, v->second.ver, VIEW(name));
                     return reload();
                 }
+                LOGT("find result %d:%d for %s", (int)v->second, v->second.ver, VIEW(name));
                 return v->second;
             }
         }

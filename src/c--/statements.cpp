@@ -53,6 +53,12 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     src = p->expression(src, v);
     if (src == NULL) return NULL;
 
+    if (p->scopes.bind_var(name, v) == false)
+    {
+        LOGE("Can not find var : %s", VIEW(name));
+        return 0;
+    }
+
     auto n = p->regs.tmp();
     INST(SET, n, name);
     INST(STORE, v, n, 2);

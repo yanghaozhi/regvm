@@ -303,25 +303,74 @@ inline void vm_cmd_echo_var(const reg::v& v)
     }
 }
 
+inline void vm_cmd_echo_vars(regvm* vm, int a = -1, int b = -1, int c = -1)
+{
+    if (a < 0) return;
+
+    vm_cmd_echo_var(vm->reg.id(a));
+
+    if (b < 0) return;
+    printf("\t");
+
+    vm_cmd_echo_var(vm->reg.id(b));
+
+    if (c < 0) return;
+    printf("\t");
+
+    vm_cmd_echo_var(vm->reg.id(c));
+}
+
+
 int vm_CODE_ECHO(regvm* vm, code_t code, int offset, const void* extra)
 {
-    switch (code.a)
+    int r = 1;
+    const int count = code.a;
+    switch (count)
     {
     case 2:
-        vm_cmd_echo_var(vm->reg.id(code.b));
-        printf("\t");
-        vm_cmd_echo_var(vm->reg.id(code.c));
+        vm_cmd_echo_vars(vm, code.b, code.c);
         break;
     case 1:
-        vm_cmd_echo_var(vm->reg.id(code.b));
+        vm_cmd_echo_vars(vm, code.b);
         break;
     case 0:
         break;
     default:
-        return __LINE__;
+        vm_cmd_echo_vars(vm, code.b, code.c);
+        {
+            const int loop = (count - 2) / 3;
+            r += loop;
+            code_t* p = (code_t*)extra;
+            for (int i = 0; i < loop; i++)
+            {
+                if (p->id != CODE_DATA) return 0;
+                printf("\t");
+                vm_cmd_echo_vars(vm, p->a, p->b, p->c);
+                p += 1;
+            }
+            if (p->id == CODE_DATA)
+            {
+                switch (count - 2 - loop * 3)
+                {
+                case 1:
+                    printf("\t");
+                    vm_cmd_echo_vars(vm, p->a);
+                    r += 1;
+                    break;
+                case 2:
+                    printf("\t");
+                    vm_cmd_echo_vars(vm, p->a, p->b);
+                    r += 1;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        break;
     }
     printf("\n");
-    return (code.a <= 2) ? 1 : 2;
+    return r;
 }
 
 int vm_CODE_SLEN(regvm* vm, code_t code, int offset, const void* extra)

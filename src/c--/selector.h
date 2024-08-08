@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <assert.h>
 
 #include <set>
@@ -19,8 +20,9 @@ public:
 
     enum STATUS
     {
-        binded,
-        locked,
+        FREED,
+        BINDED,
+        LOCKED,
     };
 
     struct data
@@ -43,12 +45,14 @@ public:
         operator int (void) const   { return ptr->id; }
     };
 
+    bool bind(const std::string_view& name, const reg& v);
     const reg bind(const std::string_view& name);
     const reg lock(void);
     const reg tmp(void);
 
     bool release(const reg& r);
     bool active(const reg& r);
+    bool valid(const reg& r);
 
     //reg get(const std::string_view& name, std::function<reg (void)>&& reload);
 

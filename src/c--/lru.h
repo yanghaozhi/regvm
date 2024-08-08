@@ -24,7 +24,7 @@ public:
             return r;
         }
         datas[size++] = v;
-        return -1;
+        return v;
     }
 
     int remove(void)

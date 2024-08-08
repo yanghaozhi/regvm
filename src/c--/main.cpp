@@ -160,7 +160,7 @@ int main(int argc, char** argv)
         auto vm = regvm_init();
 
         int64_t exit = 0;
-        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 1, &exit);
+        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
 
         regvm_exit(vm);
 

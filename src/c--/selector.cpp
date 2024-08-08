@@ -19,15 +19,49 @@ selector::selector()
     }
 }
 
+bool selector::bind(const std::string_view& name, const selector::reg& v)
+{
+    if (valid(v) == false)
+    {
+        LOGE("reg %d:%p is invalid", v.ver, v.ptr);
+        return false;
+    }
+
+    data& r = datas[v.ptr->id];
+    if (r.status != FREED)
+    {
+        LOGE("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
+        return false;
+    }
+
+    r.status = BINDED;
+    r.var = name;
+    int d = binds.add(v);
+    if (d < 0)
+    {
+        LOGW("Can NOT add %d to binds", r.id);
+
+        datas[d].ver += 1;
+        datas[d].status = FREED;
+        frees.add(d);
+        return false;
+    }
+    else
+    {
+        frees.remove(r.id);
+    }
+    return true;
+}
+
 const selector::reg selector::bind(const std::string_view& name)
 {
     int v = frees.remove();
     data& r = datas[v];
     r.ver += 1;
-    r.status = binded;
+    r.status = BINDED;
     r.var = name;
     int d = binds.add(v);
-    if (d >= 0)
+    if (d < 0)
     {
         datas[d].ver += 1;
         datas[d].status = 0;
@@ -41,10 +75,10 @@ const selector::reg selector::lock(void)
     int v = frees.remove();
     data& r = datas[v];
     r.ver += 1;
-    r.status = binded;
+    r.status = LOCKED;
     r.var = "";
     int d = locks.add(v);
-    if (d >= 0)
+    if (d < 0)
     {
         datas[d].ver += 1;
         datas[d].status = 0;
@@ -63,7 +97,7 @@ const selector::reg selector::tmp(void)
 
 bool selector::release(const reg& r)
 {
-    if (r.ver != r.ptr->ver) return false;
+    if (valid(r) == false) return false;
 
     r.ptr->ver += 1;
 
@@ -84,18 +118,22 @@ bool selector::release(const reg& r)
 
 bool selector::active(const reg& r)
 {
-    if (r.ver != r.ptr->ver) return false;
+    if (valid(r) == false) return false;
 
     switch (r.ptr->status)
     {
-    case 0:
+    case FREED:
         return frees.active(r.ptr->id) != -1;
-    case 1:
+    case BINDED:
         return binds.active(r.ptr->id) != -1;
-    case 2:
+    case LOCKED:
         return locks.active(r.ptr->id) != -1;
     default:
         return false;
     }
 }
 
+bool selector::valid(const reg& r)
+{
+    return ((r.ptr != NULL) && (r.ptr->ver == r.ver)) ? true : false;
+}

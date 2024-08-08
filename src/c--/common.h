@@ -2,6 +2,7 @@
 
 #include <code.h>
 
+#include <log.h>
 #include "selector.h"
 
 //支持的标记类别(供词法分析器next解析成对应的标记)
