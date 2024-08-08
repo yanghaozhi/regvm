@@ -376,9 +376,10 @@ void instv<CODE_ECHO>::print_asm(FILE* fp) const
         fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
         break;
     default:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
         cmd_args(args, 2, [fp](int a, int b, int c)
             {
-                fprintf(fp, "DATA    %d\t%d\t%d\n", a, b, c);
+                fprintf(fp, "DATA     %d\t%d\t%d\n", a, b, c);
             });
         break;
     }
