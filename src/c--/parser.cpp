@@ -174,6 +174,45 @@ bool parser::add(op* func, ...)
     return true;
 }
 
+inline int calc_op(int op)
+{
+    switch (op)
+    {
+#define CALC(k, op)         \
+    case k:                 \
+        return op;
+        CALC(Add, 0);
+        CALC(Sub, 1);
+        CALC(Mul, 2);
+        CALC(Div, 3);
+        CALC(Mod, 4);
+        CALC(Shl, 5);
+        CALC(Shr, 6);
+#undef CALC
+    default:
+        return -10000;
+    }
+}
+
+inline int cmp_op(int op)
+{
+    switch (op)
+    {
+#define CALC(k, op)         \
+    case k:                 \
+        return op;
+        CALC(Eq, 0);
+        CALC(Ne, 1);
+        CALC(Gt, 2);
+        CALC(Ge, 3);
+        CALC(Lt, 4);
+        CALC(Le, 5);
+#undef CALC
+    default:
+        return -10000;
+    }
+}
+
 inline int operator_level(int op)
 {
     //ref : https://en.cppreference.com/w/cpp/language/operator_precedence
@@ -266,33 +305,33 @@ selector::reg parser::token_2_reg(const token& tok)
     return selector::reg();
 }
 
-template <typename T, typename O> inline selector::reg literally_calc(parser* p, T& toks, O& ops, int v, int op, const token& tok)
-{
-    if ((-127 <= v) && (v <= 127))
-    {
-        toks.pop_back();
-        ops.pop_back();
-        auto r = p->token_2_reg(toks.back());
-        auto& insts = p->insts;
-        INST(CALC, r, v, op);
-        return r;
-    }
-    return p->token_2_reg(tok);
-}
-
-template <typename T, typename O> inline selector::reg literally_cmp(parser* p, T& toks, O& ops, int v, int op, const token& tok)
-{
-    if ((-127 <= v) && (v <= 127))
-    {
-        toks.pop_back();
-        ops.pop_back();
-        auto r = p->token_2_reg(toks.back());
-        auto& insts = p->insts;
-        INST(CALC, r, v, op);
-        return r;
-    }
-    return p->token_2_reg(tok);
-}
+//template <typename T, typename O> inline selector::reg literally_calc(parser* p, T& toks, O& ops, int v, int op, const token& tok)
+//{
+//    if ((-127 <= v) && (v <= 127))
+//    {
+//        toks.pop_back();
+//        ops.pop_back();
+//        auto r = p->token_2_reg(toks.back());
+//        auto& insts = p->insts;
+//        INST(CALC, r, v, op);
+//        return r;
+//    }
+//    return p->token_2_reg(tok);
+//}
+//
+//template <typename T, typename O> inline selector::reg literally_cmp(parser* p, T& toks, O& ops, int v, int op, const token& tok)
+//{
+//    if ((-127 <= v) && (v <= 127))
+//    {
+//        toks.pop_back();
+//        ops.pop_back();
+//        auto r = p->token_2_reg(toks.back());
+//        auto& insts = p->insts;
+//        INST(CALC, r, v, op);
+//        return r;
+//    }
+//    return p->token_2_reg(tok);
+//}
 
 template <typename T, typename O> inline selector::reg literally_optimize(parser* p, T& toks, O& ops)
 {
@@ -323,6 +362,100 @@ template <typename T, typename O> inline selector::reg literally_optimize(parser
     return p->token_2_reg(tok);
 }
 
+inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
+{
+    if (a.info.type != Num)
+    {
+        return false;
+    }
+    int v = 0;
+    switch (a.info.data_type)
+    {
+    case TYPE_SIGNED:
+        v = a.info.value.sint;
+        if ((v < -127) || (v > 127)) return false;
+        break;
+    case TYPE_UNSIGNED:
+        v = a.info.value.uint;
+        if (v > 127) return false;
+        break;
+    default:
+        return false;
+    }
+
+    auto& insts = p->insts;
+    INST(CALC, b, v, calc_op(op));
+    return true;
+}
+
+inline bool literally_cmp(parser* p, int op, const token& a, const selector::reg& b)
+{
+    return false;
+}
+
+selector::reg calc_a_b(parser* p, int op, const token& a, const selector::reg& b)
+{
+    auto& insts = p->insts;
+
+    if ((300 <= op) && (op < 320))
+    {
+        if (literally_calc(p, op, a, b) == true)
+        {
+            return b;
+        }
+    }
+
+    selector::reg r = p->regs.tmp();
+
+    auto c = p->token_2_reg(a);
+    switch (op)
+    {
+    case Add:
+        INST(ADD, r, c, b);
+        break;
+    case Sub:
+        INST(SUB, r, c, b);
+        break;
+    case Mul:
+        INST(MUL, r, c, b);
+        break;
+    case Div:
+        INST(DIV, r, c, b);
+        break;
+    case Mod:
+        INST(MOD, r, c, b);
+        break;
+    case Eq:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 0);
+        break;
+    case Ne:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 1);
+        break;
+    case Gt:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 2);
+        break;
+    case Ge:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 3);
+        break;
+    case Lt:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 4);
+        break;
+    case Le:
+        INST(SUB, r, c, b);
+        INST(CMP, r, r, 5);
+        break;
+    default:
+        LOGE("%d : UNKNOWN operator of expression %d - %c !!!", p->lineno, op, (char)op);
+        return selector::reg();
+    }
+    return r;
+}
+
 template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops)
 {
     if (toks.size() == 0)
@@ -336,74 +469,27 @@ template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks,
         return selector::reg();
     }
 
-    auto b = literally_optimize(p, toks, ops);
+    auto b = p->token_2_reg(toks.back());
+    //auto b = literally_optimize(p, toks, ops);
     toks.pop_back();
     if (ops.size() == 0)
     {
         return b;
     }
 
-    auto& insts = p->insts;
-
     int op = -1;
-    selector::reg r;
     const int level = operator_level(ops.back());
     do
     {
-        r = p->regs.tmp();
         op = ops.back();
-        ops.pop_back();
-        auto a = p->token_2_reg(toks.back());
-        toks.pop_back();
+        auto& a = toks.back();
 
-        switch (op)
-        {
-        case Add:
-            INST(ADD, r, a, b);
-            break;
-        case Sub:
-            INST(SUB, r, a, b);
-            break;
-        case Mul:
-            INST(MUL, r, a, b);
-            break;
-        case Div:
-            INST(DIV, r, a, b);
-            break;
-        case Mod:
-            INST(MOD, r, a, b);
-            break;
-        case Eq:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 0);
-            break;
-        case Ne:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 1);
-            break;
-        case Gt:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 2);
-            break;
-        case Ge:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 3);
-            break;
-        case Lt:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 4);
-            break;
-        case Le:
-            INST(SUB, r, a, b);
-            INST(CMP, r, r, 5);
-            break;
-        default:
-            LOGE("%d : UNKNOWN operator of expression %d - %c !!!", p->lineno, op, (char)op);
-            return selector::reg();
-        }
-        b = r;
+        b = calc_a_b(p, op, a, b);
+
+        toks.pop_back();
+        ops.pop_back();
     } while ((ops.size() > 0) && (level <= operator_level(ops.back())));
-    return r;
+    return b;
 }
 
 const char* parser::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
