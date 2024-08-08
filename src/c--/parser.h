@@ -47,6 +47,8 @@ public:
 
     const char* comma(const char* src, std::vector<selector::reg>& rets);
 
+    selector::reg token_2_reg(const token& tok);
+
 private:
     int                             depth      = 0;
     const char*                     last_line   = NULL;
@@ -59,11 +61,5 @@ private:
 
     trie_tree*                                  parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
-
-    selector::reg token_2_reg(const token& tok);
-    int operator_level(int op) const;
-    template <typename T, typename O> selector::reg literally_optimize(T& toks, O& ops);
-    template <typename T, typename O> selector::reg pop_and_calc(T& toks, O& ops);
-
 };
 
