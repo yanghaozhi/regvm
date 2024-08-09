@@ -55,8 +55,14 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
 
     if (p->scopes.bind_var(name, v) == false)
     {
-        LOGE("Can not find var : %s", VIEW(name));
-        return 0;
+        auto v2 = p->scopes.new_var(name);
+        if (v2.ptr == NULL)
+        {
+            LOGE("Can not create var : %s", VIEW(name));
+            return NULL;
+        }
+        INST(MOVE, v2, v, 0);
+        v = v2;
     }
 
     auto n = p->regs.tmp();

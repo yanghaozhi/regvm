@@ -30,7 +30,7 @@ bool selector::bind(const std::string_view& name, const selector::reg& v)
     data& r = datas[v.ptr->id];
     if (r.status != FREED)
     {
-        LOGE("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
+        LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
         return false;
     }
 

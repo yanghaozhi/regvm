@@ -26,7 +26,7 @@ bool blocks::bind_var(const std::string_view& name, const selector::reg& v)
 
     if (sel.bind(name, v) == false)
     {
-        LOGE("bind var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
+        LOGW("bind var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
         return false;
     }
 

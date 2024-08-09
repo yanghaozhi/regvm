@@ -319,6 +319,11 @@ inline bool can_literally_optimize(const token& a, int& v)
 
 inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
 {
+    if (b.ptr->status == selector::BINDED)
+    {
+        return false;
+    }
+
     int v = 0;
     if (can_literally_optimize(a, v) == false)
     {
@@ -397,18 +402,21 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
     {
         auto& insts = p->insts;
         auto v1 = p->token_2_reg(a);
-        switch (op)
+        if (v1.ptr->status != selector::BINDED)
         {
-        case Add:
-        case Sub:
-        case Mul:
-        case Div:
-        case Mod:
-            INST(CALC, v1, v, calc_op(op));
-            return v1;
-        default:
-            break;
-        };
+            switch (op)
+            {
+            case Add:
+            case Sub:
+            case Mul:
+            case Div:
+            case Mod:
+                INST(CALC, v1, v, calc_op(op));
+                return v1;
+            default:
+                break;
+            };
+        }
     }
     auto v2 = p->token_2_reg(b);
     if (can_literally_optimize(a, v) == true)

@@ -27,7 +27,7 @@ public:
 
     var* add(const char* name, const int type, bool global);
 
-    var* get(const char* name, bool global) const;
+    var* get(const char* name, bool global, bool no_recursive) const;
 
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 

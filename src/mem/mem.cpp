@@ -60,7 +60,7 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extr
 {
     auto& e = vm->reg.id(code.b);
     auto& r = vm->reg.id(code.a);
-    auto v = VM->get(e.value.str, false);
+    auto v = VM->get(e.value.str, false, false);
     if (v == NULL)
     {
         //auto vm = this;
@@ -81,6 +81,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     case 0:     //原始加载的变量（如无，则无操作）
         return r.store();
     case 1:
+    case 2:
         {
             auto& e = vm->reg.id(code.b);
             if (e.type != TYPE_STRING)
@@ -92,7 +93,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
             }
             else
             {
-                auto v = VM->get(e.value.str, false);
+                auto v = VM->get(e.value.str, false, (bool)(code.c - 1));
                 if (v != NULL)
                 {
                     if (v->store_from(r) == true)
@@ -104,10 +105,10 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
             }
         }
         break;
-    case 2:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
+    case 3:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
         {
             auto& n = vm->reg.id(code.b);
-            auto v = VM->get(n.value.str, false);
+            auto v = VM->get(n.value.str, false, true);
             if (v != NULL)
             {
                 return (v->type == code.a) ? true : false;
@@ -115,7 +116,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
             v = VM->add(n.value.str, code.a, false);
             return (v != NULL) ? true : false;
         }
-    case 3:     //只在顶层scope（全局变量）中查找或新建
+    case 4:     //只在顶层scope（全局变量）中查找或新建
         break;
     default:
         return 0;
@@ -168,15 +169,26 @@ var* regvm_mem::add(const char* name, const int type, bool global)
     return (v->release() == true) ? v : NULL;
 }
 
-var* regvm_mem::get(const char* name, bool global) const
+var* regvm_mem::get(const char* name, bool global, bool no_recursive) const
 {
     const int l = strlen(name);
     uint32_t h = var::calc_hash(name, l);
     if (global == false)
     {
-        for (const auto& it : frames.front().scopes)
+        if (no_recursive == false)
         {
-            auto v = it.get(h, name, l);
+            for (const auto& it : frames.front().scopes)
+            {
+                auto v = it.get(h, name, l);
+                if (v != NULL)
+                {
+                    return v;
+                }
+            }
+        }
+        else
+        {
+            auto v = frames.front().scopes.front().get(h, name, l);
             if (v != NULL)
             {
                 return v;
