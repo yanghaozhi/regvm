@@ -5,6 +5,7 @@
 #include <log.h>
 #include "parser.h"
 
+extern int cmp_op(int op);
 
 template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
 {
@@ -186,96 +187,51 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     return src;
 }
 
-const char* jumps::jcmp(const char* src, labels<int>& js, int label)
+inline selector::reg jcmp(parser* p, int op, const token& a, const token& b)
 {
-    token toks[3];
-    int end = 0;
-
-
-    token v;
-    //src = p->next_token(src, v);
-    //if (v.info.type != '(') return NULL;
-
-    src = p->expression(src, toks[0].reg, &end);
-    if (src == NULL)
+    auto& insts = p->insts;
+    switch (op)
     {
-        LOGE("parse expr ERROR");
-        return NULL;
-    }
-
-    //src = p->next_token(src, toks[1]);
-
-    //src = p->expression(src, toks[2].reg, &end);
-
-    //src = p->next_token(src, v);
-    //if (v.info.type != ')')
-    //{
-    //    LOGE("cmp expr does NOT ended");
-    //    return NULL;
-    //}
-
-    int op = 0;
-
-#define REG_OR_NUM(v, idx)                              \
-    int v = toks[idx].reg;                              \
-    if (toks[idx].info.type == Num)                     \
-    {                                                   \
-        v = toks[0].info.value.sint;                    \
-        if ((v <= 127) && (v >= -127))                  \
-        {                                               \
-            op &= 0x02;                                 \
-        }                                               \
-        else                                            \
-        {                                               \
-            auto n = p->regs.tmp();                     \
-            INST(SET, n, (int64_t)v);                   \
-            v = n;                                      \
-        }                                               \
-    }
-    REG_OR_NUM(a, 0);
-    REG_OR_NUM(b, 2);
-#undef REG_OR_NUM
-
-    switch (toks[1].info.type)
-    {
-#define CMP(k, v)                   \
-    case k:                         \
-        op += (v << 2);             \
-        break;
-        CMP(Eq, 0);
-        CMP(Ne, 1);
-        CMP(Gt, 2);
-        CMP(Ge, 3);
-        CMP(Lt, 4);
-        CMP(Le, 5);
-#undef CMP
+    case Eq:
+    case Ne:
+    case Gt:
+    case Ge:
+    case Lt:
+    case Le:
+        {
+            auto r = p->token_2_reg(a);
+            INST(JCMP, r, b.info.value.sint, cmp_op(op), 0);
+            return r;
+        }
     default:
-        return NULL;
+        return selector::reg();
     }
-
-    INST(JCMP, a, b, op);
-    js.jump(label, insts.back(), insts.size());
-
-    return src;
 }
 
-if_else::if_else(parser* p) : jumps(p)
+if_else::if_else(parser* p) : parser::op(p)
 {
     p->add(this, If, '(', -1);
 }
 
 const char* if_else::go(const char* src, const token* toks, int count)
 {
-    //selector::reg cmp;
-    //src = p->expression(src, cmp);
-
     labels<int> jump;
 
-    src = jcmp(src, jump, 0);
-    if (src == NULL)
+    selector::reg cmp;
+    int end = 0;
+    bool result = false;
+    src = p->expression(src, cmp, &end, [&jump, &result](parser* p, int op, const token& a, const token& b)
+        {
+            auto r = jcmp(p, op, a, b);
+            result = (r.ptr != NULL);
+            jump.jump(0, p->insts.back(), p->insts.size());
+            return r;
+        });
+
+    if (result == false)
     {
-        LOGE("jcmp ERROR");
-        return NULL;
+        INST(JCMP, cmp, 0, 1, 0);
+        jump.jump(0, p->insts.back(), p->insts.size());
     }
 
     src = p->statement(src);

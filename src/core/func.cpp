@@ -17,7 +17,7 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
-inline int vm_jump_dest(int c, const void* extra, int& next);
+inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra);
 inline int vm_equivalent(struct regvm* vm, int a, int b, int c);
 
 
@@ -112,41 +112,6 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         ONLY_INTEGER(MOD, %);
 #undef ONLY_INTEGER
 
-#define JUMPS(i, cmp)                                                       \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            const auto& a = vm->reg.id(inst.a);                             \
-            const auto& b = vm->reg.id(inst.b);                             \
-            int dest = vm_jump_dest(inst.cs, extra, next);                  \
-            int t = (a.type > b.type) ? a.type : b.type;                    \
-            switch (t)                                                      \
-            {                                                               \
-            case TYPE_SIGNED:                                               \
-                return ((int64_t)a cmp (int64_t)b) ? dest : next;           \
-            case TYPE_UNSIGNED:                                             \
-                return ((uint64_t)a cmp (uint64_t)b) ? dest : next;         \
-            case TYPE_DOUBLE:                                               \
-                return ((double)a cmp (double)b) ? dest : next;             \
-            default:                                                        \
-                UNSUPPORT_TYPE(#i, t, inst, offset);                        \
-                break;                                                      \
-            }                                                               \
-        }                                                                   \
-        break;
-        JUMPS(JEQ, ==);
-        JUMPS(JNE, !=);
-        JUMPS(JGT, >);
-        JUMPS(JGE, >=);
-        JUMPS(JLT, <);
-        JUMPS(JLE, <=);
-#undef JUMPS
-
-    case CODE_JUMP:
-        return inst.a3;
-
-    case CODE_CALC:
-        return vm_equivalent(vm, inst.a, inst.b, inst.c);
-
 #define WRITE(i, ...)                                                       \
     case CODE_##i:                                                          \
         {                                                                   \
@@ -189,6 +154,12 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #undef CMP
         }
         break;
+    case CODE_JUMP:
+        return inst.a3;
+    case CODE_JCMP:
+        return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
+    case CODE_CALC:
+        return vm_equivalent(vm, inst.a, inst.b, inst.c);
     case CODE_EXIT:
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;
@@ -254,16 +225,56 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
     return true;
 }
 
-inline int vm_jump_dest(int c, const void* extra, int& next)
+inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
 {
-    if (likely(c != 0))
-    {
-        return c;
-    }
-
     code_t* p = (code_t*)extra;
-    next = 2;
-    return p->a3;
+    if (unlikely(p->id != CODE_DATA))
+    {
+        return 0;
+    }
+    const int dest = p->a3;
+    const int next = 2;
+
+    const int m1 = 0x80;
+    const int m2 = 0x40;
+    const int v1 = a;
+    const int v2 = b;
+    const auto& r1 = vm->reg.id(a);
+    const auto& r2 = vm->reg.id(b);
+    const int t1 = ((c & 0x80) != 0) ? (int)TYPE_SIGNED : r1.type;
+    const int t2 = ((c & 0x40) != 0) ? (int)TYPE_SIGNED : r2.type;
+    const int t = (t1 > t2) ? t1 : t2;
+
+#define CMP_VAL(type, idx) (((c & m##idx) != 0) ? (type)v##idx : (type)r##idx)
+#define CMP_JUMP(type, cmp) return (CMP_VAL(type, 1) cmp CMP_VAL(type, 2)) ? dest : next;
+    switch (c & 0x0F)
+    {
+#define CMP_TYPE(k, cmp)                \
+    case k:                             \
+        switch (t)                      \
+        {                               \
+        case TYPE_SIGNED:               \
+            CMP_JUMP(int64_t, cmp);     \
+        case TYPE_UNSIGNED:             \
+            CMP_JUMP(uint64_t, cmp);    \
+        case TYPE_DOUBLE:               \
+            CMP_JUMP(double, cmp);      \
+        default:                        \
+            return 0;                   \
+        }                               \
+        break;
+        CMP_TYPE(0, ==);
+        CMP_TYPE(1, !=);
+        CMP_TYPE(2, > );
+        CMP_TYPE(3, >=);
+        CMP_TYPE(4, < );
+        CMP_TYPE(5, <=);
+#undef CMP_TYPE
+    }
+#undef CMP_JUMP
+#undef CMP_VAL
+
+    return 0;
 }
 
 inline int vm_equivalent(struct regvm* vm, int a, int b, int c)

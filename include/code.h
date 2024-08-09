@@ -146,16 +146,16 @@ enum DATA_TYPE
 //| JCMP    | CODE_JCMP     | a                 | b                 | op                |
 //  条件跳转，其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //  op 含义：
-//      op & 0x01 == 1：b为即时数
-//      op & 0x02 == 1：a为即时数
+//      op & 0x80 == 1：a为即时数
+//      op & 0x40 == 1：b为即时数
 //      否则，a/b均为寄存器id
 //
-//      op & 0xFC == 0：if (a == b) jump dest
-//      op & 0xFC == 1：if (a != b) jump dest
-//      op & 0xFC == 2：if (a >  b) jump dest
-//      op & 0xFC == 3：if (a >= b) jump dest
-//      op & 0xFC == 4：if (a <  b) jump dest
-//      op & 0xFC == 5：if (a <= b) jump dest
+//      op & 0x0F == 0：if (a == b) jump dest
+//      op & 0x0F == 1：if (a != b) jump dest
+//      op & 0x0F == 2：if (a >  b) jump dest
+//      op & 0x0F == 3：if (a >= b) jump dest
+//      op & 0x0F == 4：if (a <  b) jump dest
+//      op & 0x0F == 5：if (a <= b) jump dest
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JEQ      | CODE_JEQ     | a                 | b                 | dest              |
 //  if ($a == $b) jump dest

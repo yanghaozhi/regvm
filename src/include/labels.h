@@ -49,6 +49,7 @@ public:
             {
                 static_cast<instv<CODE_JUMP>*>(it.code)->offset = -((calc_counts(insts, l->second, it.pos) - js.front().code->count()) >> 1) - 1;
             }
+            LOGT("set dest of %s @ %d to %d : %d - %d", VIEW(it.code->name), it.pos, static_cast<instv<CODE_JUMP>*>(it.code)->offset, it.pos, l->second);
             //it.code->val.sint = diff;
             //it.code->ex = TYPE_SIGNED;
             //it.code->recalc();
@@ -76,14 +77,13 @@ private:
     int calc_counts(insts_t& insts, int begin, int end)
     {
         int r = 0;
-        inst* b = insts[begin];
-        inst* e = insts[end];
-        for (inst* p = b; p != e; ++p)
+        for (int i = begin; i < end; i++)
         {
+            inst* p = insts[i];
             LOGT("%s - %d : %d", p->name, p->count(), p->id);
             r += p->count();
         }
-        LOGT("--------------- %d -> %d = %d", begin, end, r >> 1);
+        LOGT("--------------- %d -> %d = %d", begin, end, r);
         return r;
     }
 };

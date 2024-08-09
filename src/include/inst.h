@@ -23,7 +23,7 @@ struct inst
     int                 id;
     const char*         name;
 
-    virtual bool scan(const char* str)      = 0;
+    virtual bool scan(const char* src)      = 0;
     virtual int count(void) const           {return 1;};
     virtual void print(FILE* fp) const      = 0;
     virtual void print_bin(FILE* fp) const  = 0;
@@ -44,9 +44,9 @@ template <int N> struct instv : public inst
 
     instv(const char* n) : inst(N, n)   {}
     instv(const char* n, int _a, int _b, int _c) : inst(N, n), a(_a), b(_b), c(_c)  {}
-    virtual bool scan(const char* str)
+    virtual bool scan(const char* src)
     {
-        return sscanf(str, "%d %d %d", &a, &b, &c) == 3;
+        return sscanf(src, "%d %d %d", &a, &b, &c) == 3;
     }
     virtual void print(FILE* fp) const
     {
@@ -88,7 +88,7 @@ template <> struct instv<CODE_SET> : public inst, public instex
     instv(const char* n, int r, double v);
 
     virtual int count(void) const     {return 1 + datas.size();};
-    virtual bool scan(const char* str);
+    virtual bool scan(const char* src);
     virtual void print(FILE* fp) const;
     virtual void print_bin(FILE* fp) const;
     virtual void print_asm(FILE* fp) const;
@@ -107,7 +107,7 @@ template <> struct instv<CODE_JUMP> : public inst
     instv(int i, const char* n) : inst(i, n)   {}
     instv(int i, const char* n, int o) : inst(i, n)    {};
 
-    virtual bool scan(const char* str);
+    virtual bool scan(const char* src);
     virtual int count(void) const       { return 1; };
     virtual void print(FILE* fp) const;
     virtual void print_bin(FILE* fp) const;
@@ -125,7 +125,7 @@ struct instj : public instv<CODE_JUMP>
     instj(int i, const char* n, int _a, int _b, int o) :
         instv<CODE_JUMP>(i, n, o), a(_a), b(_b)    {};
 
-    virtual bool scan(const char* str);
+    virtual bool scan(const char* src);
     virtual int count(void) const;
     virtual void print(FILE* fp) const;
     virtual void print_bin(FILE* fp) const;
@@ -147,6 +147,23 @@ JUMP_CMP(CODE_JLT);
 JUMP_CMP(CODE_JLE);
 #undef JUMP_CMP
 
+template <> struct instv<CODE_JCMP> : public instv<CODE_JUMP>
+{
+    int     a;
+    int     b;
+    int     c;
+
+    instv(const char* n) : instv<CODE_JUMP>(CODE_JCMP, n)    {};
+    instv(const char* n, int _a, int _b, int _c, int o) :
+        instv<CODE_JUMP>(CODE_JCMP, n, o), a(_a), b(_b), c(_c)    {};
+
+    virtual bool scan(const char* src);
+    virtual int count(void) const       { return 2; };
+    virtual void print(FILE* fp) const;
+    virtual void print_bin(FILE* fp) const;
+    virtual void print_asm(FILE* fp) const;
+};
+template struct instv<CODE_JCMP>;
 
 template <> struct instv<CODE_ECHO> : public inst
 {

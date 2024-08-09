@@ -395,7 +395,7 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const selector:
     return r;
 }
 
-inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
+inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b, parser::calc_t calc)
 {
     int v = 0;
     if (can_literally_optimize(b, v) == true)
@@ -414,6 +414,11 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
                 INST(CALC, v1, v, calc_op(op));
                 return v1;
             default:
+                if (calc != NULL)
+                {
+                    auto r = calc(p, op, a, b);
+                    if (r.ptr != NULL) return r;
+                }
                 break;
             };
         }
@@ -429,7 +434,7 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
     return calc_a_b(p, op, a, v2);
 }
 
-template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops)
+template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops, parser::calc_t calc)
 {
     if (toks.size() == 0)
     {
@@ -455,7 +460,7 @@ template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks,
     {
         int op = ops.back();
         const auto& v1 = toks[toks.size() - 2];
-        b = calc_a_b(p, op, v1, v2);
+        b = calc_a_b(p, op, v1, v2, calc);
         level = operator_level(op);
         toks.pop_back();
         ops.pop_back();
@@ -507,7 +512,13 @@ const char* parser::call_func(const char* src, const token& name, std::vector<se
     return src;
 }
 
-const char* parser::expression(const char* src, selector::reg& reg, int* end)
+const char* parser::expression(const char* src, selector::reg& reg)
+{
+    int end = 0;
+    return expression(src, reg, &end, NULL);
+}
+
+const char* parser::expression(const char* src, selector::reg& reg, int* end, calc_t calc)
 {
     std::deque<token>   toks;
     std::deque<int>     ops;
@@ -521,14 +532,14 @@ const char* parser::expression(const char* src, selector::reg& reg, int* end)
             switch (v.info.type)
             {
             case '(':
-                src = expression(src, v.reg, end);
+                src = expression(src, v.reg, end, calc);
                 break;
             case Num:
             case Id:
                 break;
             case ';':
                 toks.pop_back();
-                reg = pop_and_calc(this, toks, ops);
+                reg = pop_and_calc(this, toks, ops, calc);
                 if (end != NULL)
                 {
                     *end = ';';
@@ -548,7 +559,7 @@ const char* parser::expression(const char* src, selector::reg& reg, int* end)
         case ';':
         case ',':
         case ')':
-            reg = pop_and_calc(this, toks, ops);
+            reg = pop_and_calc(this, toks, ops, calc);
             if (end != NULL)
             {
                 *end = op.info.type;
@@ -572,7 +583,7 @@ const char* parser::expression(const char* src, selector::reg& reg, int* end)
                     int prev = operator_level(ops.back());
                     if (cur > prev)
                     {
-                        auto rr = pop_and_calc(this, toks, ops);
+                        auto rr = pop_and_calc(this, toks, ops, calc);
                         auto& vv = toks.emplace_back();
                         vv.reg = rr;
                     }
@@ -581,16 +592,6 @@ const char* parser::expression(const char* src, selector::reg& reg, int* end)
             }
             break;
         }
-        //if (r.valid() == true)
-        //{
-        //    auto& vv = toks.emplace_back();
-        //    vv.reg = r;
-        //}
-        //else
-        //{
-        //    LOGW("expr : %d : %s", (int)r, src);
-        //    reg.clear();
-        //}
     }
     if (end != NULL)
     {
@@ -605,7 +606,7 @@ const char* parser::comma(const char* src, std::vector<selector::reg>& rets)
     {
         selector::reg reg; 
         int end = -1;
-        src = expression(src, reg, &end);
+        src = expression(src, reg, &end, NULL);
         if (reg < 0)
         {
             LOGE("invalid expression result : %d : %s !!!", (int)reg, src);

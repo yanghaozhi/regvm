@@ -36,13 +36,7 @@ struct assign_var : public parser::op
     virtual const char* go(const char* src, const token* toks, int count);
 };
 
-struct jumps : public parser::op
-{
-    jumps(parser* p) : parser::op(p)    {};
-    virtual const char* jcmp(const char* src, labels<int>& js, int label);
-};
-
-struct if_else : public jumps
+struct if_else : public parser::op
 {
     if_else(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);
