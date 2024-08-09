@@ -22,4 +22,5 @@ do
 {
     echo (k);
     k -= 1;
+    echo (k);
 } while (k >= 0);

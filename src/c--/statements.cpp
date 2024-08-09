@@ -6,6 +6,7 @@
 #include "parser.h"
 
 extern int cmp_op(int op);
+extern bool can_literally_optimize(const token& a, int& v);
 
 template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
 {
@@ -91,36 +92,8 @@ assign_var::assign_var(parser* p) : parser::op(p)
     p->add(this, Id, MulE, -1);
     p->add(this, Id, DivE, -1);
     p->add(this, Id, ModE, -1);
-}
-
-template <typename T> const char* assign_var::optimize(const char* src, const std::string_view& name, T& reload, int op_id)
-{
-    token toks[2];
-    src = p->next_token(src, toks[0]);
-    switch (toks[0].info.type)
-    {
-    case TYPE_SIGNED:
-    case TYPE_UNSIGNED:
-        if ((toks[0].info.type != Num) || (toks[0].info.value.sint > 127) || (toks[0].info.value.sint < -127))
-        {
-            return NULL;
-        }
-        break;
-    default:
-        return NULL;
-    }
-    src = p->next_token(src, toks[1]);
-    switch (toks[1].info.type)
-    {
-    case ';':
-    case ')':
-        break;
-    default:
-        return NULL;
-    }
-    auto reg = p->scopes.find_var(name, reload);
-    INST(CALC, reg, toks[0].info.value.sint, op_id);
-    return src;
+    p->add(this, Id, ShlE, -1);
+    p->add(this, Id, ShrE, -1);
 }
 
 const char* assign_var::go(const char* src, const token* toks, int count)
@@ -134,56 +107,96 @@ const char* assign_var::go(const char* src, const token* toks, int count)
             INST(LOAD, vv, n, 0);
             return vv;
         };
-
-    const char* o = NULL;
-    switch (toks[1].info.type)
-    {
-#define OPT(k, op)                                  \
-    case k:                                         \
-        o = optimize(src, name, reload, op);        \
-        break;
-        OPT(AddE, 0);
-        OPT(SubE, 1);
-        OPT(MulE, 2);
-        OPT(DivE, 3);
-        OPT(ModE, 4);
-        OPT(ShlE, 5);
-        OPT(ShrE, 6);
-#undef OPT
-    default:
-        break;
-    }
-    if (o != NULL)
-    {
-        return o;
-    }
+    auto k = p->scopes.find_var(name, reload);
 
     selector::reg v;
     src = p->expression(src, v);
     switch (toks[1].info.type)
     {
     case Assign:
-        {
-            auto n = p->regs.tmp();
-            INST(SET, n, toks[0].name);
-            INST(STORE, v, n, 0);
-        }
+        INST(MOVE, k, v, 0);
         break;
-#define CALC(k, op)                                         \
-    case k:                                                 \
-        {                                                   \
-            auto reg = p->scopes.find_var(name, reload);    \
-            INST(op, reg, reg, v);                          \
-            INST(STORE, reg, 0, 0);                         \
-        }                                                   \
+#define CALC(i, op)                                     \
+    case i:                                             \
+        INST(op, k, k, v);                              \
         break;
         CALC(AddE, ADD);
         CALC(SubE, SUB);
         CALC(MulE, MUL);
         CALC(DivE, DIV);
         CALC(ModE, MOD);
+        CALC(ShlE, SHR);
+        CALC(ShrE, SHL);
 #undef CALC
     }
+    INST(STORE, k, 0, 0);
+    return src;
+}
+
+assign_equal::assign_equal(parser* p) : parser::op(p)
+{
+    p->add(this, Id, AddE, Num, -1);
+    p->add(this, Id, SubE, Num, -1);
+    p->add(this, Id, MulE, Num, -1);
+    p->add(this, Id, DivE, Num, -1);
+    p->add(this, Id, ModE, Num, -1);
+    p->add(this, Id, ShlE, Num, -1);
+    p->add(this, Id, ShrE, Num, -1);
+}
+
+const char* assign_equal::go(const char* src, const token* toks, int count)
+{
+    const std::string_view& name = toks[0].name;
+    auto reload = [this, name]()
+        {
+            auto n = p->regs.tmp();
+            INST(SET, n, name);
+            auto vv = p->regs.tmp();
+            INST(LOAD, vv, n, 0);
+            return vv;
+        };
+    auto k = p->scopes.find_var(name, reload);
+
+    int v = 0;
+    bool o = can_literally_optimize(toks[2], v);
+    switch (toks[1].info.type)
+    {
+#define CALC(i, op, op2)                                        \
+    case i:                                                     \
+        if (o == false)                                         \
+        {                                                       \
+            auto r = p->regs.tmp();                             \
+            switch (toks[2].info.type)                          \
+            {                                                   \
+            case TYPE_SIGNED:                                   \
+                INST(SET, r, toks[2].info.value.sint);          \
+                break;                                          \
+            case TYPE_UNSIGNED:                                 \
+                INST(SET, r, toks[2].info.value.uint);          \
+                break;                                          \
+            case TYPE_DOUBLE:                                   \
+                INST(SET, r, toks[2].info.value.dbl);           \
+                break;                                          \
+            default:                                            \
+                return NULL;                                    \
+            }                                                   \
+            INST(op, k, k, r);                                  \
+        }                                                       \
+        else                                                    \
+        {                                                       \
+            INST(CALC, k, v, op2);                              \
+        }                                                       \
+        break;
+        CALC(AddE, ADD, 0);
+        CALC(SubE, SUB, 1);
+        CALC(MulE, MUL, 2);
+        CALC(DivE, DIV, 3);
+        CALC(ModE, MOD, 4);
+        CALC(ShlE, SHR, 5);
+        CALC(ShrE, SHL, 6);
+#undef CALC
+    }
+    INST(STORE, k, 0, 0);
     return src;
 }
 

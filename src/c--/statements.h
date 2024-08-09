@@ -32,7 +32,12 @@ struct call_func_no_ret : public parser::op
 struct assign_var : public parser::op
 {
     assign_var(parser* p);
-    template <typename T> const char* optimize(const char* src, const std::string_view& name, T& reload, int op_id);
+    virtual const char* go(const char* src, const token* toks, int count);
+};
+
+struct assign_equal : public parser::op
+{
+    assign_equal(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);
 };
 

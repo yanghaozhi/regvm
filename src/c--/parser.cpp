@@ -45,6 +45,7 @@ bool parser::go(const char* src, insts_t& out)
     decl_var_init       dvi(this);
     call_func_no_ret    cfnr(this);
     assign_var          avar(this);
+    assign_equal        aeq(this);
     if_else             ie(this);
     do_while            dw(this);
     //while_loop          wl(this);
@@ -294,7 +295,7 @@ selector::reg parser::token_2_reg(const token& tok)
     return selector::reg();
 }
 
-inline bool can_literally_optimize(const token& a, int& v)
+bool can_literally_optimize(const token& a, int& v)
 {
     if (a.info.type != Num)
     {
