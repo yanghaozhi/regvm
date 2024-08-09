@@ -187,6 +187,25 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     return src;
 }
 
+inline int jcmp_op(int op)
+{
+    switch (op)
+    {
+#define CALC(k, op)         \
+    case k:                 \
+        return op;
+        CALC(Eq, 1);
+        CALC(Ne, 0);
+        CALC(Gt, 5);
+        CALC(Ge, 4);
+        CALC(Lt, 3);
+        CALC(Le, 2);
+#undef CALC
+    default:
+        return -10000;
+    }
+}
+
 inline selector::reg jcmp(parser* p, int op, const token& a, const token& b)
 {
     auto& insts = p->insts;
@@ -199,8 +218,11 @@ inline selector::reg jcmp(parser* p, int op, const token& a, const token& b)
     case Lt:
     case Le:
         {
+            int c = jcmp_op(op);
+            c |= 0x40;
             auto r = p->token_2_reg(a);
-            INST(JCMP, r, b.info.value.sint, cmp_op(op), 0);
+            int vb = b.info.value.sint;
+            INST(JCMP, r, vb, c, 0);
             return r;
         }
     default:

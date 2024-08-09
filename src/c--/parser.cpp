@@ -395,33 +395,33 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const selector:
     return r;
 }
 
-inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b, parser::calc_t calc)
+inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b, const parser::calc_t& calc)
 {
     int v = 0;
     if (can_literally_optimize(b, v) == true)
     {
         auto& insts = p->insts;
         auto v1 = p->token_2_reg(a);
-        if (v1.ptr->status != selector::BINDED)
+        switch (op)
         {
-            switch (op)
+        case Add:
+        case Sub:
+        case Mul:
+        case Div:
+        case Mod:
+            if (v1.ptr->status != selector::BINDED)
             {
-            case Add:
-            case Sub:
-            case Mul:
-            case Div:
-            case Mod:
                 INST(CALC, v1, v, calc_op(op));
-                return v1;
-            default:
-                if (calc != NULL)
-                {
-                    auto r = calc(p, op, a, b);
-                    if (r.ptr != NULL) return r;
-                }
-                break;
-            };
-        }
+            }
+            return v1;
+        default:
+            if (calc != NULL)
+            {
+                auto r = calc(p, op, a, b);
+                if (r.ptr != NULL) return r;
+            }
+            break;
+        };
     }
     auto v2 = p->token_2_reg(b);
     if (can_literally_optimize(a, v) == true)
@@ -434,7 +434,7 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b,
     return calc_a_b(p, op, a, v2);
 }
 
-template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops, parser::calc_t calc)
+template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops, const parser::calc_t& calc)
 {
     if (toks.size() == 0)
     {
@@ -518,7 +518,7 @@ const char* parser::expression(const char* src, selector::reg& reg)
     return expression(src, reg, &end, NULL);
 }
 
-const char* parser::expression(const char* src, selector::reg& reg, int* end, calc_t calc)
+const char* parser::expression(const char* src, selector::reg& reg, int* end, const calc_t& calc)
 {
     std::deque<token>   toks;
     std::deque<int>     ops;

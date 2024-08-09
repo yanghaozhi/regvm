@@ -57,12 +57,7 @@ regvm::regvm() : reg(), ops{NULL}
     SET_OPS(0, SHL);
     SET_OPS(0, SHR);
     SET_OPS(0, JUMP);
-    SET_OPS(0, JEQ);
-    SET_OPS(0, JNE);
-    SET_OPS(0, JGT);
-    SET_OPS(0, JGE);
-    SET_OPS(0, JLT);
-    SET_OPS(0, JLE);
+    SET_OPS(0, JCMP);
 
     SET_OPS(1, TRAP);
     SET_OPS(1, SET);

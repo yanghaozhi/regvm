@@ -217,7 +217,6 @@ void instv<CODE_SET>::print(FILE* fp) const
         break;
     }
 
-    fprintf(fp, "%-8s %d\t%d\t%d\n", name, reg, type, c);
     for (auto& it : datas)
     {
         data_print(fp, it);
@@ -349,7 +348,7 @@ template <typename F> inline void cmd_args(const std::vector<int>& args, const i
 
 void instv<CODE_ECHO>::print(FILE* fp) const
 {
-    fprintf(fp, "%-8s %02X\t%d\n", name, id, (int)args.size());
+    fprintf(fp, "%-8s %02X\t%d", name, id, (int)args.size());
     for (auto& it : args)
     {
         fprintf(fp, "\t%d", it);

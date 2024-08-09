@@ -155,7 +155,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         }
         break;
     case CODE_JUMP:
-        return inst.a3;
+        return inst.a3 + 1;
     case CODE_JCMP:
         return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
     case CODE_CALC:
@@ -183,7 +183,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         }
 
         VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
-        fprintf(stderr, "code %d is NOT SUPPORT YET", code);
+        fprintf(stderr, "code %d is NOT SUPPORT YET\n", code);
         return 0;
     };
 
@@ -225,6 +225,11 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
     return true;
 }
 
+template <typename T> inline T vm_cmp_val(const int c, const int i, const int* ms, const int* vs, const reg::v** rs)
+{
+    return ((c & ms[i]) != 0) ? (T)vs[i] : (T)*rs[i]; 
+}
+
 inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
 {
     code_t* p = (code_t*)extra;
@@ -232,21 +237,19 @@ inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
     {
         return 0;
     }
-    const int dest = p->a3;
     const int next = 2;
+    const int dest = p->a3 + next;
 
-    const int m1 = 0x80;
-    const int m2 = 0x40;
-    const int v1 = a;
-    const int v2 = b;
-    const auto& r1 = vm->reg.id(a);
-    const auto& r2 = vm->reg.id(b);
-    const int t1 = ((c & 0x80) != 0) ? (int)TYPE_SIGNED : r1.type;
-    const int t2 = ((c & 0x40) != 0) ? (int)TYPE_SIGNED : r2.type;
+    const int ms[] = {0x80, 0x40};
+    const int vs[] = {a, b};
+    const reg::v* rs[] = {&vm->reg.id(a), &vm->reg.id(b)};
+    const int t1 = ((c & 0x80) != 0) ? (int)TYPE_SIGNED : rs[0]->type;
+    const int t2 = ((c & 0x40) != 0) ? (int)TYPE_SIGNED : rs[1]->type;
     const int t = (t1 > t2) ? t1 : t2;
 
-#define CMP_VAL(type, idx) (((c & m##idx) != 0) ? (type)v##idx : (type)r##idx)
-#define CMP_JUMP(type, cmp) return (CMP_VAL(type, 1) cmp CMP_VAL(type, 2)) ? dest : next;
+//#define CMP_VAL(type, idx) (((c & m##idx) != 0) ? (type)v##idx : (type)r##idx)
+#define CMP_VAL(type, idx) vm_cmp_val<type>(c, idx, ms, vs, rs)
+#define CMP_JUMP(type, cmp) return (CMP_VAL(type, 0) cmp CMP_VAL(type, 1)) ? dest : next;
     switch (c & 0x0F)
     {
 #define CMP_TYPE(k, cmp)                \

@@ -42,7 +42,7 @@ public:
     const char* statement(const char* src, std::function<void (const token&)> cb = {});
 
     typedef std::function<selector::reg (parser*, int, const token&, const token&)> calc_t;
-    const char* expression(const char* src, selector::reg& reg, int* end, calc_t calc);
+    const char* expression(const char* src, selector::reg& reg, int* end, const calc_t& calc);
     const char* expression(const char* src, selector::reg& reg);
 
     const char* call_func(const char* src, const token& name, std::vector<selector::reg>& rets);

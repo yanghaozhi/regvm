@@ -8,7 +8,7 @@ int j = i + 10;
 
 echo(i, j);
 
-if (j > 10)
+if (j < 10)
 {
     echo(1234);
 }
