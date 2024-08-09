@@ -275,10 +275,6 @@ selector::reg parser::token_2_reg(const token& tok)
         break;
     case Id:
         {
-            //int n = regs.get();
-            //INST(SETC, n, tok.name);
-            //auto reg = regs.var(tok.name);
-            //INST(LOAD, reg, n);
             std::string_view name = tok.name;
             auto reg = scopes.find_var(tok.name, [this, name]()
                 {
@@ -288,13 +284,6 @@ selector::reg parser::token_2_reg(const token& tok)
                     INST(LOAD, reg, n, 0);
                     return reg;
                 });
-            //INST(LOAD, reg.get([](selector::reg* r)
-            //        {
-            //            auto n = regs.get();
-            //            INST(SETC, n, tok.name);
-            //            *id = n;
-            //            *ver = 
-            //        }), n);
             return reg;
         }
         break;
@@ -305,70 +294,13 @@ selector::reg parser::token_2_reg(const token& tok)
     return selector::reg();
 }
 
-//template <typename T, typename O> inline selector::reg literally_calc(parser* p, T& toks, O& ops, int v, int op, const token& tok)
-//{
-//    if ((-127 <= v) && (v <= 127))
-//    {
-//        toks.pop_back();
-//        ops.pop_back();
-//        auto r = p->token_2_reg(toks.back());
-//        auto& insts = p->insts;
-//        INST(CALC, r, v, op);
-//        return r;
-//    }
-//    return p->token_2_reg(tok);
-//}
-//
-//template <typename T, typename O> inline selector::reg literally_cmp(parser* p, T& toks, O& ops, int v, int op, const token& tok)
-//{
-//    if ((-127 <= v) && (v <= 127))
-//    {
-//        toks.pop_back();
-//        ops.pop_back();
-//        auto r = p->token_2_reg(toks.back());
-//        auto& insts = p->insts;
-//        INST(CALC, r, v, op);
-//        return r;
-//    }
-//    return p->token_2_reg(tok);
-//}
-
-template <typename T, typename O> inline selector::reg literally_optimize(parser* p, T& toks, O& ops)
-{
-    auto& tok = toks.back();
-    if ((tok.info.type != Num) || (ops.size() <= 1))
-    {
-        return p->token_2_reg(tok);
-    }
-
-    int v = tok.info.value.sint;
-
-    switch (ops.back())
-    {
-#define CALC(k, op)                                             \
-    case k:                                                     \
-        return literally_calc(p, toks, ops, v, op, tok);
-        CALC(Add, 0);
-        CALC(Sub, 1);
-        CALC(Mul, 2);
-        CALC(Div, 3);
-        CALC(Mod, 4);
-        CALC(Shl, 5);
-        CALC(Shr, 6);
-#undef CALC
-    default:
-        break;
-    }
-    return p->token_2_reg(tok);
-}
-
-inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
+inline bool can_literally_optimize(const token& a, int& v)
 {
     if (a.info.type != Num)
     {
         return false;
     }
-    int v = 0;
+
     switch (a.info.data_type)
     {
     case TYPE_SIGNED:
@@ -382,10 +314,27 @@ inline bool literally_calc(parser* p, int op, const token& a, const selector::re
     default:
         return false;
     }
+    return true;
+}
+
+inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
+{
+    int v = 0;
+    if (can_literally_optimize(a, v) == false)
+    {
+        return false;
+    }
 
     auto& insts = p->insts;
-    INST(CALC, b, v, calc_op(op));
-    return true;
+    switch (op)
+    {
+    case Add:
+    case Mul:
+        INST(CALC, b, v, calc_op(op));
+        return true;
+    default:
+        return false;
+    }
 }
 
 inline bool literally_cmp(parser* p, int op, const token& a, const selector::reg& b)
@@ -393,7 +342,7 @@ inline bool literally_cmp(parser* p, int op, const token& a, const selector::reg
     return false;
 }
 
-selector::reg calc_a_b(parser* p, int op, const token& a, const selector::reg& b)
+inline selector::reg calc_a_b(parser* p, int op, const token& a, const selector::reg& b)
 {
     auto& insts = p->insts;
 
@@ -426,34 +375,50 @@ selector::reg calc_a_b(parser* p, int op, const token& a, const selector::reg& b
         INST(MOD, r, c, b);
         break;
     case Eq:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, 0);
-        break;
     case Ne:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, 1);
-        break;
     case Gt:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, 2);
-        break;
     case Ge:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, 3);
-        break;
     case Lt:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, 4);
-        break;
     case Le:
         INST(SUB, r, c, b);
-        INST(CMP, r, r, 5);
+        INST(CMP, r, r, cmp_op(op));
         break;
     default:
         LOGE("%d : UNKNOWN operator of expression %d - %c !!!", p->lineno, op, (char)op);
         return selector::reg();
     }
     return r;
+}
+
+inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
+{
+    int v = 0;
+    if (can_literally_optimize(b, v) == true)
+    {
+        auto& insts = p->insts;
+        auto v1 = p->token_2_reg(a);
+        switch (op)
+        {
+        case Add:
+        case Sub:
+        case Mul:
+        case Div:
+        case Mod:
+            INST(CALC, v1, v, calc_op(op));
+            return v1;
+        default:
+            break;
+        };
+    }
+    auto v2 = p->token_2_reg(b);
+    if (can_literally_optimize(a, v) == true)
+    {
+        if (literally_calc(p, op, a, v2) == true)
+        {
+            return v2;
+        }
+    }
+    return calc_a_b(p, op, a, v2);
 }
 
 template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops)
@@ -463,32 +428,46 @@ template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks,
         LOGE("toks is empty");
         return selector::reg();
     }
+    if (ops.size() == 0)
+    {
+        auto r = p->token_2_reg(toks.back());
+        toks.pop_back();
+        return r;
+    }
     if (ops.size() != toks.size() - 1)
     {
         LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
         return selector::reg();
     }
 
-    auto b = p->token_2_reg(toks.back());
-    //auto b = literally_optimize(p, toks, ops);
-    toks.pop_back();
-    if (ops.size() == 0)
+    const auto& v2 = toks.back();
+    selector::reg b;
+    int level = -1;
+    if (v2.info.type == Num)
     {
-        return b;
+        int op = ops.back();
+        const auto& v1 = toks[toks.size() - 2];
+        b = calc_a_b(p, op, v1, v2);
+        level = operator_level(op);
+        toks.pop_back();
+        ops.pop_back();
     }
-
-    int op = -1;
-    const int level = operator_level(ops.back());
-    do
+    else
     {
-        op = ops.back();
+        b = p->token_2_reg(v2);
+    }
+    toks.pop_back();
+
+    while ((ops.size() > 0) && (level <= operator_level(ops.back())))
+    {
+        int op = ops.back();
         auto& a = toks.back();
 
         b = calc_a_b(p, op, a, b);
 
         toks.pop_back();
         ops.pop_back();
-    } while ((ops.size() > 0) && (level <= operator_level(ops.back())));
+    }
     return b;
 }
 
