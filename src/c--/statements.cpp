@@ -230,6 +230,28 @@ inline selector::reg jcmp(parser* p, int op, const token& a, const token& b)
     }
 }
 
+inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<int>& j)
+{
+    selector::reg cmp;
+    int end = 0;
+    bool result = false;
+    src = p->expression(src, cmp, &end, [&j, &result, label](parser* p, int op, const token& a, const token& b)
+        {
+            auto r = jcmp(p, op, a, b);
+            result = (r.ptr != NULL);
+            j.jump(label, p->insts.back(), p->insts.size());
+            return r;
+        });
+
+    auto& insts = p->insts;
+    if (result == false)
+    {
+        INST(JCMP, cmp, 0, 1, 0);
+        j.jump(label, p->insts.back(), p->insts.size());
+    }
+    return src;
+}
+
 if_else::if_else(parser* p) : parser::op(p)
 {
     p->add(this, If, '(', -1);
@@ -239,22 +261,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    selector::reg cmp;
-    int end = 0;
-    bool result = false;
-    src = p->expression(src, cmp, &end, [&jump, &result](parser* p, int op, const token& a, const token& b)
-        {
-            auto r = jcmp(p, op, a, b);
-            result = (r.ptr != NULL);
-            jump.jump(0, p->insts.back(), p->insts.size());
-            return r;
-        });
-
-    if (result == false)
-    {
-        INST(JCMP, cmp, 0, 1, 0);
-        jump.jump(0, p->insts.back(), p->insts.size());
-    }
+    src = cmp_jump_expr(src, 0, p, jump);
 
     src = p->statement(src);
 
@@ -278,51 +285,50 @@ const char* if_else::go(const char* src, const token* toks, int count)
     return (jump.finish(p->insts) == true) ? src : NULL;
 }
 
-//do_while::do_while(parser* p) : parser::op(p)
-//{
-//    p->add(this, Do, '{', -1);
-//}
-//
-//const char* do_while::go(const char* src, const token* toks, int count)
-//{
-//    labels jump(insts);
-//
-//    jump.set_label(0);
-//
-//    src = p->statement(src - 1, [&jump](auto& tok)
-//        {
-//            switch (tok.info.type)
-//            {
-//            case Break:
-//                SET_JUMP(jump, 2, JUMP, -1);
-//                break;
-//            case Continue:
-//                SET_JUMP(jump, 1, JUMP, -1);
-//                break;
-//            default:
-//                break;
-//            }
-//        });
-//
-//    jump.set_label(1);
-//
-//    token tok;
-//    src = p->next_token(src, tok);
-//    if (tok.info.type != While)
-//    {
-//        LOGE("do {...} MUST end with while !!!");
-//        return NULL;
-//    }
-//
-//    selector::reg cmp;
-//    src = p->expression(src, cmp);
-//
-//    SET_JUMP(jump, 0, JNZ, cmp);
-//
-//    jump.set_label(2);
-//
-//    return (jump.finish() == true) ? src : NULL;
-//}
+do_while::do_while(parser* p) : parser::op(p)
+{
+    p->add(this, Do, '{', -1);
+}
+
+const char* do_while::go(const char* src, const token* toks, int count)
+{
+    labels<int> jump;
+
+    jump.label(0, insts.size());
+
+    src = p->statement(src - 1, [this, &jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                INST(JUMP, 0);
+                jump.jump(2, p->insts.back(), p->insts.size());
+                break;
+            case Continue:
+                INST(JUMP, 0);
+                jump.jump(1, p->insts.back(), p->insts.size());
+                break;
+            default:
+                break;
+            }
+        });
+
+    jump.label(1, insts.size());
+
+    token tok;
+    src = p->next_token(src, tok);
+    if (tok.info.type != While)
+    {
+        LOGE("do {...} MUST end with while !!!");
+        return NULL;
+    }
+
+    src = cmp_jump_expr(src, 0, p, jump);
+
+    jump.label(2, insts.size());
+
+    return (jump.finish(p->insts) == true) ? src : NULL;
+}
 //
 //while_loop::while_loop(parser* p) : parser::op(p)
 //{

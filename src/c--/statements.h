@@ -42,19 +42,19 @@ struct if_else : public parser::op
     virtual const char* go(const char* src, const token* toks, int count);
 };
 
-//struct do_while : public jumps
-//{
-//    do_while(parser* p);
-//    virtual const char* go(const char* src, const token* toks, int count);
-//};
+struct do_while : public parser::op
+{
+    do_while(parser* p);
+    virtual const char* go(const char* src, const token* toks, int count);
+};
 //
-//struct while_loop : public jumps
+//struct while_loop : public parser::op
 //{
 //    while_loop(parser* p);
 //    virtual const char* go(const char* src, const token* toks, int count);
 //};
 //
-//struct for_loop : public jumps
+//struct for_loop : public parser::op
 //{
 //    for_loop(parser* p);
 //    virtual const char* go(const char* src, const token* toks, int count);

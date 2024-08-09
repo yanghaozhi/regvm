@@ -46,7 +46,7 @@ bool parser::go(const char* src, insts_t& out)
     call_func_no_ret    cfnr(this);
     assign_var          avar(this);
     if_else             ie(this);
-    //do_while            dw(this);
+    do_while            dw(this);
     //while_loop          wl(this);
     //for_loop            fl(this);
 

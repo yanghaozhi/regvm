@@ -15,7 +15,7 @@ public:
 
     void jump(const T& label, inst* code, int pos)
     {
-        js.emplace_back(info{code, label, pos + 1});
+        js.emplace_back(info{code, label, pos});
     }
 
     void label(const T& label, int pos)
@@ -43,7 +43,7 @@ public:
 
             if (l->second > it.pos)
             {
-                static_cast<instv<CODE_JUMP>*>(it.code)->offset = calc_counts(insts, it.pos, l->second) + 1;
+                static_cast<instv<CODE_JUMP>*>(it.code)->offset = calc_counts(insts, it.pos, l->second);
             }
             else
             {
