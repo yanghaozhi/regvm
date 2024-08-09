@@ -412,8 +412,9 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b,
             if (v1.ptr->status != selector::BINDED)
             {
                 INST(CALC, v1, v, calc_op(op));
+                return v1;
             }
-            return v1;
+            break;
         default:
             if (calc != NULL)
             {
