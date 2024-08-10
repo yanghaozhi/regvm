@@ -74,16 +74,18 @@ public:
     selector::reg token_2_reg(const token& tok);
 
 private:
-    int                             depth      = 0;
+    int                             depth       = 0;
     const char*                     last_line   = NULL;
 
     struct trie_tree
     {
-        op*                         func    = NULL;
+        op*                         func        = NULL;
         std::map<int, trie_tree*>   next;
     };
 
     trie_tree*                                  parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
+    
+    const char* find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max);
 };
 

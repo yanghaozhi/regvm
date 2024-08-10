@@ -254,7 +254,7 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
     auto& insts = p->insts;
     if (result == false)
     {
-        INST(JCMP, r, 0, 1, 0);
+        INST(JCMP, r, 1, (cmp != cmp_op) | 0x40, 0);
         j.jump(label, p->insts.back(), p->insts.size());
     }
     return src;

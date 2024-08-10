@@ -103,16 +103,25 @@ const char* parser::statement(const char* src, std::function<void (const token&)
 
     token toks[depth];
 
-    trie_tree* cur = parser_list;
-    int idx = 0;
-    while ((src != NULL) && (*src != '\0'))
+    src = find_statement(src, parser_list, toks, 0, depth);
+    if (src == NULL)
+    {
+        LOGE("%d : no valid parser op !!!", lineno);
+        return NULL;
+    }
+    return src;
+}
+
+const char* parser::find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max)
+{
+    if ((src != NULL) && (*src != '\0'))
     {
         if (cur->next.empty() == true)
         {
             return cur->func->go(src, toks, idx);
         }
 
-        if (idx >= depth)
+        if (idx >= max)
         {
             LOGE("%d : too deep to find next token %d !!!", lineno, idx);
             return NULL;
@@ -120,25 +129,26 @@ const char* parser::statement(const char* src, std::function<void (const token&)
 
         token& tok = toks[idx];
         src = next_token(src, tok);
-        switch (tok.info.type)
+        if (tok.info.type == 0)
         {
-        case 0:
-        case ';':
-            continue;
+            return NULL;
         }
 
-        //LOGD("%d %c", tok.info.type, (char)tok.info.orig);
         auto it = cur->next.find(tok.info.type);
         if (it == cur->next.end())
         {
-            LOGE("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
-            return NULL;
+            LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
+            return (cur->func != NULL) ? cur->func->go(src, toks, idx) : NULL;
         }
-        cur = it->second;
 
-        idx += 1;
+        const char* r = find_statement(src, it->second, toks, idx + 1, max);
+        if ((r == NULL) && (cur->func != NULL))
+        {
+            r = cur->func->go(src, toks, idx);
+        }
+        return r;
     }
-    return src;
+    return NULL;
 }
 
 bool parser::add(op* func, ...)
