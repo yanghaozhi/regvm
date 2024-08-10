@@ -205,7 +205,7 @@ inline int calc_op(int op)
     }
 }
 
-inline int cmp_op(int op)
+int cmp_op(int op)
 {
     switch (op)
     {

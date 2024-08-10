@@ -27,3 +27,8 @@ echo
 echo
 echo test vasm ...
 time ../out/vasm ./pi.vasm -r
+
+echo
+echo
+echo test vcc ...
+time ../out/vcc ./pi.c-- -r
