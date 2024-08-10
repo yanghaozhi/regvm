@@ -5,7 +5,6 @@
 #include <log.h>
 #include "parser.h"
 
-extern int cmp_op(int op);
 extern bool can_literally_optimize(const token& a, int& v);
 
 template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
@@ -200,7 +199,8 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     return src;
 }
 
-inline int jcmp_op(int op)
+extern int cmp_op(int op);
+int cmp_op_not(int op)
 {
     switch (op)
     {
@@ -219,39 +219,34 @@ inline int jcmp_op(int op)
     }
 }
 
-inline selector::reg jcmp(parser* p, int op, const token& a, const token& b)
+inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<int>& j, int (*cmp)(int))
 {
-    auto& insts = p->insts;
-    switch (op)
-    {
-    case Eq:
-    case Ne:
-    case Gt:
-    case Ge:
-    case Lt:
-    case Le:
+    selector::reg r;
+    int end = 0;
+    bool result = false;
+    src = p->expression(src, r, &end, [&j, &result, label, cmp](parser* p, int op, const token& a, const token& b)
         {
-            int c = jcmp_op(op);
+            auto& insts = p->insts;
+            int c = -1;
+            switch (op)
+            {
+            case Eq:
+            case Ne:
+            case Gt:
+            case Ge:
+            case Lt:
+            case Le:
+                result = true;
+                break;
+            default:
+                result = false;
+                return selector::reg();
+            }
+            c = cmp(op);
             c |= 0x40;
             auto r = p->token_2_reg(a);
             int vb = b.info.value.sint;
             INST(JCMP, r, vb, c, 0);
-            return r;
-        }
-    default:
-        return selector::reg();
-    }
-}
-
-inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<int>& j)
-{
-    selector::reg cmp;
-    int end = 0;
-    bool result = false;
-    src = p->expression(src, cmp, &end, [&j, &result, label](parser* p, int op, const token& a, const token& b)
-        {
-            auto r = jcmp(p, op, a, b);
-            result = (r.ptr != NULL);
             j.jump(label, p->insts.back(), p->insts.size());
             return r;
         });
@@ -259,7 +254,7 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
     auto& insts = p->insts;
     if (result == false)
     {
-        INST(JCMP, cmp, 0, 1, 0);
+        INST(JCMP, r, 0, 1, 0);
         j.jump(label, p->insts.back(), p->insts.size());
     }
     return src;
@@ -274,7 +269,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    src = cmp_jump_expr(src, 0, p, jump);
+    src = cmp_jump_expr(src, 0, p, jump, cmp_op_not);
 
     src = p->statement(src);
 
@@ -336,7 +331,7 @@ const char* do_while::go(const char* src, const token* toks, int count)
         return NULL;
     }
 
-    src = cmp_jump_expr(src, 0, p, jump);
+    src = cmp_jump_expr(src, 0, p, jump, cmp_op);
 
     jump.label(2, insts.size());
 

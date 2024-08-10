@@ -238,7 +238,7 @@ inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
         return 0;
     }
     const int next = 2;
-    const int dest = p->a3 + next;
+    const int dest = p->a3;
 
     const int ms[] = {0x80, 0x40};
     const int vs[] = {a, b};
