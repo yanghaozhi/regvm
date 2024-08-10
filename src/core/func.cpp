@@ -20,6 +20,8 @@ extern vm_sub_op_t  CHG_OPS[16];
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
 inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra);
 inline int vm_equivalent(struct regvm* vm, int a, int b, int c);
+inline int vm_cmp_type(struct regvm* vm, int v, bool i_v);
+template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v);
 
 
 inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
@@ -155,6 +157,38 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
 #undef CMP
         }
         break;
+
+#define JUMPS_CMP(t, cmp) vm_cmp_value<t>(vm, inst.a, i_a) cmp vm_cmp_value<t>(vm, inst.b, i_b)
+#define JUMPS(i, cmp)                                                       \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            const bool i_a = ((inst.c & 0x02) != 0);                        \
+            const bool i_b = ((inst.c & 0x01) != 0);                        \
+            int t1 = vm_cmp_type(vm, inst.a, i_a);                          \
+            int t2 = vm_cmp_type(vm, inst.b, i_b);                          \
+            int dest = ((code_t*)extra)->a3;                                \
+            switch ((t1 > t2) ? t1 : t2)                                    \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                return (JUMPS_CMP(int64_t, cmp)) ? dest : 2;                \
+            case TYPE_UNSIGNED:                                             \
+                return (JUMPS_CMP(uint64_t, cmp)) ? dest : 2;               \
+            case TYPE_DOUBLE:                                               \
+                return (JUMPS_CMP(double, cmp)) ? dest : 2;                 \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, (t1 > t2) ? t1 : t2, inst, offset);      \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
+        break;
+        JUMPS(JEQ, ==);
+        JUMPS(JNE, !=);
+        JUMPS(JGT, >);
+        JUMPS(JGE, >=);
+        JUMPS(JLT, <);
+        JUMPS(JLE, <=);
+#undef JUMPS
+
     case CODE_JUMP:
         return inst.a3;
     case CODE_JCMP:
@@ -224,6 +258,16 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
     r.type = to;
 
     return true;
+}
+
+inline int vm_cmp_type(struct regvm* vm, int v, bool i_v)
+{
+    return (i_v == true) ? (int)TYPE_SIGNED : vm->reg.id(v).type;
+}
+
+template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v)
+{
+    return (i_v == true) ? (T)v: (T)vm->reg.id(v);
 }
 
 template <typename T> inline T vm_cmp_val(const int c, const int i, const int* ms, const int* vs, const reg::v** rs)

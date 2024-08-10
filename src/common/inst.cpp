@@ -57,25 +57,13 @@ void instv<CODE_JCMP>::print_asm(FILE* fp) const
 
 bool instj::scan(const char* src)
 {
-    return sscanf(src, "%d %d %d", &a, &b, &offset) == 3;
-}
-
-int instj::count(void) const
-{
-    return ((-127 <= offset) && (offset <= 127)) ? 1 : 2;
+    return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
 }
 
 void instj::print(FILE* fp) const
 {
-    if ((-127 <= offset) && (offset <= 127))
-    {
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, offset);
-    }
-    else
-    {
-        fprintf(fp, "%-8s %02X\t%d\t%d\t0\n", name, id, a, b);
-        data_print(fp, offset);
-    }
+    fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
+    data_print(fp, offset);
 }
 
 void instj::print_bin(FILE* fp) const
@@ -84,22 +72,14 @@ void instj::print_bin(FILE* fp) const
     code.id = id;
     code.a = a;
     code.b = b;
-    if ((-127 <= offset) && (offset <= 127))
-    {
-        code.c = offset;
-        fwrite(&code, sizeof(code_t), 1, fp);
-    }
-    else
-    {
-        code.c = 0;
-        fwrite(&code, sizeof(code_t), 1, fp);
-        data_print_bin(fp, offset);
-    }
+    code.c = c;
+    fwrite(&code, sizeof(code_t), 1, fp);
+    data_print_bin(fp, offset);
 }
 
 void instj::print_asm(FILE* fp) const
 {
-    fprintf(fp, "%-8s %d\t%d\t%d\n", name, a, b, offset);
+    fprintf(fp, "%-8s %d\t%d\t%d\t%d\n", name, a, b, c, offset);
 }
 
 

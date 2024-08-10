@@ -120,24 +120,25 @@ struct instj : public instv<CODE_JUMP>
 {
     int     a;
     int     b;
+    int     c;
 
     instj(int i, const char* n) : instv<CODE_JUMP>(i, n)    {};
-    instj(int i, const char* n, int _a, int _b, int o) :
-        instv<CODE_JUMP>(i, n, o), a(_a), b(_b)    {};
+    instj(int i, const char* n, int _a, int _b, int _c, int o) :
+        instv<CODE_JUMP>(i, n, o), a(_a), b(_b), c(_c)    {};
 
     virtual bool scan(const char* src);
-    virtual int count(void) const;
+    virtual int count(void) const       { return 2; };
     virtual void print(FILE* fp) const;
     virtual void print_bin(FILE* fp) const;
     virtual void print_asm(FILE* fp) const;
 };
 
-#define JUMP_CMP(x)                                 \
-template <> struct instv<x> : public instj          \
-{                                                   \
-    instv(const char* n) : instj(x, n)  {}          \
-    instv(const char* n, int a, int b, int o)       \
-        : instj(x, n, a, b, o)  {}                  \
+#define JUMP_CMP(x)                                     \
+template <> struct instv<x> : public instj              \
+{                                                       \
+    instv(const char* n) : instj(x, n)  {}              \
+    instv(const char* n, int a, int b, int c, int o)    \
+        : instj(x, n, a, b, c, o)  {}                   \
 };
 JUMP_CMP(CODE_JEQ);
 JUMP_CMP(CODE_JNE);
