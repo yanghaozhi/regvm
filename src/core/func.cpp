@@ -9,6 +9,7 @@
 
 #include <log.h>
 
+
 using namespace core;
 
 
@@ -155,7 +156,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         }
         break;
     case CODE_JUMP:
-        return inst.a3 + 1;
+        return inst.a3;
     case CODE_JCMP:
         return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
     case CODE_CALC:
@@ -357,6 +358,7 @@ bool func::run(struct regvm* vm, int64_t start)
 {
     int64_t offset = (start >= 0) ? start : entry;
     int rest = size;
+    LOGT("running : %ld - %d", offset, rest);
     const code_t* cur = codes + offset;
     while (rest > 0)
     {

@@ -43,17 +43,13 @@ public:
 
             if (l->second > it.pos)
             {
-                static_cast<instv<CODE_JUMP>*>(it.code)->offset = calc_counts(insts, it.pos, l->second) + it.code->count() - 1;
+                static_cast<instv<CODE_JUMP>*>(it.code)->offset = calc_counts(insts, it.pos, l->second) + it.code->count();
             }
             else
             {
-                static_cast<instv<CODE_JUMP>*>(it.code)->offset = -(calc_counts(insts, l->second, it.pos) - js.front().code->count());
+                static_cast<instv<CODE_JUMP>*>(it.code)->offset = -(calc_counts(insts, l->second, it.pos) - it.code->count());
             }
-            LOGT("set dest of %s @ %d:%d to %d : %d - %d", VIEW(it.code->name), it.pos, it.code->count(), static_cast<instv<CODE_JUMP>*>(it.code)->offset, l->second, it.pos);
-            //it.code->val.sint = diff;
-            //it.code->ex = TYPE_SIGNED;
-            //it.code->recalc();
-            //it.to = ;
+            LOGT("set dest of %s @ %d:(%d,%d) to %d : %d - %d", VIEW(it.code->name), it.pos, it.code->count(), js.front().code->count(), static_cast<instv<CODE_JUMP>*>(it.code)->offset, l->second, it.pos);
         }
 
         return true;

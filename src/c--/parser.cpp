@@ -48,7 +48,7 @@ bool parser::go(const char* src, insts_t& out)
     assign_equal        aeq(this);
     if_else             ie(this);
     do_while            dw(this);
-    //while_loop          wl(this);
+    while_loop          wl(this);
     //for_loop            fl(this);
 
     scopes.enter();

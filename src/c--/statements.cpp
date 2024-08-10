@@ -337,44 +337,44 @@ const char* do_while::go(const char* src, const token* toks, int count)
 
     return (jump.finish(p->insts) == true) ? src : NULL;
 }
-//
-//while_loop::while_loop(parser* p) : parser::op(p)
-//{
-//    p->add(this, While, '(', -1);
-//}
-//
-//const char* while_loop::go(const char* src, const token* toks, int count)
-//{
-//    labels jump(insts);
-//
-//    jump.set_label(0);
-//
-//    selector::reg cmp;
-//    src = p->expression(src, cmp);
-//
-//    SET_JUMP(jump, 2, JZ, cmp);
-//
-//    src = p->statement(src, [&jump](auto& tok)
-//        {
-//            switch (tok.info.type)
-//            {
-//            case Break:
-//                SET_JUMP(jump, 2, JUMP, -1);
-//                break;
-//            case Continue:
-//                SET_JUMP(jump, 0, JUMP, -1);
-//                break;
-//            default:
-//                break;
-//            }
-//        });
-//
-//    SET_JUMP(jump, 0, JUMP, -1);
-//
-//    jump.set_label(2);
-//
-//    return (jump.finish() == true) ? src : NULL;
-//}
+
+while_loop::while_loop(parser* p) : parser::op(p)
+{
+    p->add(this, While, '(', -1);
+}
+
+const char* while_loop::go(const char* src, const token* toks, int count)
+{
+    labels<int> jump;
+
+    jump.label(0, insts.size());
+
+    src = cmp_jump_expr(src, 2, p, jump, cmp_op_not);
+
+    src = p->statement(src, [this, &jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                INST(JUMP, 0);
+                jump.jump(2, p->insts.back(), p->insts.size());
+                break;
+            case Continue:
+                INST(JUMP, 0);
+                jump.jump(0, p->insts.back(), p->insts.size());
+                break;
+            default:
+                break;
+            }
+        });
+
+    INST(JUMP, 0);
+    jump.jump(0, p->insts.back(), p->insts.size());
+
+    jump.label(2, insts.size());
+
+    return (jump.finish(p->insts) == true) ? src : NULL;
+}
 //
 //for_loop::for_loop(parser* p) : parser::op(p)
 //{
