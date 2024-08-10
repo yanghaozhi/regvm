@@ -29,7 +29,7 @@ static void data_print_bin(FILE* fp, int v)
 
 bool instv<CODE_JCMP>::scan(const char* src)
 {
-    return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 3;
+    return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
 }
 
 void instv<CODE_JCMP>::print(FILE* fp) const
