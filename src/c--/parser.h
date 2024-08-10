@@ -9,6 +9,7 @@
 
 #include "selector.h"
 #include "blocks.h"
+#include "labels.h"
 #include "common.h"
 #include "inst.h"
 
@@ -38,6 +39,27 @@ public:
     bool add(op* func, ...);
 
     const char* next_token(const char* src, token& tok);
+
+    template <typename T> const char* statements(const char* src, labels<T>& jump, const T& break_label, const T& continue_label)
+    {
+        auto cb = [this, &jump, &break_label, &continue_label](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                INST(JUMP, 0);
+                jump.jump(break_label, insts.back(), insts.size());
+                break;
+            case Continue:
+                INST(JUMP, 0);
+                jump.jump(continue_label, insts.back(), insts.size());
+                break;
+            default:
+                break;
+            }
+        };
+        return statement(src, cb);
+    }
 
     const char* statement(const char* src, std::function<void (const token&)> cb = {});
 

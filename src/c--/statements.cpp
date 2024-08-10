@@ -304,22 +304,7 @@ const char* do_while::go(const char* src, const token* toks, int count)
 
     jump.label(0, insts.size());
 
-    src = p->statement(src - 1, [this, &jump](auto& tok)
-        {
-            switch (tok.info.type)
-            {
-            case Break:
-                INST(JUMP, 0);
-                jump.jump(2, p->insts.back(), p->insts.size());
-                break;
-            case Continue:
-                INST(JUMP, 0);
-                jump.jump(1, p->insts.back(), p->insts.size());
-                break;
-            default:
-                break;
-            }
-        });
+    src = p->statements(src - 1, jump, 2, 1);
 
     jump.label(1, insts.size());
 
@@ -351,22 +336,7 @@ const char* while_loop::go(const char* src, const token* toks, int count)
 
     src = cmp_jump_expr(src, 2, p, jump, cmp_op_not);
 
-    src = p->statement(src, [this, &jump](auto& tok)
-        {
-            switch (tok.info.type)
-            {
-            case Break:
-                INST(JUMP, 0);
-                jump.jump(2, p->insts.back(), p->insts.size());
-                break;
-            case Continue:
-                INST(JUMP, 0);
-                jump.jump(0, p->insts.back(), p->insts.size());
-                break;
-            default:
-                break;
-            }
-        });
+    src = p->statements(src, jump, 2, 0);
 
     INST(JUMP, 0);
     jump.jump(0, p->insts.back(), p->insts.size());
@@ -416,22 +386,7 @@ const char* for_loop::go(const char* src, const token* toks, int count)
         return NULL;
     }
 
-    src = p->statement(src, [this, &jump](auto& tok)
-        {
-            switch (tok.info.type)
-            {
-            case Break:
-                INST(JUMP, 0);
-                jump.jump(5, p->insts.back(), p->insts.size());
-                break;
-            case Continue:
-                INST(JUMP, 0);
-                jump.jump(0, p->insts.back(), p->insts.size());
-                break;
-            default:
-                break;
-            }
-        });
+    src = p->statements(src, jump, 5, 0);
 
     for (auto& it : expr3)
     {
