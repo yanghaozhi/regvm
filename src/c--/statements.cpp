@@ -375,68 +375,75 @@ const char* while_loop::go(const char* src, const token* toks, int count)
 
     return (jump.finish(p->insts) == true) ? src : NULL;
 }
-//
-//for_loop::for_loop(parser* p) : parser::op(p)
-//{
-//    p->add(this, For, '(', -1);
-//}
-//
-//const char* for_loop::go(const char* src, const token* toks, int count)
-//{
-//    labels jump(insts);
-//
-//    src = p->statement(src);
-//
-//    jump.set_label(0);
-//
-//    std::deque<inst> expr3;
-//    switch (*(src - 1))
-//    {
-//    case ';':
-//        {
-//            selector::reg cmp;
-//            src = p->expression(src, cmp);
-//            SET_JUMP(jump, 5, JZ, cmp);
-//
-//            p->regs.cleanup(true);
-//
-//            expr3.swap(insts);
-//            src = p->statement(src);
-//            expr3.swap(insts);
-//        }
-//        break;
-//    case ':':
-//        break;
-//    default:
-//        LOGE("Unexpect token : %c !!!", *(src - 1));
-//        return NULL;
-//    }
-//
-//    src = p->statement(src, [&jump](auto& tok)
-//        {
-//            switch (tok.info.type)
-//            {
-//            case Break:
-//                SET_JUMP(jump, 5, JUMP, -1);
-//                break;
-//            case Continue:
-//                SET_JUMP(jump, 0, JUMP, -1);
-//                break;
-//            default:
-//                break;
-//            }
-//        });
-//
-//    for (auto& it : expr3)
-//    {
-//        insts.emplace_back(it);
-//    }
-//
-//    SET_JUMP(jump, 0, JUMP, -1);
-//
-//    jump.set_label(5);
-//
-//    return (jump.finish() == true) ? src : NULL;
-//}
+
+for_loop::for_loop(parser* p) : parser::op(p)
+{
+    p->add(this, For, '(', -1);
+}
+
+const char* for_loop::go(const char* src, const token* toks, int count)
+{
+    labels<int> jump;
+
+    src = p->statement(src);
+
+    jump.label(0, insts.size());
+
+    insts_t expr3;
+    switch (*(src - 1))
+    {
+    case ';':
+        {
+            src = cmp_jump_expr(src, 5, p, jump, cmp_op_not);
+
+            expr3.swap(p->insts);
+            src = p->statement(src);
+            expr3.swap(p->insts);
+
+            token tok;
+            src = p->next_token(src, tok);
+            if (tok.info.type != ')')
+            {
+                LOGE("for loop condition must end with ) !!!");
+                return NULL;
+            }
+        }
+        break;
+    case ':':
+        break;
+    default:
+        LOGE("Unexpect token : %c !!!", *(src - 1));
+        return NULL;
+    }
+
+    src = p->statement(src, [this, &jump](auto& tok)
+        {
+            switch (tok.info.type)
+            {
+            case Break:
+                INST(JUMP, 0);
+                jump.jump(5, p->insts.back(), p->insts.size());
+                break;
+            case Continue:
+                INST(JUMP, 0);
+                jump.jump(0, p->insts.back(), p->insts.size());
+                break;
+            default:
+                break;
+            }
+        });
+
+    for (auto& it : expr3)
+    {
+        insts.emplace_back(it);
+    }
+
+    INST(JUMP, 0);
+    jump.jump(0, p->insts.back(), p->insts.size());
+
+    jump.label(5, insts.size());
+
+    return (jump.finish(p->insts) == true) ? src : NULL;
+}
 
 

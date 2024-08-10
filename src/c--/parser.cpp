@@ -49,7 +49,7 @@ bool parser::go(const char* src, insts_t& out)
     if_else             ie(this);
     do_while            dw(this);
     while_loop          wl(this);
-    //for_loop            fl(this);
+    for_loop            fl(this);
 
     scopes.enter();
     while ((src != NULL) && (*src != '\0'))

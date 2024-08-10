@@ -58,10 +58,10 @@ struct while_loop : public parser::op
     while_loop(parser* p);
     virtual const char* go(const char* src, const token* toks, int count);
 };
-//
-//struct for_loop : public parser::op
-//{
-//    for_loop(parser* p);
-//    virtual const char* go(const char* src, const token* toks, int count);
-//};
-//
+
+struct for_loop : public parser::op
+{
+    for_loop(parser* p);
+    virtual const char* go(const char* src, const token* toks, int count);
+};
+

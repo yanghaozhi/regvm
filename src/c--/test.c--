@@ -32,7 +32,7 @@ while (i >= 0)
     echo(i);
 }
 
-//for (int i = 0; i < 10; i+=1)
-//{
-//    echo(i);
-//}
+for (int m = 0; m < 10; m += 1)
+{
+    echo(m);
+}
