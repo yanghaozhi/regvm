@@ -1,9 +1,10 @@
 //int n = 10000000;
-int n = 10;
+register int n = 10;
 
-double pi = 0.0;
-for (int i = 0; i < n; i += 1)
+register double pi = 0.0;
+for (register int i = 0; i < n; i += 1)
 {
+    echo(i);
     if (i % 2 == 0)
     {
         pi += (1.0 / (i * 2 + 1));

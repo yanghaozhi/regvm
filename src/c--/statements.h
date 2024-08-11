@@ -5,6 +5,11 @@
 #include <labels.h>
 
 
+enum ATTR
+{
+    REG     = 0x01,
+};
+
 template <typename T> struct var_crtp : public parser::op
 {
     var_crtp(parser* p);
@@ -14,13 +19,13 @@ template <typename T> struct var_crtp : public parser::op
 struct decl_var_only : public var_crtp<decl_var_only>
 {
     decl_var_only(parser* p);
-    const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name);
+    const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr);
 };
 
 struct decl_var_init : public var_crtp<decl_var_init>
 {
     decl_var_init(parser* p);
-    const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name);
+    const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr);
 };
 
 struct call_func_no_ret : public parser::op

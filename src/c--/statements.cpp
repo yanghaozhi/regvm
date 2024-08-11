@@ -14,18 +14,29 @@ template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
 template <typename T> const char* var_crtp<T>::go(const char* src, const token* toks, int count)
 {
     DATA_TYPE type = TYPE_NULL;
-    switch (toks[0].info.type)
+    int attr = 0;
+    std::string_view name;
+    for (int i = 0; i < count - 1; i ++)
     {
-    case Int:
-        type = TYPE_SIGNED;
-        break;
-    case Double:
-        type = TYPE_DOUBLE;
-        break;
-    default:
-        break;
+        switch (toks[i].info.type)
+        {
+        case Int:
+            type = TYPE_SIGNED;
+            break;
+        case Double:
+            type = TYPE_DOUBLE;
+            break;
+        case Register:
+            attr |= REG;
+            break;
+        case Id:
+            name = toks[i].name;
+            break;
+        default:
+            break;
+        }
     }
-    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, type, toks[1].name);
+    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, type, name, attr);
 }
 
 decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
@@ -34,11 +45,23 @@ decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
     p->add(this, Double, Id, ';', -1);
 }
 
-const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
+const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
 {
-    auto n = p->regs.tmp();
-    INST(SET, n, name);
-    INST(STORE, type, n, 3);
+    if ((attr & REG) == 0)
+    {
+        auto n = p->regs.tmp();
+        INST(SET, n, name);
+        INST(STORE, type, n, 3);
+    }
+    else
+    {
+        auto v2 = p->scopes.new_var(name, attr);
+        if (v2.ptr == NULL)
+        {
+            LOGE("Can not new reg var : %s", VIEW(name));
+            return NULL;
+        }
+    }
     return src;
 }
 
@@ -46,17 +69,19 @@ decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
 {
     p->add(this, Int, Id, Assign, -1);
     p->add(this, Double, Id, Assign, -1);
+    p->add(this, Register, Int, Id, Assign, -1);
+    p->add(this, Register, Double, Id, Assign, -1);
 }
 
-const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name)
+const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
 {
     selector::reg v;
     src = p->expression(src, v);
     if (src == NULL) return NULL;
 
-    if (p->scopes.bind_var(name, v) == false)
+    if (p->scopes.bind_var(name, v, attr) == false)
     {
-        auto v2 = p->scopes.new_var(name);
+        auto v2 = p->scopes.new_var(name, attr);
         if (v2.ptr == NULL)
         {
             LOGE("Can not create var : %s", VIEW(name));
@@ -66,9 +91,12 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
         v = v2;
     }
 
-    auto n = p->regs.tmp();
-    INST(SET, n, name);
-    INST(STORE, v, n, 2);
+    if ((attr & REG) == 0)
+    {
+        auto n = p->regs.tmp();
+        INST(SET, n, name);
+        INST(STORE, v, n, 2);
+    }
     return src;
 }
 
@@ -98,7 +126,7 @@ assign_var::assign_var(parser* p) : parser::op(p)
 const char* assign_var::go(const char* src, const token* toks, int count)
 {
     const std::string_view& name = toks[0].name;
-    auto reload = [this, name]()
+    auto reload = [this, name](int attr)
         {
             auto n = p->regs.tmp();
             INST(SET, n, name);
@@ -106,7 +134,8 @@ const char* assign_var::go(const char* src, const token* toks, int count)
             INST(LOAD, vv, n, 0);
             return vv;
         };
-    auto k = p->scopes.find_var(name, reload);
+    int attr = 0;
+    auto k = p->scopes.find_var(name, attr, reload);
 
     selector::reg v;
     src = p->expression(src, v);
@@ -128,7 +157,11 @@ const char* assign_var::go(const char* src, const token* toks, int count)
         CALC(ShrE, SHL);
 #undef CALC
     }
-    INST(STORE, k, 0, 0);
+
+    if ((attr & REG) == 0)
+    {
+        INST(STORE, k, 0, 0);
+    }
     return src;
 }
 
@@ -146,7 +179,8 @@ assign_equal::assign_equal(parser* p) : parser::op(p)
 const char* assign_equal::go(const char* src, const token* toks, int count)
 {
     const std::string_view& name = toks[0].name;
-    auto reload = [this, name]()
+    int attr = 0;
+    auto reload = [this, name](int attr)
         {
             auto n = p->regs.tmp();
             INST(SET, n, name);
@@ -154,7 +188,7 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
             INST(LOAD, vv, n, 0);
             return vv;
         };
-    auto k = p->scopes.find_var(name, reload);
+    auto k = p->scopes.find_var(name, attr, reload);
 
     int v = 0;
     bool o = can_literally_optimize(toks[2], v);
@@ -195,7 +229,10 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
         CALC(ShrE, SHL, 6);
 #undef CALC
     }
-    INST(STORE, k, 0, 0);
+    if ((attr & REG) == 0)
+    {
+        INST(STORE, k, 0, 0);
+    }
     return src;
 }
 

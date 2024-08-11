@@ -47,7 +47,10 @@ public:
 
     bool bind(const std::string_view& name, const reg& v);
     const reg bind(const std::string_view& name);
+
+    bool lock(const reg& v);
     const reg lock(void);
+
     const reg tmp(void);
 
     bool release(const reg& r);

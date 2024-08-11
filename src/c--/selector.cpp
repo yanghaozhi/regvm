@@ -50,6 +50,8 @@ bool selector::bind(const std::string_view& name, const selector::reg& v)
     {
         frees.remove(r.id);
     }
+
+    LOGT("bind %d:%d -> %s", v.ver, v.ptr->id, VIEW(name));
     return true;
 }
 
@@ -68,6 +70,42 @@ const selector::reg selector::bind(const std::string_view& name)
         frees.add(d);
     }
     return reg(&r);
+}
+
+bool selector::lock(const selector::reg& v)
+{
+    if (valid(v) == false)
+    {
+        LOGE("reg %d:%p is invalid", v.ver, v.ptr);
+        return false;
+    }
+
+    data& r = datas[v.ptr->id];
+    if (r.status != FREED)
+    {
+        LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
+        return false;
+    }
+
+    r.status = LOCKED;
+    r.var = "";
+    int d = locks.add(v);
+    if (d < 0)
+    {
+        LOGW("Can NOT add %d to locks", r.id);
+
+        datas[d].ver += 1;
+        datas[d].status = FREED;
+        frees.add(d);
+        return false;
+    }
+    else
+    {
+        frees.remove(r.id);
+    }
+
+    LOGT("lock %d:%d", v.ver, v.ptr->id);
+    return true;
 }
 
 const selector::reg selector::lock(void)

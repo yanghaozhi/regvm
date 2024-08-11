@@ -19,6 +19,7 @@ parser::parser() : regs(), scopes(regs), parser_list(new trie_tree())
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
+    keywords.emplace("register", Register);
     keywords.emplace("int", Int);
     keywords.emplace("double", Double);
     keywords.emplace("for", For);
@@ -287,11 +288,12 @@ selector::reg parser::token_2_reg(const token& tok)
     case Id:
         {
             std::string_view name = tok.name;
-            auto reg = scopes.find_var(tok.name, [this, name]()
+            int attr = 0;
+            auto reg = scopes.find_var(tok.name, attr, [this, name](int attr)
                 {
                     auto n = regs.tmp();
                     INST(SET, n, name);
-                    auto reg = scopes.new_var(name);
+                    auto reg = scopes.new_var(name, 0);
                     INST(LOAD, reg, n, 0);
                     return reg;
                 });
@@ -330,9 +332,13 @@ bool can_literally_optimize(const token& a, int& v)
 
 inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
 {
-    if (b.ptr->status == selector::BINDED)
+    switch (b.ptr->status)
     {
+    case selector::BINDED:
+    case selector::LOCKED:
         return false;
+    default:
+        break;
     }
 
     int v = 0;
@@ -420,8 +426,12 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
         case Mul:
         case Div:
         case Mod:
-            if (v1.ptr->status != selector::BINDED)
+            switch (v1.ptr->status)
             {
+            case selector::BINDED:
+            case selector::LOCKED:
+                break;
+            default:
                 INST(CALC, v1, v, calc_op(op));
                 return v1;
             }
@@ -634,9 +644,9 @@ const char* parser::comma(const char* src, std::vector<selector::reg>& rets)
         selector::reg reg; 
         int end = -1;
         src = expression(src, reg, &end, NULL);
-        if (reg < 0)
+        if (reg.ptr == NULL)
         {
-            LOGE("invalid expression result : %d : %s !!!", (int)reg, src);
+            LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
             return NULL;
         }
         rets.emplace_back(reg);
