@@ -58,10 +58,11 @@ public:
                 break;
             }
         };
-        return statement(src, cb);
+        return statements(src, cb);
     }
 
-    const char* statement(const char* src, std::function<void (const token&)> cb = {});
+    const char* statements(const char* src, std::function<void (const token&)> cb);
+    const char* statement(const char* src);
 
     typedef std::function<selector::reg (parser*, int, const token&, const token*, const selector::reg*)> calc_t;
     const char* expression(const char* src, selector::reg& reg, int* end, const calc_t& calc);
@@ -87,5 +88,6 @@ private:
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
     
     const char* find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max);
+    const char* statement(const char* src, std::function<void (const token&)> cb, token& tok);
 };
 

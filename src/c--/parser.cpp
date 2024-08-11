@@ -63,27 +63,42 @@ bool parser::go(const char* src, insts_t& out)
     return (src != NULL) ? true : false;
 }
 
-const char* parser::statement(const char* src, std::function<void (const token&)> cb)
+const char* parser::statements(const char* src, std::function<void (const token&)> cb)
 {
     token tok;
+    const char* p = next_token(src, tok);
+    switch (tok.info.type)
+    {
+    case '{':
+        scopes.enter();
+        INST(BLOCK, 0, 0, 0);
+        while ((p != NULL) && (tok.info.type != '}'))
+        {
+            p = statement(p, cb, tok);
+        }
+        INST(BLOCK, 0, 1, 0);
+        scopes.leave();
+        return p;
+    case 0:
+    case ';':
+        return p;
+    default:
+        return statement(src, cb, tok);
+    }
+}
+
+const char* parser::statement(const char* src, std::function<void (const token&)> cb, token& tok)
+{
     const char* p = src;
     src = next_token(src, tok);
     switch (tok.info.type)
     {
-    case '}':
-        scopes.leave();
-        INST(BLOCK, 0, 1, 0);
-        [[fallthrough]];
     case 0:
     case ';':
         return src;
     case '{':
-        scopes.enter();
-        INST(BLOCK, 0, 0, 0);
-        while ((src != NULL) && (*src != '\0') && (*(src - 1) != '}'))
-        {
-            src = statement(src);
-        }
+        return statements(src, cb);
+    case '}':
         return src;
     case Break:
     case Continue:
@@ -111,6 +126,12 @@ const char* parser::statement(const char* src, std::function<void (const token&)
         return NULL;
     }
     return src;
+}
+
+const char* parser::statement(const char* src)
+{
+    token tok;
+    return statement(src, NULL, tok);
 }
 
 const char* parser::find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max)

@@ -338,7 +338,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 
     src = cmp_jump_expr(src, 0, p, jump, cmp_op_not);
 
-    src = p->statement(src);
+    src = p->statements(src, NULL);
 
     token tok;
     auto o = p->next_token(src, tok);
@@ -349,7 +349,7 @@ const char* if_else::go(const char* src, const token* toks, int count)
 
         jump.label(0, insts.size());
 
-        src = p->statement(o);
+        src = p->statements(o, NULL);
 
         jump.label(1, insts.size());
     }
