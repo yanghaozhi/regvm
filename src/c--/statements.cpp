@@ -224,10 +224,8 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
     selector::reg r;
     int end = 0;
     bool result = false;
-    src = p->expression(src, r, &end, [&j, &result, label, cmp](parser* p, int op, const token& a, const token& b)
+    src = p->expression(src, r, &end, [&j, &result, label, cmp](parser* p, int op, const token& a, const token* b, const selector::reg* r)
         {
-            auto& insts = p->insts;
-            int c = -1;
             switch (op)
             {
             case Eq:
@@ -242,13 +240,45 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
                 result = false;
                 return selector::reg();
             }
+            auto& insts = p->insts;
+            int c = -1;
             c = cmp(op);
-            c |= 0x40;
-            auto r = p->token_2_reg(a);
-            int vb = b.info.value.sint;
-            INST(JCMP, r, vb, c, 0);
+            int ll = 0;
+            selector::reg ret;
+            if (can_literally_optimize(a, ll) == false)
+            {
+                ret = p->token_2_reg(a);
+                ll = ret;
+            }
+            else
+            {
+                c |= 0x80;
+            }
+            int rr = 0;
+            if (r != NULL)
+            {
+                ret = *r;
+                rr = *r;
+            }
+            else
+            {
+                if (can_literally_optimize(*b, rr) == false)
+                {
+                    ret = p->token_2_reg(*b);
+                    rr = ret;
+                }
+                else
+                {
+                    c |= 0x40;
+                }
+            }
+            INST(JCMP, ll, rr, c, 0);
             j.jump(label, p->insts.back(), p->insts.size());
-            return r;
+            if (ret.ptr == NULL)
+            {
+                ret.ptr = (decltype(ret.ptr))(uintptr_t)-1;
+            }
+            return ret;
         });
 
     auto& insts = p->insts;

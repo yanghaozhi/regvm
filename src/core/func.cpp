@@ -19,7 +19,7 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
 inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra);
-inline int vm_equivalent(struct regvm* vm, int a, int b, int c);
+inline int vm_calc(struct regvm* vm, int a, int b, int c);
 inline int vm_cmp_type(struct regvm* vm, int v, bool i_v);
 template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v);
 
@@ -194,7 +194,7 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
     case CODE_JCMP:
         return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
     case CODE_CALC:
-        return vm_equivalent(vm, inst.a, inst.b, inst.c);
+        return vm_calc(vm, inst.a, inst.b, inst.c);
     case CODE_EXIT:
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;
@@ -325,7 +325,7 @@ inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
     return 0;
 }
 
-inline int vm_equivalent(struct regvm* vm, int a, int b, int c)
+inline int vm_calc(struct regvm* vm, int a, int b, int c)
 {
     auto& v = vm->reg.id(a);
 

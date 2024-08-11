@@ -406,7 +406,7 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const selector:
     return r;
 }
 
-inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b, const parser::calc_t& calc)
+inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
 {
     int v = 0;
     if (can_literally_optimize(b, v) == true)
@@ -427,11 +427,6 @@ inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b,
             }
             break;
         default:
-            if (calc != NULL)
-            {
-                auto r = calc(p, op, a, b);
-                if (r.ptr != NULL) return r;
-            }
             break;
         };
     }
@@ -472,7 +467,17 @@ template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks,
     {
         int op = ops.back();
         const auto& v1 = toks[toks.size() - 2];
-        b = calc_a_b(p, op, v1, v2, calc);
+        if ((calc != NULL) && (ops.size() == 1))
+        {
+            auto r = calc(p, op, v1, &v2, NULL);
+            if (r.ptr != NULL)
+            {
+                toks.clear();
+                ops.clear();
+                return r;
+            }
+        }
+        b = calc_a_b(p, op, v1, v2);
         level = operator_level(op);
         toks.pop_back();
         ops.pop_back();
@@ -488,6 +493,16 @@ template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks,
         int op = ops.back();
         auto& a = toks.back();
 
+        if ((calc != NULL) && (ops.size() == 1))
+        {
+            auto r = calc(p, op, a, NULL, &b);
+            if (r.ptr != NULL)
+            {
+                toks.clear();
+                ops.clear();
+                return r;
+            }
+        }
         b = calc_a_b(p, op, a, b);
 
         toks.pop_back();

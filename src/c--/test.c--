@@ -8,7 +8,7 @@ int j = i + 10;
 
 echo(i, j);
 
-if (j < 10)
+if (j % 2 == 0)
 {
     echo(1234);
 }
@@ -18,21 +18,21 @@ else
 }
 echo(j);
 
-int k = j / 100;
-do
-{
-    echo (k);
-    k -= 1;
-} while (k >= 0);
-
-echo(i);
-while (i >= 0)
-{
-    i -= 100;
-    echo(i);
-}
-
-for (int m = 0; m < 10; m += 1)
+//int k = j / 100;
+//do
+//{
+//    echo (k);
+//    k -= 1;
+//} while (k >= 0);
+//
+//echo(i);
+//while (i >= 0)
+//{
+//    i -= 100;
+//    echo(i);
+//}
+//
+for (int m = 0; m < i; m += 1)
 {
     echo(m);
 }
