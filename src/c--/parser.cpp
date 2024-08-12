@@ -71,12 +71,12 @@ const char* parser::statements(const char* src, std::function<void (const token&
     {
     case '{':
         scopes.enter();
-        INST(BLOCK, 0, 0, 0);
+        //INST(BLOCK, 0, 0, 0);
         while ((p != NULL) && (tok.info.type != '}'))
         {
             p = statement(p, cb, tok);
         }
-        INST(BLOCK, 0, 1, 0);
+        //INST(BLOCK, 0, 1, 0);
         scopes.leave();
         return p;
     case 0:

@@ -112,7 +112,7 @@ int vm_CODE_NEW(regvm* vm, code_t code, int offset, const void* extra)
 
 int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra)
 {
-    return 0;
+    return 1;
 }
 
 int vm_CODE_CONV(regvm* vm, code_t code, int offset, const void* extra)

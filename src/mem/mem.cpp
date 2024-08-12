@@ -151,7 +151,7 @@ regvm_mem::regvm_mem() : globals(0)
     REG_OP(STORE);
     //REG_OP(GLOBAL);
     //REG_OP(NEW);
-    REG_OP(BLOCK);
+    //REG_OP(BLOCK);
 #undef REG_OP
 }
 
