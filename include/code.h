@@ -297,11 +297,10 @@ enum CODE_ID
     CODE_JGE,
     CODE_JLT,
     CODE_JLE,
-
+    CODE_SET,
 
 
     CODE_TRAP   = 64,
-    CODE_SET,
     CODE_LOAD,
     CODE_CLEAR,
     CODE_STORE,

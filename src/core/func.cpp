@@ -16,220 +16,50 @@ using namespace core;
 
 extern vm_sub_op_t  CHG_OPS[16];
 
-
-inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to);
-inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra);
-inline int vm_calc(struct regvm* vm, int a, int b, int c);
-inline int vm_cmp_type(struct regvm* vm, int v, bool i_v);
-template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v);
+inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
 
 
-inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
+
+inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
 {
+    uint64_t v = c;
+    int shift = 8;
     int next = 1;
-
-#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, inst, offset, fmt, ##__VA_ARGS__);
-
-    const int code = inst.id;
-
-    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, inst.a, inst.b, inst.c);
-
-    switch (code)
+    code_t* p = (code_t*)extra;
+    while (p->id == CODE_DATA)
     {
-#define CALC(i, op)                                                         \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.a);                                   \
-            const auto& b = vm->reg.id(inst.b);                             \
-            const auto& c = vm->reg.id(inst.c);                             \
-            int t = (b.type > c.type) ? b.type : c.type;                    \
-            vm_conv_impl(vm, r, t);                                         \
-            switch (t)                                                      \
-            {                                                               \
-            case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)b op (int64_t)c;                    \
-                break;                                                      \
-            case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                break;                                                      \
-            case TYPE_DOUBLE:                                               \
-                r.value.dbl = (double)b op (double)c;                       \
-                break;                                                      \
-            default:                                                        \
-                UNSUPPORT_TYPE(#i, t, inst, offset);                        \
-                break;                                                      \
-            }                                                               \
-        }                                                                   \
-        break;
-        CALC(ADD, +);
-        CALC(SUB, -);
-        CALC(MUL, *);
-        CALC(DIV, /);
-#undef CALC
-
-#define ONLY_UNSIGNED(i, op)                                                \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.a);                                   \
-            const auto& b = vm->reg.id(inst.b);                             \
-            const auto& c = vm->reg.id(inst.c);                             \
-            vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
-            if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
-            {                                                               \
-                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-            }                                                               \
-            else                                                            \
-            {                                                               \
-                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
-            }                                                               \
-        }                                                                   \
-        break;
-        ONLY_UNSIGNED(AND, &);
-        ONLY_UNSIGNED(OR, |);
-        ONLY_UNSIGNED(XOR, ^);
-#undef ONLY_UNSIGNED
-
-#define ONLY_INTEGER(i, op)                                                 \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.a);                                   \
-            const auto& b = vm->reg.id(inst.b);                             \
-            const auto& c = vm->reg.id(inst.c);                             \
-            vm_conv_impl(vm, r, b.type);                                    \
-            switch (r.type)                                                 \
-            {                                                               \
-            case TYPE_SIGNED:                                               \
-                r.value.sint = (int64_t)b op (int64_t)c;                    \
-                break;                                                      \
-            case TYPE_UNSIGNED:                                             \
-                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                break;                                                      \
-            default:                                                        \
-                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
-                break;                                                      \
-            }                                                               \
-        }                                                                   \
-        break;
-        ONLY_INTEGER(SHL, <<);
-        ONLY_INTEGER(SHR, >>);
-        ONLY_INTEGER(MOD, %);
-#undef ONLY_INTEGER
-
-#define WRITE(i, ...)                                                       \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.a);                                   \
-            auto& e = vm->reg.id(inst.b);                                   \
-            return r.write(__VA_ARGS__);                                    \
-        }
-        WRITE(MOVE, e.value.uint, e.type, true);
-        WRITE(TYPE, e.type, TYPE_SIGNED, true);
-#undef WRITE
-
-#define SUB_OPS(i, op)                                                      \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto f = i##_OPS[inst.op];                                      \
-            if (unlikely(f == NULL))                                        \
-            {                                                               \
-                UNSUPPORT_TYPE(#i, inst.op, inst, offset);                  \
-                return 0;                                                   \
-            }                                                               \
-            return f(vm, inst.a, inst.b, inst.c, offset);                   \
-        }                                                                   \
-        break;
-        SUB_OPS(CHG, c);
-#undef SUBS
-
-    case CODE_CMP:
-        switch (inst.c)
-        {
-#define CMP(k, cmp)                             \
-    case k:                                     \
-        vm->reg.id(inst.a).write(((int64_t)vm->reg.id(inst.b) cmp 0), TYPE_SIGNED, true);  \
-        return 1;
-            CMP(0, ==);
-            CMP(1, !=);
-            CMP(2, >);
-            CMP(3, >=);
-            CMP(4, <);
-            CMP(5, <=);
-#undef CMP
-        }
-        break;
-
-#define JUMPS_CMP(t, cmp) vm_cmp_value<t>(vm, inst.a, i_a) cmp vm_cmp_value<t>(vm, inst.b, i_b)
-#define JUMPS(i, cmp)                                                       \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            const bool i_a = ((inst.c & 0x02) != 0);                        \
-            const bool i_b = ((inst.c & 0x01) != 0);                        \
-            int t1 = vm_cmp_type(vm, inst.a, i_a);                          \
-            int t2 = vm_cmp_type(vm, inst.b, i_b);                          \
-            int dest = ((code_t*)extra)->a3;                                \
-            switch ((t1 > t2) ? t1 : t2)                                    \
-            {                                                               \
-            case TYPE_SIGNED:                                               \
-                return (JUMPS_CMP(int64_t, cmp)) ? dest : 2;                \
-            case TYPE_UNSIGNED:                                             \
-                return (JUMPS_CMP(uint64_t, cmp)) ? dest : 2;               \
-            case TYPE_DOUBLE:                                               \
-                return (JUMPS_CMP(double, cmp)) ? dest : 2;                 \
-            default:                                                        \
-                UNSUPPORT_TYPE(#i, (t1 > t2) ? t1 : t2, inst, offset);      \
-                break;                                                      \
-            }                                                               \
-        }                                                                   \
-        break;
-        JUMPS(JEQ, ==);
-        JUMPS(JNE, !=);
-        JUMPS(JGT, >);
-        JUMPS(JGE, >=);
-        JUMPS(JLT, <);
-        JUMPS(JLE, <=);
-#undef JUMPS
-
-    case CODE_JUMP:
-        return inst.a3;
-    case CODE_JCMP:
-        return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
-    case CODE_CALC:
-        return vm_calc(vm, inst.a, inst.b, inst.c);
-    case CODE_EXIT:
-        //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
-        vm->exit_code = inst.b2;
-        vm->exit = true;
-        return 0;
-    case CODE_RET:
-        return 0;
-    default:
-        if (likely(code >= CODE_TRAP))
-        {
-            auto f = vm->ops[code - CODE_TRAP];
-            if (likely(f != NULL))
-            {
-                int r = f(vm, inst, offset, extra);
-                if (unlikely(r == 0))
-                {
-                    VM_ERROR(ERR_RUNTIME, inst, offset, "run code ERROR : %8s - 0x%02X", CODE_NAME(code), inst.value);
-                }
-                return r;
-            }
-        }
-
-        VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
-        fprintf(stderr, "code %d is NOT SUPPORT YET\n", code);
-        return 0;
-    };
-
-    if (likely(vm->fatal == false))
-    {
-        return next;
+        uint64_t vv = (unsigned int)p->a3 & 0xFFFFFF;
+        v += (vv << shift);
+        shift += 24;
+        next += 1;
+        p += 1;
     }
-    else
-    {
-        return 0;
-    }
+    auto& r = vm->reg.id(a);
+    r.write(v, b, (b != r.type));
+    return next;
+    //if ((ex == TYPE_STRING) && (value & 0x01))
+    //{
+    //    //auto it = vm->strs.find(value);
+    //    //if (it == vm->strs.end())
+    //    //{
+    //    //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
+    //    //    return false;
+    //    //}
+    //    //value = (intptr_t)it->second;
+    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
+    //    if (it.func == NULL)
+    //    {
+    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
+    //        return false;
+    //    }
+    //    value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
+    //    if (value == 0)
+    //    {
+    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
+    //        return false;
+    //    }
+    //}
+    //return r.write(value, ex, (ex != r.type));
 }
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
@@ -431,6 +261,217 @@ bool func::run(struct regvm* vm, int64_t start)
 bool func::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
 {
     return step(vm, code, 0, max, extra);
+}
+
+
+inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
+{
+    int next = 1;
+
+#define STEP_ERROR(e, fmt, ...) VM_ERROR(e, inst, offset, fmt, ##__VA_ARGS__);
+
+    const int code = inst.id;
+
+    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, inst.a, inst.b, inst.c);
+
+    switch (code)
+    {
+#define CALC(i, op)                                                         \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(inst.a);                                   \
+            const auto& b = vm->reg.id(inst.b);                             \
+            const auto& c = vm->reg.id(inst.c);                             \
+            int t = (b.type > c.type) ? b.type : c.type;                    \
+            vm_conv_impl(vm, r, t);                                         \
+            switch (t)                                                      \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                r.value.sint = (int64_t)b op (int64_t)c;                    \
+                break;                                                      \
+            case TYPE_UNSIGNED:                                             \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
+                break;                                                      \
+            case TYPE_DOUBLE:                                               \
+                r.value.dbl = (double)b op (double)c;                       \
+                break;                                                      \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, t, inst, offset);                        \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
+        break;
+        CALC(ADD, +);
+        CALC(SUB, -);
+        CALC(MUL, *);
+        CALC(DIV, /);
+#undef CALC
+
+#define ONLY_UNSIGNED(i, op)                                                \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(inst.a);                                   \
+            const auto& b = vm->reg.id(inst.b);                             \
+            const auto& c = vm->reg.id(inst.c);                             \
+            vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
+            if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
+            {                                                               \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
+            }                                                               \
+        }                                                                   \
+        break;
+        ONLY_UNSIGNED(AND, &);
+        ONLY_UNSIGNED(OR, |);
+        ONLY_UNSIGNED(XOR, ^);
+#undef ONLY_UNSIGNED
+
+#define ONLY_INTEGER(i, op)                                                 \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(inst.a);                                   \
+            const auto& b = vm->reg.id(inst.b);                             \
+            const auto& c = vm->reg.id(inst.c);                             \
+            vm_conv_impl(vm, r, b.type);                                    \
+            switch (r.type)                                                 \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                r.value.sint = (int64_t)b op (int64_t)c;                    \
+                break;                                                      \
+            case TYPE_UNSIGNED:                                             \
+                r.value.uint = (uint64_t)b op (uint64_t)c;                  \
+                break;                                                      \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
+        break;
+        ONLY_INTEGER(SHL, <<);
+        ONLY_INTEGER(SHR, >>);
+        ONLY_INTEGER(MOD, %);
+#undef ONLY_INTEGER
+
+#define WRITE(i, ...)                                                       \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto& r = vm->reg.id(inst.a);                                   \
+            auto& e = vm->reg.id(inst.b);                                   \
+            return r.write(__VA_ARGS__);                                    \
+        }
+        WRITE(MOVE, e.value.uint, e.type, true);
+        WRITE(TYPE, e.type, TYPE_SIGNED, true);
+#undef WRITE
+
+#define SUB_OPS(i, op)                                                      \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            auto f = i##_OPS[inst.op];                                      \
+            if (unlikely(f == NULL))                                        \
+            {                                                               \
+                UNSUPPORT_TYPE(#i, inst.op, inst, offset);                  \
+                return 0;                                                   \
+            }                                                               \
+            return f(vm, inst.a, inst.b, inst.c, offset);                   \
+        }                                                                   \
+        break;
+        SUB_OPS(CHG, c);
+#undef SUBS
+
+    case CODE_CMP:
+        switch (inst.c)
+        {
+#define CMP(k, cmp)                             \
+    case k:                                     \
+        vm->reg.id(inst.a).write(((int64_t)vm->reg.id(inst.b) cmp 0), TYPE_SIGNED, true);  \
+        return 1;
+            CMP(0, ==);
+            CMP(1, !=);
+            CMP(2, >);
+            CMP(3, >=);
+            CMP(4, <);
+            CMP(5, <=);
+#undef CMP
+        }
+        break;
+
+#define JUMPS_CMP(t, cmp) vm_cmp_value<t>(vm, inst.a, i_a) cmp vm_cmp_value<t>(vm, inst.b, i_b)
+#define JUMPS(i, cmp)                                                       \
+    case CODE_##i:                                                          \
+        {                                                                   \
+            const bool i_a = ((inst.c & 0x02) != 0);                        \
+            const bool i_b = ((inst.c & 0x01) != 0);                        \
+            int t1 = vm_cmp_type(vm, inst.a, i_a);                          \
+            int t2 = vm_cmp_type(vm, inst.b, i_b);                          \
+            int dest = ((code_t*)extra)->a3;                                \
+            switch ((t1 > t2) ? t1 : t2)                                    \
+            {                                                               \
+            case TYPE_SIGNED:                                               \
+                return (JUMPS_CMP(int64_t, cmp)) ? dest : 2;                \
+            case TYPE_UNSIGNED:                                             \
+                return (JUMPS_CMP(uint64_t, cmp)) ? dest : 2;               \
+            case TYPE_DOUBLE:                                               \
+                return (JUMPS_CMP(double, cmp)) ? dest : 2;                 \
+            default:                                                        \
+                UNSUPPORT_TYPE(#i, (t1 > t2) ? t1 : t2, inst, offset);      \
+                break;                                                      \
+            }                                                               \
+        }                                                                   \
+        break;
+        JUMPS(JEQ, ==);
+        JUMPS(JNE, !=);
+        JUMPS(JGT, >);
+        JUMPS(JGE, >=);
+        JUMPS(JLT, <);
+        JUMPS(JLE, <=);
+#undef JUMPS
+
+    case CODE_SET:
+        return vm_set(vm, inst.a, inst.b, inst.c, extra);
+    case CODE_JUMP:
+        return inst.a3;
+    case CODE_JCMP:
+        return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
+    case CODE_CALC:
+        return vm_calc(vm, inst.a, inst.b, inst.c);
+    case CODE_EXIT:
+        //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
+        vm->exit_code = inst.b2;
+        vm->exit = true;
+        return 0;
+    case CODE_RET:
+        return 0;
+    default:
+        if (likely(code >= CODE_TRAP))
+        {
+            auto f = vm->ops[code - CODE_TRAP];
+            if (likely(f != NULL))
+            {
+                int r = f(vm, inst, offset, extra);
+                if (unlikely(r == 0))
+                {
+                    VM_ERROR(ERR_RUNTIME, inst, offset, "run code ERROR : %8s - 0x%02X", CODE_NAME(code), inst.value);
+                }
+                return r;
+            }
+        }
+
+        VM_ERROR(ERR_INVALID_CODE, inst, offset, "invalid code : %8s - 0x%02X", CODE_NAME(code), inst.value);
+        fprintf(stderr, "code %d is NOT SUPPORT YET\n", code);
+        return 0;
+    };
+
+    if (likely(vm->fatal == false))
+    {
+        return next;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 #undef UNSUPPORT_TYPE

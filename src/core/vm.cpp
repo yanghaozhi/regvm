@@ -64,9 +64,9 @@ regvm::regvm() : reg(), ops{NULL}
     SET_OPS(0, JGE);
     SET_OPS(0, JLT);
     SET_OPS(0, JLE);
+    SET_OPS(0, SET);
 
     SET_OPS(1, TRAP);
-    SET_OPS(1, SET);
     SET_OPS(1, LOAD);
     SET_OPS(1, CLEAR);
     SET_OPS(1, STORE);

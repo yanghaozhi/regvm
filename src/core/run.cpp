@@ -240,48 +240,6 @@ int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra)
 }
 
 
-int vm_CODE_SET(regvm* vm, code_t code, int offset, const void* extra)
-{
-    uint64_t v = code.c;
-    int shift = 8;
-    int next = 1;
-    code_t* p = (code_t*)extra;
-    while (p->id == CODE_DATA)
-    {
-        uint64_t vv = (unsigned int)p->a3 & 0xFFFFFF;
-        v += (vv << shift);
-        shift += 24;
-        next += 1;
-        p += 1;
-    }
-    auto& r = vm->reg.id(code.a);
-    r.write(v, code.b, (code.b != r.type));
-    return next;
-    //if ((ex == TYPE_STRING) && (value & 0x01))
-    //{
-    //    //auto it = vm->strs.find(value);
-    //    //if (it == vm->strs.end())
-    //    //{
-    //    //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-    //    //    return false;
-    //    //}
-    //    //value = (intptr_t)it->second;
-    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-    //    if (it.func == NULL)
-    //    {
-    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-    //        return false;
-    //    }
-    //    value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
-    //    if (value == 0)
-    //    {
-    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
-    //        return false;
-    //    }
-    //}
-    //return r.write(value, ex, (ex != r.type));
-}
-
 inline void vm_cmd_echo_var(const reg::v& v)
 {
     switch (v.type)
