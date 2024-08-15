@@ -15,6 +15,8 @@
 #include "statements.h"
 
 
+
+
 parser::parser() : regs(), scopes(regs), parser_list(new trie_tree())
 {
     keywords.emplace("if", If);
@@ -310,15 +312,15 @@ selector::reg parser::token_2_reg(const token& tok)
         {
             std::string_view name = tok.name;
             int attr = 0;
-            auto reg = scopes.find_var(tok.name, attr, [this, name](int attr)
+            auto v = scopes.find_var(tok.name, attr, [this, name](int attr, uint64_t id)
                 {
                     auto n = regs.tmp();
-                    INST(SET, n, name);
-                    auto reg = scopes.new_var(name, 0);
-                    INST(LOAD, reg, n, 0);
-                    return reg;
+                    INST(SET, n, TYPE_ADDR, id);
+                    auto v = scopes.new_var(name, 0);
+                    INST(LOAD, v->reg, n, 0);
+                    return v->reg;
                 });
-            return reg;
+            return v->reg;
         }
         break;
     default:

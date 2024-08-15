@@ -10,12 +10,10 @@
 
 using namespace ext;
 
-var::var(uint8_t t, const char* n, const int l) :
+var::var(uint8_t t, uint64_t i) :
     type(t),
-    name_len(l),
-    hash(calc_hash(n, l))
+    id(i)
 {
-    strcpy(name, n);
     value.uint = 0;
 }
 
@@ -26,37 +24,6 @@ var::~var()
         reg->set_from(NULL);
     }
     free_uvalue(type, value);
-}
-
-var* var::create(uint8_t t, const char* n)
-{
-    const int l = strlen(n);
-
-    char* p = (char*)malloc(sizeof(var) + l + 1);
-    var* v = new (p) var(t, n, l);
-
-    return v;
-}
-
-bool var::cmp(uint32_t k, const char* n, int l)
-{
-    if ((k != hash) || (l != name_len))
-    {
-        return false;
-    }
-    return (memcmp(name, n, l)  == 0) ? true : false;
-}
-
-
-uint32_t var::calc_hash(const char* name, const int len)
-{
-    const int seed = 35153;
-    uint32_t hash = 0;
-    for (int i = 0; i < len; i++)
-    {
-        hash = hash * seed + name[i];
-    }
-    return hash;
 }
 
 bool var::set_val(const core::regv& reg)

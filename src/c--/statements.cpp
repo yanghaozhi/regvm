@@ -49,18 +49,15 @@ const char* decl_var_only::go2(const char* src, const token* toks, int count, DA
 {
     if ((attr & REG) == 0)
     {
-        auto n = p->regs.tmp();
-        INST(SET, n, name);
-        INST(STORE, type, n, 3);
-    }
-    else
-    {
         auto v2 = p->scopes.new_var(name, attr);
-        if (v2.ptr == NULL)
+        if ((v2 == NULL) || (v2->reg.ptr == NULL))
         {
             LOGE("Can not new reg var : %s", VIEW(name));
             return NULL;
         }
+        auto n = p->regs.tmp();
+        INST(SET, (int)n, TYPE_ADDR, v2->id);
+        INST(STORE, type, n, 3);
     }
     return src;
 }
@@ -79,22 +76,23 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
     src = p->expression(src, v);
     if (src == NULL) return NULL;
 
-    if (p->scopes.bind_var(name, v, attr) == false)
+    auto r = p->scopes.bind_var(name, v, attr);
+    if (r == NULL)
     {
-        auto v2 = p->scopes.new_var(name, attr);
-        if (v2.ptr == NULL)
+        auto r = p->scopes.new_var(name, attr);
+        if ((r == NULL) || (r->reg.ptr == NULL))
         {
             LOGE("Can not create var : %s", VIEW(name));
             return NULL;
         }
-        INST(MOVE, v2, v, 0);
-        v = v2;
+        INST(MOVE, r->reg, v, 0);
+        v = r->reg;
     }
 
     if ((attr & REG) == 0)
     {
         auto n = p->regs.tmp();
-        INST(SET, n, name);
+        INST(SET, n, TYPE_ADDR, r->id);
         INST(STORE, v, n, 2);
     }
     return src;
@@ -126,10 +124,10 @@ assign_var::assign_var(parser* p) : parser::op(p)
 const char* assign_var::go(const char* src, const token* toks, int count)
 {
     const std::string_view& name = toks[0].name;
-    auto reload = [this, name](int attr)
+    auto reload = [this, name](int attr, uint64_t id)
         {
             auto n = p->regs.tmp();
-            INST(SET, n, name);
+            INST(SET, n, TYPE_ADDR, id);
             auto vv = p->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
@@ -142,11 +140,11 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     switch (toks[1].info.type)
     {
     case Assign:
-        INST(MOVE, k, v, 0);
+        INST(MOVE, k->reg, v, 0);
         break;
 #define CALC(i, op)                                     \
     case i:                                             \
-        INST(op, k, k, v);                              \
+        INST(op, k->reg, k->reg, v);                    \
         break;
         CALC(AddE, ADD);
         CALC(SubE, SUB);
@@ -160,7 +158,7 @@ const char* assign_var::go(const char* src, const token* toks, int count)
 
     if ((attr & REG) == 0)
     {
-        INST(STORE, k, 0, 0);
+        INST(STORE, k->reg, 0, 0);
     }
     return src;
 }
@@ -180,10 +178,10 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
 {
     const std::string_view& name = toks[0].name;
     int attr = 0;
-    auto reload = [this, name](int attr)
+    auto reload = [this, name](int attr, uint64_t id)
         {
             auto n = p->regs.tmp();
-            INST(SET, n, name);
+            INST(SET, n, TYPE_ADDR, id);
             auto vv = p->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
@@ -213,11 +211,11 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
             default:                                            \
                 return NULL;                                    \
             }                                                   \
-            INST(op, k, k, r);                                  \
+            INST(op, k->reg, k->reg, r);                        \
         }                                                       \
         else                                                    \
         {                                                       \
-            INST(CALC, k, v, op2);                              \
+            INST(CALC, k->reg, v, op2);                         \
         }                                                       \
         break;
         CALC(AddE, ADD, 0);
@@ -231,7 +229,7 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     }
     if ((attr & REG) == 0)
     {
-        INST(STORE, k, 0, 0);
+        INST(STORE, k->reg, 0, 0);
     }
     return src;
 }

@@ -576,14 +576,15 @@ int vm_CODE_DITEMS(regvm* vm, code_t code, int offset, const void* extra)
         return 1;
     }
 
-    core::uvalue::list_t* keys = ks.value.list_v;
+    //core::uvalue::list_t* keys = ks.value.list_v;
     core::uvalue::list_t* values = vs.value.list_v;
 
     for (auto& it : *v.value.dict_v)
     {
-        auto k = CRTP_CALL(vm_var, TYPE_STRING, "");
-        *k = it.first.c_str();
-        keys->push_back(k);
+        //TODO
+        //auto k = CRTP_CALL(vm_var, TYPE_STRING, "");
+        //*k = it.first.c_str();
+        //keys->push_back(k);
 
         it.second->acquire();
         values->push_back(it.second);

@@ -84,6 +84,7 @@ template <> struct instv<CODE_SET> : public inst, public instex
     instv(const char* n, int r, const std::string_view& v);
     instv(const char* n, int r, const char* v);
     instv(const char* n, int r, uint64_t v);
+    instv(const char* n, int r, int t, uint64_t v);
     instv(const char* n, int r, int64_t v);
     instv(const char* n, int r, double v);
 

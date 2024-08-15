@@ -4,6 +4,7 @@
 
 #include <map>
 #include <list>
+#include <unordered_map>
 
 #include <debug.h>
 #include <ext.h>
@@ -25,9 +26,11 @@ public:
 
     bool store();
 
-    var* add(const char* name, const int type, bool global);
+    var* add(uint64_t id, const int type);
 
-    var* get(const char* name, bool global, bool no_recursive) const;
+    var* get(uint64_t id) const;
+
+    bool del(uint64_t id);
 
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
@@ -38,25 +41,26 @@ public:
     CRTP_FUNC(vm_exit,  bool, 0);
     CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
     CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
+    CRTP_FUNC(vm_var,   core::var*, 2, int, uint64_t);
 
 #undef CRTP_FUNC
 
 private:
-    struct context
-    {
-        context(int64_t frame);
-        ~context();
+    //struct context
+    //{
+    //    context(int64_t frame);
+    //    ~context();
 
-        void enter_block();
-        void leave_block();
+    //    void enter_block();
+    //    void leave_block();
 
-        const int64_t       frame;
-        std::list<scope>    scopes;
-    };
+    //    const int64_t       frame;
+    //    std::list<scope>    scopes;
+    //};
 
-    scope                   globals;
-    std::list<context>      frames;
+    //scope                   globals;
+    //std::list<context>      frames;
+    std::unordered_map<uint64_t, var_t*>    vars;
 
     static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
     static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);

@@ -48,7 +48,7 @@ struct regvm
     CRTP_FUNC(vm_exit,  bool, true, 0);
     CRTP_FUNC(vm_call,  bool, true, 3, code_t, int, int64_t);
     CRTP_FUNC(vm_var,   core::var*, NULL, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, NULL, 2, int, const char*);
+    CRTP_FUNC(vm_var,   core::var*, NULL, 2, int, uint64_t);
 
 #undef CRTP_FUNC
 

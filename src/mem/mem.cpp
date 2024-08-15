@@ -21,38 +21,38 @@ bool regvm_mem::vm_init()
 
 bool regvm_mem::vm_exit()
 {
-    frames.clear();
+    //frames.clear();
     return true;
 }
 
 core::var* regvm_mem::vm_var(int id)
 {
     auto& r = reg.id(id);
-    auto v = var::create(r.type, "");
+    auto v = new var(r.type, (uint64_t)r);
     v->store_from(r);
     return v;
 }
 
-core::var* regvm_mem::vm_var(int type, const char* name)
+core::var* regvm_mem::vm_var(int type, uint64_t id)
 {
-    return var::create(type, name); 
+    return new var(type, id); 
 }
 
 bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 {
-    if ((id > 0) || ((id == 0) && (frames.empty() == true)))
-    {
-        frames.emplace_front(offset);
-    }
-    else
-    {
-        if (frames.front().frame != -id)
-        {
-            assert(0);
-            return false;
-        }
-        frames.pop_front();
-    }
+    //if ((id > 0) || ((id == 0) && (frames.empty() == true)))
+    //{
+    //    frames.emplace_front(offset);
+    //}
+    //else
+    //{
+    //    if (frames.front().frame != -id)
+    //    {
+    //        assert(0);
+    //        return false;
+    //    }
+    //    frames.pop_front();
+    //}
     return true;
 }
 
@@ -60,12 +60,12 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extr
 {
     auto& e = vm->reg.id(code.b);
     auto& r = vm->reg.id(code.a);
-    auto v = VM->get(e.value.str, false, false);
+    auto v = VM->get(e);
     if (v == NULL)
     {
         //auto vm = this;
         //VM_ERROR(ERR_INVALID_VAR, code, reg, ex, offset, "load var name : %s", e.value.str);
-        return false;
+        return 0;
     }
     else
     {
@@ -84,37 +84,40 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     case 2:
         {
             auto& e = vm->reg.id(code.b);
-            if (e.type != TYPE_STRING)
+            switch (e.type)
             {
+            case TYPE_STRING:
+                return 0;
+            case TYPE_ADDR:
+                {
+                    auto v = VM->get(e.value.uint);
+                    if (v != NULL)
+                    {
+                        if (v->store_from(r) == true)
+                        {
+                            return 1;
+                        }
+                    }
+                    return VM->add(e.value.uint, r.type)->store_from(r);
+                }
+            default:
                 //auto vm = this;
                 //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
                 vm->fatal = true;
-                return false;
-            }
-            else
-            {
-                auto v = VM->get(e.value.str, false, (bool)(code.c - 1));
-                if (v != NULL)
-                {
-                    if (v->store_from(r) == true)
-                    {
-                        return true;
-                    }
-                }
-                return VM->add(e.value.str, r.type, false)->store_from(r);
+                return 0;
             }
         }
         break;
     case 3:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
         {
             auto& n = vm->reg.id(code.b);
-            auto v = VM->get(n.value.str, false, true);
+            auto v = VM->get(n);
             if (v != NULL)
             {
                 return (v->type == code.a) ? true : false;
             }
-            v = VM->add(n.value.str, code.a, false);
-            return (v != NULL) ? true : false;
+            v = VM->add(n, code.a);
+            return (v != NULL) ? 1 : 0;
         }
     case 4:     //只在顶层scope（全局变量）中查找或新建
         break;
@@ -126,25 +129,25 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
 
 int regvm_mem::vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra)
 {
-    if (VM->frames.size() == 0)
-    {
-        return false;
-    }
+    //if (VM->frames.size() == 0)
+    //{
+    //    return false;
+    //}
 
-    switch (code.b)
-    {
-    case 0:
-        VM->frames.back().enter_block();
-        break;
-    case 1:
-        VM->frames.back().leave_block();
-        break;
-    }
+    //switch (code.b)
+    //{
+    //case 0:
+    //    VM->frames.back().enter_block();
+    //    break;
+    //case 1:
+    //    VM->frames.back().leave_block();
+    //    break;
+    //}
 
-    return true;
+    return 1;
 }
 
-regvm_mem::regvm_mem() : globals(0)
+regvm_mem::regvm_mem()
 {
 #define REG_OP(x)   ops[CODE_##x - CODE_TRAP] = vm_CODE_##x;
     REG_OP(LOAD);
@@ -155,94 +158,80 @@ regvm_mem::regvm_mem() : globals(0)
 #undef REG_OP
 }
 
-var* regvm_mem::add(const char* name, const int type, bool global)
+var* regvm_mem::add(uint64_t id, const int type)
 {
-    auto v = var::create(type, name);
-    if (global == false)
+    auto v = new var(type, id);
+
+    auto r = vars.emplace(id, v);
+    if (r.second == false)
     {
-        frames.front().scopes.front().add(v);
+        v->release();
+        return NULL;
     }
-    else
-    {
-        globals.add(v);
-    }
-    return (v->release() == true) ? v : NULL;
+    return v;
+
+    //if (global == false)
+    //{
+    //    frames.front().scopes.front().add(v);
+    //}
+    //else
+    //{
+    //    globals.add(v);
+    //}
+    //return (v->release() == true) ? v : NULL;
 }
 
-var* regvm_mem::get(const char* name, bool global, bool no_recursive) const
+var* regvm_mem::get(uint64_t id) const
 {
-    const int l = strlen(name);
-    uint32_t h = var::calc_hash(name, l);
-    if (global == false)
-    {
-        if (no_recursive == false)
-        {
-            for (const auto& it : frames.front().scopes)
-            {
-                auto v = it.get(h, name, l);
-                if (v != NULL)
-                {
-                    return v;
-                }
-            }
-        }
-        else
-        {
-            auto v = frames.front().scopes.front().get(h, name, l);
-            if (v != NULL)
-            {
-                return v;
-            }
-        }
-    }
-    return globals.get(h, name, l);
+    auto it = vars.find(id);
+    return (it != vars.end()) ? it->second : NULL;
 }
 
-regvm_mem::context::context(int64_t f) : frame(f)
-{
-    scopes.emplace_front(0);
-}
-
-regvm_mem::context::~context()
-{
-    if (scopes.size() > 1)
-    {
-        //TODO
-        //warning
-    }
-}
-
-void regvm_mem::context::enter_block()
-{
-    scopes.emplace_front(scopes.size());
-}
-
-void regvm_mem::context::leave_block()
-{
-    scopes.pop_front();
-}
+//regvm_mem::context::context(int64_t f) : frame(f)
+//{
+//    scopes.emplace_front(0);
+//}
+//
+//regvm_mem::context::~context()
+//{
+//    if (scopes.size() > 1)
+//    {
+//        //TODO
+//        //warning
+//    }
+//}
+//
+//void regvm_mem::context::enter_block()
+//{
+//    scopes.emplace_front(scopes.size());
+//}
+//
+//void regvm_mem::context::leave_block()
+//{
+//    scopes.pop_front();
+//}
 
 void regvm_mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
 {
-    for (auto& f : frames)
-    {
-        info->func_id = f.frame >> 32;
-        info->call_id = f.frame & 0xFFFFFFFF;
-        auto it = vm->funcs.find(info->func_id);
-        if (it != vm->funcs.end())
-        {
-            info->func_name = it->second.src.func;
-        }
-        else
-        {
-            info->func_name = NULL;
-        }
+    //for (auto& f : frames)
+    //{
+    //    info->func_id = f.frame >> 32;
+    //    info->call_id = f.frame & 0xFFFFFFFF;
+    //    auto it = vm->funcs.find(info->func_id);
+    //    if (it != vm->funcs.end())
+    //    {
+    //        info->func_name = it->second.src.func;
+    //    }
+    //    else
+    //    {
+    //        info->func_name = NULL;
+    //    }
 
-        for (auto& s : f.scopes)
-        {
-            s.dump(cb, arg, info);
-        }
-    }
+    //    for (auto& s : f.scopes)
+    //    {
+    //        s.dump(cb, arg, info);
+    //    }
+    //}
 }
 
 #ifdef __cplusplus

@@ -4,24 +4,29 @@
 
 #include "common.h"
 
-const selector::reg blocks::new_var(const std::string_view& name, int attr)
+
+uint64_t         blocks::var_id  = 1;
+
+
+const blocks::var* blocks::new_var(const std::string_view& name, int attr)
 {
     auto v = (attr == 0) ? sel.bind(name) : sel.lock();
-    if (v.ptr != NULL)
+    if (v.ptr == NULL)
     {
-        LOGT("add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-        stack.front().vars.emplace(name, var{v, attr});
+        return NULL;
     }
-    return v;
+    LOGT("add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
+    auto r = stack.front().vars.emplace(name, var{v, attr, ++var_id});
+    return &r.first->second;
 }
 
-bool blocks::bind_var(const std::string_view& name, const selector::reg& v, int attr)
+const blocks::var* blocks::bind_var(const std::string_view& name, const selector::reg& v, int attr)
 {
     auto it = stack.front().vars.find(name);
     if (it != stack.front().vars.end())
     {
-        LOGE("try to bind var %d:%d:%s to block %d, but it's already bind to %d:%d", (int)v, v.ver, VIEW(name), (int)stack.size(), (int)it->second.r, it->second.r.ver);
-        return false;
+        LOGE("try to bind var %d:%d:%s to block %d, but it's already bind to %d:%d", (int)v, v.ver, VIEW(name), (int)stack.size(), (int)it->second.reg, it->second.reg.ver);
+        return NULL;
     }
 
     if (attr == 0)
@@ -29,23 +34,23 @@ bool blocks::bind_var(const std::string_view& name, const selector::reg& v, int 
         if (sel.bind(name, v) == false)
         {
             LOGW("bind var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
-            return false;
+            return NULL;
         }
         LOGT("bind var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-        stack.front().vars.emplace(name, var{v, attr});
+        stack.front().vars.emplace(name, var{v, attr, ++var_id});
     }
     else
     {
         if (sel.lock(v) == false)
         {
             LOGW("lock for var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
-            return false;
+            return NULL;
         }
         LOGT("lock var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-        stack.front().vars.emplace(name, var{v, attr});
     }
 
-    return true;
+    auto r = stack.front().vars.emplace(name, var{v, attr, ++var_id});
+    return &r.first->second;
 }
 
 bool blocks::enter()
@@ -66,6 +71,6 @@ blocks::block::~block()
 {
     for (auto& it : vars)
     {
-        sel.release(it.second.r);
+        sel.release(it.second.reg);
     }
 }

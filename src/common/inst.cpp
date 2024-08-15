@@ -121,6 +121,13 @@ instv<CODE_SET>::instv(const char* n, int r, const char* v) : inst(CODE_SET, n)
     c = set_datas((uintptr_t)ex.str, 1);
 }
 
+instv<CODE_SET>::instv(const char* n, int r, int t, uint64_t v) : inst(CODE_SET, n)
+    ,reg(r), type(t)
+{
+    ex.uint = v;
+    c = set_datas(ex.uint, 1);
+}
+
 instv<CODE_SET>::instv(const char* n, int r, uint64_t v) : inst(CODE_SET, n)
     ,reg(r), type(TYPE_UNSIGNED)
 {
@@ -233,6 +240,9 @@ void instv<CODE_SET>::print_asm(FILE* fp) const
         return;
     case TYPE_STRING:
         fprintf(fp, "%-8s %d\t%d\t%s\n", name, reg, type, ex.str);
+        return;
+    case TYPE_ADDR:
+        fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
         return;
     default:
         assert(0);
