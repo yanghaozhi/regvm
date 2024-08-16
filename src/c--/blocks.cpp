@@ -3,20 +3,21 @@
 #include <log.h>
 
 #include "common.h"
+#include "statements.h"
 
 
-uint64_t         blocks::var_id  = 1;
+uint32_t         blocks::var_id  = 1;
 
 
 const blocks::var* blocks::new_var(const std::string_view& name, int attr)
 {
-    auto v = (attr == 0) ? sel.bind(name) : sel.lock();
+    auto v = (attr == 0) ? regs.bind(name) : regs.lock();
     if (v.ptr == NULL)
     {
         return NULL;
     }
     LOGT("add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-    auto r = stack.front().vars.emplace(name, var{v, attr, ++var_id});
+    auto r = stack.front().vars.emplace(name, var{v, attr, new_id(name)});
     return &r.first->second;
 }
 
@@ -31,17 +32,17 @@ const blocks::var* blocks::bind_var(const std::string_view& name, const selector
 
     if (attr == 0)
     {
-        if (sel.bind(name, v) == false)
+        if (regs.bind(name, v) == false)
         {
             LOGW("bind var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
             return NULL;
         }
         LOGT("bind var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-        stack.front().vars.emplace(name, var{v, attr, ++var_id});
+        stack.front().vars.emplace(name, var{v, attr, new_id(name)});
     }
     else
     {
-        if (sel.lock(v) == false)
+        if (regs.lock(v) == false)
         {
             LOGW("lock for var %d:%d:%s to block %d ERROR", (int)v, v.ver, VIEW(name), (int)stack.size());
             return NULL;
@@ -49,13 +50,13 @@ const blocks::var* blocks::bind_var(const std::string_view& name, const selector
         LOGT("lock var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
     }
 
-    auto r = stack.front().vars.emplace(name, var{v, attr, ++var_id});
+    auto r = stack.front().vars.emplace(name, var{v, attr, new_id(name)});
     return &r.first->second;
 }
 
 bool blocks::enter()
 {
-    stack.emplace_front(sel);
+    stack.emplace_front(this);
     LOGT("enter block %d", (int)stack.size());
     return true;
 }
@@ -69,8 +70,31 @@ bool blocks::leave()
 
 blocks::block::~block()
 {
+    insts_t& insts = cur->insts;
+    selector& regs = cur->regs;
+    int n = (vars.size() > 0) ? regs.tmp() : -1;
     for (auto& it : vars)
     {
-        sel.release(it.second.reg);
+        LOGT("deleting var %u(%u) - %s", (uint32_t)it.second.id, it.second.attr, VIEW(it.second.reg.ptr->var));
+
+        if ((it.second.attr & REG) == 0)
+        {
+            INST(SET, n, TYPE_ADDR, it.second.id);
+            INST(STORE, 0, n, 5);
+        }
+
+        regs.release(it.second.reg);
     }
 }
+
+uint32_t blocks::new_id(const std::string_view& name)
+{
+    uint32_t n = ++var_id;
+    while (ids.emplace(n).second == false)
+    {
+        n = ++var_id;
+    }
+    LOGT("alloc %u for name %s", n, VIEW(name));
+    return n;
+}
+

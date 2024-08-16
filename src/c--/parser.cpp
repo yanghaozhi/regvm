@@ -17,7 +17,7 @@
 
 
 
-parser::parser() : regs(), scopes(regs), parser_list(new trie_tree())
+parser::parser() : regs(), scopes(insts, regs), parser_list(new trie_tree())
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);

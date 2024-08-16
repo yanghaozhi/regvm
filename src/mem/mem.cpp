@@ -121,6 +121,23 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
         }
     case 4:     //只在顶层scope（全局变量）中查找或新建
         break;
+    case 5:
+        {
+            auto& e = vm->reg.id(code.b);
+            switch (e.type)
+            {
+            case TYPE_STRING:
+                return 0;
+            case TYPE_ADDR:
+                return VM->del(e.value.uint);
+            default:
+                //auto vm = this;
+                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+                vm->fatal = true;
+                return 0;
+            }
+        }
+        break;
     default:
         return 0;
     }
@@ -185,6 +202,11 @@ var* regvm_mem::get(uint64_t id) const
 {
     auto it = vars.find(id);
     return (it != vars.end()) ? it->second : NULL;
+}
+
+bool regvm_mem::del(uint64_t id)
+{
+    return vars.erase(id) == 1;
 }
 
 //regvm_mem::context::context(int64_t f) : frame(f)

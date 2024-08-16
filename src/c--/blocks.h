@@ -1,15 +1,17 @@
 #pragma once
 
 #include <list>
+#include <unordered_set>
 #include <unordered_map>
 
+#include "inst.h"
 #include "common.h"
 #include "selector.h"
 
 class blocks
 {
 public:
-    blocks(selector& s) : sel(s)    {};
+    blocks(insts_t& i, selector& s) : insts(i), regs(s)    {};
     ~blocks()                       {};
 
     struct var
@@ -28,7 +30,7 @@ public:
             auto v = it.vars.find(name);
             if (v != it.vars.end())
             {
-                if (sel.active(v->second.reg) == false)
+                if (regs.active(v->second.reg) == false)
                 {
                     LOGW("find invalid result %d:%d for %s, need to reload it", (int)v->second.reg, v->second.reg.ver, VIEW(name));
                     v->second.reg = reload(v->second.attr, v->second.id);
@@ -48,14 +50,18 @@ public:
 private:
     struct block
     {
-        block(selector& s) : sel(s)    {};
+        block(blocks* b) : cur(b)    {};
         ~block();
 
-        selector&       sel;
+        blocks*         cur;
         std::unordered_map<std::string_view, var>   vars;
     };
 
+    insts_t&            insts;
+    selector&           regs;
     std::list<block>    stack;
-    selector&           sel;
-    static uint64_t     var_id;
+    static uint32_t     var_id;
+    std::unordered_set<uint32_t>   ids;
+
+    uint32_t new_id(const std::string_view& name);
 };
