@@ -67,7 +67,7 @@ private:
     bool                valid   = true;
     enum REASON         reason;
 
-    int64_t gen_id(void);
+    inline int64_t gen_id(void) const;
 //    scope&              globals;
 //    std::list<scope>    scopes;
 

@@ -137,13 +137,13 @@ bool regvm::run(const code_t* start, int count)
 //    }
 //}
 
-bool regvm::call(int64_t id, code_t code, int offset)
+bool regvm::call(int32_t id, code_t code, int offset)
 {
     auto vm = this;
     auto it = funcs.find(id);
     if (it == funcs.end())
     {
-        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
+        VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %d", id);
         return false;
     }
 

@@ -37,7 +37,7 @@ struct regvm
     virtual ~regvm();
 
     bool run(const code_t* start, int count);
-    bool call(int64_t id, code_t code, int offset);
+    bool call(int32_t id, code_t code, int offset);
 
 #define CRTP_FUNC(name, ret, val, argc, ...)                                \
     virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))    {return val;};

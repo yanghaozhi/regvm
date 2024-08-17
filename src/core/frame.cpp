@@ -267,7 +267,7 @@ frame::~frame()
     vm->call_stack = up;
 }
 
-int64_t frame::gen_id(void)
+int64_t frame::gen_id(void) const
 {
     int64_t c = running->id;
     c <<= 32;
@@ -343,13 +343,13 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             {                                                               \
             case TYPE_SIGNED:                                               \
                 r.value.sint = (int64_t)b op (int64_t)c;                    \
-                break;                                                      \
+                return next;                                                \
             case TYPE_UNSIGNED:                                             \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                break;                                                      \
+                return next;                                                \
             case TYPE_DOUBLE:                                               \
                 r.value.dbl = (double)b op (double)c;                       \
-                break;                                                      \
+                return next;                                                \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, t, inst, offset);                        \
                 break;                                                      \
@@ -372,6 +372,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
             {                                                               \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
+                return next;                                                \
             }                                                               \
             else                                                            \
             {                                                               \
@@ -395,10 +396,10 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             {                                                               \
             case TYPE_SIGNED:                                               \
                 r.value.sint = (int64_t)b op (int64_t)c;                    \
-                break;                                                      \
+                return next;                                                \
             case TYPE_UNSIGNED:                                             \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                break;                                                      \
+                return next;                                                \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
                 break;                                                      \
@@ -513,6 +514,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
                 VM_ERROR(ERR_RUNTIME, inst, offset, "call function : %d ERROR", id);
                 return 0;
             }
+            return next;
         }
         break;
     case CODE_RET:
