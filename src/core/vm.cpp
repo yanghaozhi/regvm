@@ -121,7 +121,7 @@ bool regvm::run(const code_t* start, int count)
         return false;
     }
     core::frame f(this, &r.first->second, *start, 0);
-    return f.run();
+    return (bool)f.run();
 }
 
 //bool regvm::call(core::reg::v& addr, code_t code, int offset)
@@ -148,7 +148,7 @@ bool regvm::call(int64_t id, code_t code, int offset)
     }
 
     core::frame f(*call_stack, &it->second, code, offset);
-    return f.run();
+    return (bool)f.run();
 }
 
 

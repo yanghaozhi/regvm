@@ -498,6 +498,23 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         vm->exit = true;
         reason = EXIT;
         return 0;
+    case CODE_CALL:
+        {
+            int32_t id = inst.a3;
+            if (unlikely(id < 0))
+            {
+                id = id & 0xFFFF;
+                code_t* p = (code_t*)extra;
+                id += (p->a3 << 16);
+                next += 1;
+            }
+            if (unlikely(vm->call(id, inst, offset) == false))
+            {
+                VM_ERROR(ERR_RUNTIME, inst, offset, "call function : %d ERROR", id);
+                return 0;
+            }
+        }
+        break;
     case CODE_RET:
         reason = RET;
         return 0;

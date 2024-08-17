@@ -88,14 +88,12 @@ enum DATA_TYPE
 //| BLOCK   | CODE_BLOCK    | N/A               | enter or leave    |                   |
 //  ex == 0 means enter block, ex == 1 means exit block
 //+---------+---------------+-------------------+-------------------+-------------------+
-//| CALL    | CODE_CALL     | entry             | arg               |                   |
-//  调用函数，函数入口存于$entry，
-//      ex表示参数个数（从0开始依次存在于寄存器中，最多16个）
-//      如果$reg的类型为TYPE_ADDR，则它直接是跳转地址
-//      如果$reg的类型为TYPE_SIGNED，则表明它是函数id
+//| CALL    | CODE_CALL     | id                                                        |
+//  调用函数，id为子函数的id（由regvm_func设置）
+//      如果id大于0x7FFFFF，则保留低两字节，高两字节由接下来的DATA指令给出
 //+---------+---------------+-------------------+-------------------+-------------------+
-//| RET     | CODE_RET      | N/A               | return value count|                   |
-//  退出函数，ex表示返回值个数（方法如同CALL的参数）
+//| RET     | CODE_RET      | N/A                                                       |
+//  退出函数
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| CALC    | CODE_CALC     | a                 | b                 | op                |
 //  $a op b ( -127 <= b <= 127 )
