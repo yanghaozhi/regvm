@@ -14,18 +14,6 @@
 namespace core
 {
 
-union extend_args
-{
-    uint16_t        v;
-    struct
-    {
-        uint16_t    a1 : 4;
-        uint16_t    a2 : 4;
-        uint16_t    a3 : 4;
-        uint16_t    a4 : 4;
-    };
-};
-
 typedef int (*vm_sub_op_t)(regvm* vm, int a, int b, int c, int offset);
 
 class func
@@ -33,17 +21,14 @@ class func
 public:
     const int32_t               id;
 
-    const code_t*               codes;      //code page(file) begins
-    const int64_t               count;      //code page count
-
-    const int64_t               entry;      //function entry position
-    const int64_t               size;       //function size
+    const int32_t               count;      //code page count
+    const code_t*               codes;      //code page begins
 
     regvm_src_location          src;
 
-    func(const code_t* codes, int64_t count, int64_t entry, int64_t size, int32_t id, const regvm_src_location* src);
+    func(const code_t* codes, int32_t count, int32_t id, const regvm_src_location* src);
 
-    bool run(struct regvm* vm, int64_t start = -1);
+    int run(struct regvm* vm);
 
     static bool one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra);
 };

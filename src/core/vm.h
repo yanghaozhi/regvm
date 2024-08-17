@@ -30,7 +30,6 @@ struct regvm
     core::ivt       idt;
 
     std::map<int32_t, core::func>   funcs;
-    std::map<int64_t, const char*>  strs;
 
     vm_op_t         ops[256 - CODE_TRAP];
 
@@ -39,7 +38,6 @@ struct regvm
 
     bool run(const code_t* start, int count);
     bool call(int64_t id, code_t code, int offset);
-    bool call(core::reg::v& addr, code_t code, int offset);
 
 #define CRTP_FUNC(name, ret, val, argc, ...)                                \
     virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__))    {return val;};

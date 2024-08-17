@@ -113,8 +113,8 @@ regvm::~regvm()
 bool regvm::run(const code_t* start, int count)
 {
     regvm_src_location src = {0, "NULL", "..."};
-    auto r = funcs.try_emplace((int32_t)0, start, count, 0, count, 0, &src);
-    if (r.second == false)
+    auto r = funcs.try_emplace((int32_t)0, start, count, 0, &src);
+    if (unlikely(r.second == false))
     {
         auto vm = this;
         VM_ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
@@ -124,18 +124,18 @@ bool regvm::run(const code_t* start, int count)
     return f.run();
 }
 
-bool regvm::call(core::reg::v& addr, code_t code, int offset)
-{
-    if (addr.type != TYPE_ADDR)
-    {
-        return call((int64_t)addr, code, offset);
-    }
-    else
-    {
-        core::frame f(*call_stack, call_stack->running, code, offset);
-        return f.run((int64_t)addr);
-    }
-}
+//bool regvm::call(core::reg::v& addr, code_t code, int offset)
+//{
+//    if (addr.type != TYPE_ADDR)
+//    {
+//        return call((int64_t)addr, code, offset);
+//    }
+//    else
+//    {
+//        core::frame f(*call_stack, call_stack->running, code, offset);
+//        return f.run((int64_t)addr);
+//    }
+//}
 
 bool regvm::call(int64_t id, code_t code, int offset)
 {

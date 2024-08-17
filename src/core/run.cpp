@@ -18,6 +18,24 @@ extern bool vm_conv_type(struct regvm* vm, reg::v& r, int to);
 extern "C"
 {
 
+bool regvm_func(struct regvm* vm, int32_t id, const code_t* start, int count, const struct regvm_src_location* src)
+{
+    if (id <= 0)
+    {
+        LOGE("function id can not be : %d", id);
+        return false;
+    }
+
+    auto r = vm->funcs.try_emplace(id, start, count, id, src);
+    if (r.second == false)
+    {
+        LOGE("Can not reg function : %d", id);
+        return false;
+    }
+
+    return true;
+}
+
 bool regvm_exec(struct regvm* vm, const code_t* start, int count, int64_t* exit)
 {
     if (vm->run(start, count) == false)

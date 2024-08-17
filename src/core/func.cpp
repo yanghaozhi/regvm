@@ -6,6 +6,7 @@
 
 #include "vm.h"
 #include "ext.h"
+#include "frame.h"
 
 #include <log.h>
 
@@ -16,7 +17,7 @@ using namespace core;
 
 extern vm_sub_op_t  CHG_OPS[16];
 
-inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
+inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra, int* reason);
 
 
 
@@ -213,8 +214,8 @@ bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
     return vm_conv_impl(vm, r, to);
 }
 
-func::func(const code_t* p, int64_t c, int64_t e, int64_t s, int32_t i, const regvm_src_location* l) :
-    id(i), codes(p), count(c), entry(e), size(s)
+func::func(const code_t* p, int32_t c, int32_t i, const regvm_src_location* l) :
+    id(i), count(c), codes(p)
 {
     if (l == NULL)
     {
@@ -228,19 +229,24 @@ func::func(const code_t* p, int64_t c, int64_t e, int64_t s, int32_t i, const re
     }
 }
 
-bool func::run(struct regvm* vm, int64_t start)
+int func::run(struct regvm* vm)
 {
-    int64_t offset = (start >= 0) ? start : entry;
-    int rest = size;
-    LOGT("running : %ld - %d", offset, rest);
+    int32_t offset = 0;
+    int rest = count;
+    LOGT("running : %d - %d", offset, rest);
     const code_t* cur = codes + offset;
+    int reason = frame::END;
     while (rest > 0)
     {
-        int next = step(vm, *cur, offset, rest, cur + 1);
+        int next = step(vm, *cur, offset, rest, cur + 1, &reason);
         if (unlikely(next == 0))
         {
-            VM_ERROR(ERR_RUNTIME, *cur, offset, "run code ERROR at %lld : %s - %d - %d - %d", offset, CODE_NAME(cur->id), cur->a, cur->b, cur->c);
-            return ! vm->fatal;
+            if (unlikely(reason == frame::END))
+            {
+                reason = frame::ERROR;
+                VM_ERROR(ERR_RUNTIME, *cur, offset, "run code ERROR at %lld : %s - %d - %d - %d", offset, CODE_NAME(cur->id), cur->a, cur->b, cur->c);
+            }
+            return reason;
         }
 
         cur += next;
@@ -248,23 +254,26 @@ bool func::run(struct regvm* vm, int64_t start)
         offset += next;
     }
 
-    if (rest < 0)
+    if (unlikely(rest < 0))
     {
         VM_ERROR(ERR_RUNTIME, code_t{0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
+        vm->fatal = true;
+        return frame::ERROR;
     }
 
     auto& r = vm->reg.id(0);
     vm->exit_code = (r.type == TYPE_NULL) ? 0 : r.value.sint;
-    return true;
+    return reason;
 }
 
 bool func::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
 {
-    return step(vm, code, 0, max, extra);
+    int reason;
+    return step(vm, code, 0, max, extra, &reason);
 }
 
 
-inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
+inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra, int* reason)
 {
     int next = 1;
 
@@ -441,8 +450,10 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;
         vm->exit = true;
+        *reason = frame::EXIT;
         return 0;
     case CODE_RET:
+        *reason = frame::RET;
         return 0;
     default:
         if (likely(code >= CODE_TRAP))

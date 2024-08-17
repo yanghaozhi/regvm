@@ -21,7 +21,7 @@ public:
     frame(regvm* vm, func* func, code_t code, int offset);
     ~frame();
 
-    const uint32_t      depth;
+    const uint16_t      depth;
 
     frame*              up      = NULL;
     frame*              down    = NULL;
@@ -31,7 +31,15 @@ public:
 
     const int64_t       id;
 
-    bool run(int64_t entry = -1);
+    enum REASON
+    {
+        ERROR   = 0,
+        RET,
+        EXIT,
+        END,
+    };
+
+    int run(void);
 
     //const code_t*       start   = NULL;     //first code pos
     //const code_t*       entry   = NULL;     //entry of current frame

@@ -14,13 +14,19 @@ using namespace core;
 frame::frame(frame& cur, func* f, code_t c, int o) :
     depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm), code(c), offset(o)
 {
+    if (unlikely(depth <= cur.depth))
+    {
+        VM_ERROR(ERR_FUNCTION_CALL, c, offset, "stack is OVERFLOWED !!! : %d", cur.depth);
+        valid = false;
+    }
+
     up = vm->call_stack;
     down = NULL;
     up->down = this;
 
     vm->call_stack = this;
 
-    if (vm->vm_call(code, offset, id) == false)
+    if ((unlikely(valid == false)) || (unlikely(vm->vm_call(code, offset, id) == false)))
     {
         VM_ERROR(ERR_FUNCTION_CALL, c, offset, "Can not get function info : %lu", id);
         valid = false;
@@ -33,7 +39,7 @@ frame::frame(regvm* v, func* f, code_t c, int o) :
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    if (vm->vm_call(code, offset, id) == false)
+    if (unlikely(vm->vm_call(code, offset, id) == false))
     {
         VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
@@ -42,7 +48,7 @@ frame::frame(regvm* v, func* f, code_t c, int o) :
 
 frame::~frame()
 {
-    if (vm->vm_call(code, offset, -id) == false)
+    if (unlikely(vm->vm_call(code, offset, -id) == false))
     {
         VM_ERROR(ERR_FUNCTION_CALL, code, offset, "Can not get function info : %lu", id);
         valid = false;
@@ -55,9 +61,9 @@ frame::~frame()
     vm->call_stack = up;
 }
 
-bool frame::run(int64_t entry)
+int frame::run(void)
 {
-    return (valid == true) ? running->run(vm, entry) : false;
+    return (valid == true) ? running->run(vm) : ERROR;
 }
 
 int64_t frame::gen_id(void)
