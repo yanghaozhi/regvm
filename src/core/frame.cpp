@@ -17,8 +17,6 @@ using namespace core;
 
 extern vm_sub_op_t  CHG_OPS[16];
 
-inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra, int* reason);
-
 
 
 inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
@@ -214,36 +212,84 @@ bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
     return vm_conv_impl(vm, r, to);
 }
 
-func::func(const code_t* p, int32_t c, int32_t i, const regvm_src_location* l) :
-    id(i), count(c), codes(p)
+frame::frame(frame& cur, func* f, code_t c, int o) :
+    depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm)
 {
-    if (l == NULL)
+    caller.code = c;
+    caller.offset = o;
+
+    if (unlikely(depth <= cur.depth))
     {
-        src.line = 0;
-        src.file = NULL;
-        src.func = NULL;
+        VM_ERROR(ERR_FUNCTION_CALL, c, o, "stack is OVERFLOWED !!! : %d", cur.depth);
+        valid = false;
     }
-    else
+
+    up = vm->call_stack;
+    down = NULL;
+    up->down = this;
+
+    vm->call_stack = this;
+
+    if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
     {
-        src = *l;
+        VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
+        valid = false;
     }
 }
 
-int func::run(struct regvm* vm)
+frame::frame(regvm* v, func* f, code_t c, int o) :
+    depth(0), running(f), id(gen_id()), vm(v)
+{
+    caller.code = c;
+    caller.offset = o;
+    up = NULL;
+    down = NULL;
+    vm->call_stack = this;
+    if (unlikely(vm->vm_call(c, o, id) == false))
+    {
+        VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
+        valid = false;
+    }
+}
+
+frame::~frame()
+{
+    if (unlikely(vm->vm_call(caller.code, caller.offset, -id) == false))
+    {
+        VM_ERROR(ERR_FUNCTION_CALL, caller.code, caller.offset, "Can not get function info : %lu", id);
+        valid = false;
+    }
+
+    if (up != NULL)
+    {
+        up->down = NULL;
+    }
+    vm->call_stack = up;
+}
+
+int64_t frame::gen_id(void)
+{
+    int64_t c = running->id;
+    c <<= 32;
+    c += depth;
+    return c;
+}
+
+int frame::run(void)
 {
     int32_t offset = 0;
-    int rest = count;
+    int rest = running->count;
     LOGT("running : %d - %d", offset, rest);
-    const code_t* cur = codes + offset;
-    int reason = frame::END;
+    const code_t* cur = running->codes + offset;
+    reason = END;
     while (rest > 0)
     {
-        int next = step(vm, *cur, offset, rest, cur + 1, &reason);
+        int next = step(vm, *cur, offset, rest, cur + 1);
         if (unlikely(next == 0))
         {
-            if (unlikely(reason == frame::END))
+            if (unlikely(reason == END))
             {
-                reason = frame::ERROR;
+                reason = ERROR;
                 VM_ERROR(ERR_RUNTIME, *cur, offset, "run code ERROR at %lld : %s - %d - %d - %d", offset, CODE_NAME(cur->id), cur->a, cur->b, cur->c);
             }
             return reason;
@@ -258,7 +304,7 @@ int func::run(struct regvm* vm)
     {
         VM_ERROR(ERR_RUNTIME, code_t{0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
         vm->fatal = true;
-        return frame::ERROR;
+        return ERROR;
     }
 
     auto& r = vm->reg.id(0);
@@ -266,14 +312,14 @@ int func::run(struct regvm* vm)
     return reason;
 }
 
-bool func::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
+bool frame::one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra)
 {
-    int reason;
-    return step(vm, code, 0, max, extra, &reason);
+    //return step(vm, code, 0, max, extra);
+    return false;
 }
 
 
-inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra, int* reason)
+inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
 {
     int next = 1;
 
@@ -450,10 +496,10 @@ inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* 
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;
         vm->exit = true;
-        *reason = frame::EXIT;
+        reason = EXIT;
         return 0;
     case CODE_RET:
-        *reason = frame::RET;
+        reason = RET;
         return 0;
     default:
         if (likely(code >= CODE_TRAP))

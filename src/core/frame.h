@@ -9,8 +9,12 @@
 #include "func.h"
 //#include "scope.h"
 
+#define UNSUPPORT_TYPE(op, t, c, o, ...) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
+
 namespace core
 {
+
+typedef int (*vm_sub_op_t)(regvm* vm, int a, int b, int c, int offset);
 
 class frame
 {
@@ -41,6 +45,8 @@ public:
 
     int run(void);
 
+    static bool one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra);
+
     //const code_t*       start   = NULL;     //first code pos
     //const code_t*       entry   = NULL;     //entry of current frame
 
@@ -53,13 +59,19 @@ public:
 
 private:
     regvm*              vm;
-    const code_t        code;
-    const int           offset;
+    struct 
+    {
+        code_t          code;
+        int             offset;
+    }                   caller;
     bool                valid   = true;
+    enum REASON         reason;
 
     int64_t gen_id(void);
 //    scope&              globals;
 //    std::list<scope>    scopes;
+
+    inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
 };
 
 
