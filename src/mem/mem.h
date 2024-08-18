@@ -9,8 +9,6 @@
 #include <debug.h>
 #include <ext.h>
 
-#include "scope.h"
-
 
 namespace ext
 {
@@ -46,20 +44,6 @@ public:
 #undef CRTP_FUNC
 
 private:
-    //struct context
-    //{
-    //    context(int64_t frame);
-    //    ~context();
-
-    //    void enter_block();
-    //    void leave_block();
-
-    //    const int64_t       frame;
-    //    std::list<scope>    scopes;
-    //};
-
-    //scope                   globals;
-    //std::list<context>      frames;
     std::unordered_map<uint64_t, var_t*>    vars;
 
     static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);

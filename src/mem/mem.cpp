@@ -5,7 +5,6 @@
 #include "structs.h"
 
 #include "error.h"
-#include "scope.h"
 
 #include "../core/vm.h"
 
