@@ -113,15 +113,9 @@ regvm::~regvm()
 bool regvm::run(const code_t* start, int count)
 {
     regvm_src_location src = {0, "NULL", "..."};
-    auto r = funcs.try_emplace((int32_t)0, start, count, 0, &src);
-    if (unlikely(r.second == false))
-    {
-        auto vm = this;
-        VM_ERROR(ERR_FUNCTION_CALL, *start, 0, "Can not get entry function");
-        return false;
-    }
-    core::frame f(this, &r.first->second, *start, 0);
-    return (bool)f.run();
+    core::func f(start, count, 0, &src);
+    core::frame entry(this, &f, *start, 0);
+    return (bool)entry.run();
 }
 
 //bool regvm::call(core::reg::v& addr, code_t code, int offset)
