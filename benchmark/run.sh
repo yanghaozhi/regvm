@@ -9,7 +9,7 @@ make release
 
 cd -
 
-declare -A scripts=(["lua"]="lua" ["python3"]="py" ["quickjs"]="js" ["node"]="js")
+declare -A scripts=(["lua"]="lua" ["python3"]="py" ["qjs"]="js" ["duk"]="js" ["node"]="js")
 for k in "${!scripts[@]}"
 do
     which $k > /dev/null
