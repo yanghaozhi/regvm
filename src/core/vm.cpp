@@ -113,7 +113,7 @@ regvm::~regvm()
 bool regvm::run(const code_t* start, int count)
 {
     regvm_src_location src = {0, "NULL", "..."};
-    core::func f(start, count, 0, &src);
+    core::func f(start, count, 0, &src, VM_CODE_SHARE);
     core::frame entry(this, &f, *start, 0);
     return (bool)entry.run();
 }

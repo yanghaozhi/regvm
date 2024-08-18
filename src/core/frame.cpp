@@ -33,32 +33,22 @@ inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
         next += 1;
         p += 1;
     }
+
+    if (b == TYPE_STRTAB)
+    {
+        if (unlikely(vm->str_tab == NULL))
+        {
+            LOGE("need to relocate string : %lld, but str tab is NULL", (long long)v);
+            VM_ERROR(ERR_STRING_RELOCATE, code_t{0}, -1, "need to relocate string : %lld, but str tab is NULL", (long long)v);
+            return 0;
+        }
+        const char* s = vm->str_tab + v;
+        v = (uintptr_t)s;
+    }
+
     auto& r = vm->reg.id(a);
     r.write(v, b, (b != r.type));
     return next;
-    //if ((ex == TYPE_STRING) && (value & 0x01))
-    //{
-    //    //auto it = vm->strs.find(value);
-    //    //if (it == vm->strs.end())
-    //    //{
-    //    //    VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-    //    //    return false;
-    //    //}
-    //    //value = (intptr_t)it->second;
-    //    auto& it = vm->idt.isrs[IRQ_STR_RELOCATE];
-    //    if (it.func == NULL)
-    //    {
-    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "need to relocate string : %ld", value);
-    //        return false;
-    //    }
-    //    value = it.call(vm, IRQ_STR_RELOCATE, code, reg, ex, offset, (void*)value);
-    //    if (value == 0)
-    //    {
-    //        VM_ERROR(ERR_STRING_RELOCATE, code, reg, ex, offset, "relocate string : %ld ERROR", value);
-    //        return false;
-    //    }
-    //}
-    //return r.write(value, ex, (ex != r.type));
 }
 
 inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)

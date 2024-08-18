@@ -24,6 +24,8 @@ struct regvm
     bool            fatal       = false;
     int64_t         exit_code   = 0;
     core::frame*    call_stack  = NULL;
+    const char*     str_tab     = NULL;
+
     core::reg       reg;
     //scope           globals;
     core::error     err;

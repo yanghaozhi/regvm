@@ -18,7 +18,7 @@ extern bool vm_conv_type(struct regvm* vm, reg::v& r, int to);
 extern "C"
 {
 
-bool regvm_func(struct regvm* vm, int32_t id, const code_t* start, int count, const struct regvm_src_location* src)
+bool regvm_func(struct regvm* vm, int32_t id, const code_t* start, int count, const struct regvm_src_location* src, int mode)
 {
     if (id <= 0)
     {
@@ -26,7 +26,7 @@ bool regvm_func(struct regvm* vm, int32_t id, const code_t* start, int count, co
         return false;
     }
 
-    auto r = vm->funcs.try_emplace(id, start, count, id, src);
+    auto r = vm->funcs.try_emplace(id, start, count, id, src, mode);
     if (r.second == false)
     {
         LOGE("Can not reg function : %d", id);
@@ -52,6 +52,16 @@ int regvm_exec_step(struct regvm* vm, const code_t* code, int max)
 {
     int next = 0;
     return (core::frame::one_step(vm, *code, max, &next, code + 1) == false) ? 0 : next;
+}
+
+bool regvm_str_tab(struct regvm* vm, const char* str_tab)
+{
+    if (vm->str_tab != NULL)
+    {
+        LOGW("replace str tab from %p to %p", vm->str_tab, str_tab);
+    }
+    vm->str_tab = str_tab;
+    return true;
 }
 
 int regvm_code_len(code_t code)

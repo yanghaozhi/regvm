@@ -45,6 +45,7 @@ enum DATA_TYPE
     TYPE_DICT       = 5,
     TYPE_LIST       = 6,
     TYPE_ADDR       = 7,
+    TYPE_STRTAB     = 8,
 };
 
 //每条指令长度为32bit
@@ -64,6 +65,7 @@ enum DATA_TYPE
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| SET     | CODE_SET      | reg               | type of data      | lowest byte       |
 //  设置$reg寄存器的值和类型, 超过1字节的数据则在后面附加DATA指令
+//      如果type类型为TYPE_STRTAB，则：它会以TYPE_STRING类型写入，地址值为：str_tab + value
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| MOVE    | CODE_MOVE     | dst               | src               |                   |
 //  $dst = $src

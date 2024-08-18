@@ -206,7 +206,14 @@ var* regvm_mem::get(uint64_t id) const
 
 bool regvm_mem::del(uint64_t id)
 {
-    return vars.erase(id) == 1;
+    auto it = vars.find(id);
+    if (likely(it != vars.end()))
+    {
+        it->second->release();
+        vars.erase(it);
+        return true;
+    }
+    return false;
 }
 
 //regvm_mem::context::context(int64_t f) : frame(f)
