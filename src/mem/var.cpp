@@ -8,17 +8,21 @@
 #include <string.h>
 #include <assert.h>
 
+#include "log.h"
+
 using namespace ext;
 
 var::var(uint8_t t, uint64_t i) :
     type(t),
     id(i)
 {
+    LOGD("create var %p - %d", this, ref);
     value.uint = 0;
 }
 
 var::~var()
 {
+    LOGD("delete var %p - %d", this, ref);
     if (reg != NULL)
     {
         reg->set_from(NULL);
@@ -76,6 +80,7 @@ bool var::set_reg(const core::regv* new_reg) const
         if (reg == NULL)
         {
             ++ref;
+            LOGD("var %p ref : %d", this, ref);
         }
     }
     else
@@ -96,8 +101,10 @@ bool var::release(void) const
 {
     if (--ref > 0)
     {
+        LOGD("var %p ref : %d", this, ref);
         return true;
     }
+    LOGD("var %p ref : %d", this, ref);
 
     if (ref == 0)
     {

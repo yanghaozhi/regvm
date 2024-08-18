@@ -27,11 +27,11 @@ public:
     const uint64_t      id;
 
 
-    bool set_val(const core::regv& reg);
-    bool set_reg(const core::regv* reg) const;
-    bool release(void) const;
+    virtual bool set_val(const core::regv& reg) override;
+    virtual bool set_reg(const core::regv* reg) const override;
+    virtual bool release(void) const override;
 
-    virtual int vtype(void) const                {return type;}
+    virtual int vtype(void) const override                {return type;}
 
     bool store_from(core::regv& v);
 };

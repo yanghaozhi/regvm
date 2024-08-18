@@ -64,7 +64,7 @@ public:
     virtual bool set_val(const regv& r)         {return false;};
     virtual bool set_reg(const regv* r) const   {return false;};
     virtual int vtype(void) const               {return 0;};
-    virtual void release()                      {};
+    virtual bool release(void) const            {return false;};
 };
 
 struct regv

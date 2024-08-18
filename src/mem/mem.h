@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include <map>
-#include <list>
+#include <vector>
 #include <unordered_map>
 
 #include <debug.h>
@@ -44,7 +44,14 @@ public:
 #undef CRTP_FUNC
 
 private:
-    std::unordered_map<uint64_t, var_t*>    vars;
+    uint64_t                    cur_call;
+    std::map<uint64_t, var_t*>  vars;
+    std::vector<int64_t>        calls;
+
+    inline uint64_t var_id(uint64_t id) const
+    {
+        return cur_call + id;
+    }
 
     static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
     static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);

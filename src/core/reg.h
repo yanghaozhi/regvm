@@ -7,6 +7,8 @@
 #include "structs.h"
 #include <code.h>
 
+#include "log.h"
+
 namespace ext
 {
     class var;

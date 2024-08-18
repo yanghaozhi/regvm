@@ -4,6 +4,7 @@
 #include "irq.h"
 #include "structs.h"
 
+#include "log.h"
 #include "error.h"
 
 #include "../core/vm.h"
@@ -39,19 +40,38 @@ core::var* regvm_mem::vm_var(int type, uint64_t id)
 
 bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 {
-    //if ((id > 0) || ((id == 0) && (frames.empty() == true)))
-    //{
-    //    frames.emplace_front(offset);
-    //}
-    //else
-    //{
-    //    if (frames.front().frame != -id)
-    //    {
-    //        assert(0);
-    //        return false;
-    //    }
-    //    frames.pop_front();
-    //}
+    if (unlikely(id == 0))
+    {
+        cur_call = 0;
+        return true;
+    }
+
+    if (id > 0)
+    {
+        cur_call = id;
+        calls.push_back(id);
+    }
+    else
+    {
+        id = -id;
+        if (unlikely(id != calls.back()))
+        {
+            LOGE("exist call %lld, but it's NOT match %lld", (long long)id, (long long)calls.back());
+            return false;
+        }
+        calls.pop_back();
+        cur_call = calls.back();
+
+        auto first = vars.lower_bound(id);
+        auto last = first;
+        while ((last != vars.end()) && (last->first & 0xFFFFFFFFFFFF0000) == (uint64_t)id)
+        {
+            last->second->release();
+            ++last;
+        }
+        vars.erase(first, last);
+    }
+
     return true;
 }
 
@@ -89,7 +109,8 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                 return 0;
             case TYPE_ADDR:
                 {
-                    auto v = VM->get(e.value.uint);
+                    auto vid = VM->var_id(e.value.uint);
+                    auto v = VM->get(vid);
                     if (v != NULL)
                     {
                         if (v->store_from(r) == true)
@@ -97,7 +118,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                             return 1;
                         }
                     }
-                    return VM->add(e.value.uint, r.type)->store_from(r);
+                    return VM->add(vid, r.type)->store_from(r);
                 }
             default:
                 //auto vm = this;
@@ -110,12 +131,13 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     case 3:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
         {
             auto& n = vm->reg.id(code.b);
-            auto v = VM->get(n);
+            auto vid = VM->var_id(n.value.uint);
+            auto v = VM->get(vid);
             if (v != NULL)
             {
                 return (v->type == code.a) ? true : false;
             }
-            v = VM->add(n, code.a);
+            v = VM->add(vid, code.a);
             return (v != NULL) ? 1 : 0;
         }
     case 4:     //只在顶层scope（全局变量）中查找或新建
@@ -123,12 +145,13 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     case 5:
         {
             auto& e = vm->reg.id(code.b);
+            auto vid = VM->var_id(e.value.uint);
             switch (e.type)
             {
             case TYPE_STRING:
                 return 0;
             case TYPE_ADDR:
-                return VM->del(e.value.uint);
+                return VM->del(vid);
             default:
                 //auto vm = this;
                 //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
