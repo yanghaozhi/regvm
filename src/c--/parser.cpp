@@ -17,7 +17,7 @@
 
 
 
-parser::parser() : regs(), scopes(insts, regs), parser_list(new trie_tree())
+parser::parser() : regs(), scopes(insts, regs)
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
@@ -34,7 +34,6 @@ parser::parser() : regs(), scopes(insts, regs), parser_list(new trie_tree())
 
 parser::~parser()
 {
-    //TODO
 }
 
 bool parser::go(const char* src, insts_t& out)
@@ -136,13 +135,13 @@ const char* parser::statement(const char* src)
     return statement(src, NULL, tok);
 }
 
-const char* parser::find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max)
+const char* parser::find_statement(const char* src, trie_tree& cur, token* toks, int idx, int max)
 {
     if ((src != NULL) && (*src != '\0'))
     {
-        if (cur->next.empty() == true)
+        if (cur.next.empty() == true)
         {
-            return cur->func->go(src, toks, idx);
+            return cur.func->go(src, toks, idx);
         }
 
         if (idx >= max)
@@ -158,17 +157,17 @@ const char* parser::find_statement(const char* src, trie_tree* cur, token* toks,
             return NULL;
         }
 
-        auto it = cur->next.find(tok.info.type);
-        if (it == cur->next.end())
+        auto it = cur.next.find(tok.info.type);
+        if (it == cur.next.end())
         {
             LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
-            return (cur->func != NULL) ? cur->func->go(src, toks, idx) : NULL;
+            return (cur.func != NULL) ? cur.func->go(src, toks, idx) : NULL;
         }
 
         const char* r = find_statement(src, it->second, toks, idx + 1, max);
-        if ((r == NULL) && (cur->func != NULL))
+        if ((r == NULL) && (cur.func != NULL))
         {
-            r = cur->func->go(src, toks, idx);
+            r = cur.func->go(src, toks, idx);
         }
         return r;
     }
@@ -177,7 +176,7 @@ const char* parser::find_statement(const char* src, trie_tree* cur, token* toks,
 
 bool parser::add(op* func, ...)
 {
-    trie_tree* cur = parser_list;
+    trie_tree* cur = &parser_list;
 
     LOGT("add %s ", typeid(*func).name());
 
@@ -190,11 +189,11 @@ bool parser::add(op* func, ...)
         auto it = cur->next.find(t);
         if (it != cur->next.end())
         {
-            cur = it->second;
+            cur = &it->second;
         }
         else
         {
-            cur = cur->next.emplace(t, new trie_tree()).first->second;
+            cur = &cur->next.emplace(t, trie_tree{}).first->second;
         }
         d += 1;
     }

@@ -165,6 +165,8 @@ int main(int argc, char** argv)
         regvm_exit(vm);
 
         LOGI("run : %d\n", r);
+
+        free(codes);
     }
     //auto r = grammar(t2);
     //printf("grammar : %d\n", r);

@@ -81,13 +81,13 @@ private:
     struct trie_tree
     {
         op*                         func        = NULL;
-        std::map<int, trie_tree*>   next;
+        std::map<int, trie_tree>    next;
     };
 
-    trie_tree*                                  parser_list;
+    trie_tree                                   parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
     
-    const char* find_statement(const char* src, trie_tree* cur, token* toks, int idx, int max);
+    const char* find_statement(const char* src, trie_tree& cur, token* toks, int idx, int max);
     const char* statement(const char* src, std::function<void (const token&)> cb, token& tok);
 };
 
