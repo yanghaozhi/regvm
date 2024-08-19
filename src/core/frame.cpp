@@ -69,6 +69,7 @@ inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
             r.value.dbl = (double)r;
             break;
         default:
+            LOGE("Can not conv to type %d", to);
             return false;
         }
     }
@@ -99,6 +100,7 @@ inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
     code_t* p = (code_t*)extra;
     if (unlikely(p->id != CODE_DATA))
     {
+        LOGE("Can not find CODE_DATA next to CODE_JCMP");
         return 0;
     }
     const int next = 2;
@@ -162,6 +164,7 @@ inline int vm_calc(struct regvm* vm, int a, int b, int c)
             v.value.dbl op b;                                           \
             break;                                                      \
         default:                                                        \
+            LOGE("type %d does NOT support op : %s", v.type, #op);      \
             return 0;                                                   \
         }                                                               \
         break;
@@ -177,6 +180,7 @@ inline int vm_calc(struct regvm* vm, int a, int b, int c)
             v.value.uint op b;                                          \
             break;                                                      \
         default:                                                        \
+            LOGE("type %d does NOT support op : %s", v.type, #op);      \
             return 0;                                                   \
         }                                                               \
         break;

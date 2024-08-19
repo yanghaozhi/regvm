@@ -38,7 +38,7 @@ $(OBJS) : %.o : %.cc
 
 $(NAME):$(OBJS) $(DEPS) 
 	mkdir -p $(OUT)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lfmt -lgcov
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lgcov
 	ln -sf $(OUT)/$(NAME) $(NAME)
 
 

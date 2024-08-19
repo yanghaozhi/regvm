@@ -32,8 +32,8 @@ TYPE    5   3   0
 # $5 == $0.type
 TRAP    4   1   0
 
-CALC    1   2   6
-CALC    0   2   5
+CALC    5   2   5
+CALC    0   2   6
 TRAP    5   2   0
 
 EXIT    0   0   0
@@ -56,19 +56,19 @@ TEST(code, calc)
                                                    
             CHECK_REG(key, 2, 0, N, TYPE_SIGNED,   461,     -1, 0);
             CHECK_REG(key, 2, 1, N, TYPE_DOUBLE,   -195.12, -1, 0);
-            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,     -1, 0);
+            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,       -1, 0);
             CHECK_REG(key, 2, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
 
             CHECK_REG(key, 3, 0, N, TYPE_SIGNED,   461,     -1, 0);
             CHECK_REG(key, 3, 1, N, TYPE_DOUBLE,   -195.12, -1, 0);
             CHECK_REG(key, 3, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
-            CHECK_REG(key, 3, 8, N, TYPE_DOUBLE,   318.12 / -195.12, -1, 0);
-            CHECK_REG(key, 3, 9, N, TYPE_DOUBLE,   -195.12 * 461,     -1, 0);
+            CHECK_REG(key, 3, 8, N, TYPE_DOUBLE,   318.12 / -195.12,    -1, 0);
+            CHECK_REG(key, 3, 9, N, TYPE_DOUBLE,   -195.12 * 461,       -1, 0);
 
-            CHECK_REG(key, 4, 5, N, TYPE_SIGNED,   TYPE_DOUBLE,   -1, 0);
+            CHECK_REG(key, 4, 5, N, TYPE_SIGNED,   TYPE_DOUBLE,         -1, 0);
 
-            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   3688, -1, 0);
-            CHECK_REG(key, 5, 1, N, TYPE_SIGNED,   414,     -1, 0);
+            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   115,     -1, 0);
+            CHECK_REG(key, 5, 5, N, TYPE_SIGNED,   12,      -1, 0);
 
             return match;
         },
