@@ -11,7 +11,7 @@
 class blocks
 {
 public:
-    blocks(insts_t& i, selector& s) : insts(i), regs(s)    {};
+    blocks(insts_t* i, selector& s) : insts(i), regs(s)    {};
     ~blocks()                       {};
 
     struct var
@@ -57,7 +57,7 @@ private:
         std::unordered_map<std::string_view, var>   vars;
     };
 
-    insts_t&            insts;
+    insts_t*            insts;
     selector&           regs;
     std::list<block>    stack;
     static uint32_t     var_id;

@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #include <log.h>
+
+#include "func.h"
 #include "parser.h"
 
 extern bool can_literally_optimize(const token& a, int& v);
@@ -49,13 +51,13 @@ const char* decl_var_only::go2(const char* src, const token* toks, int count, DA
 {
     if ((attr & REG) == 0)
     {
-        auto v2 = p->scopes.new_var(name, attr);
+        auto v2 = f->scopes.new_var(name, attr);
         if ((v2 == NULL) || (v2->reg.ptr == NULL))
         {
             LOGE("Can not new reg var : %s", VIEW(name));
             return NULL;
         }
-        auto n = p->regs.tmp();
+        auto n = f->regs.tmp();
         INST(SET, (int)n, TYPE_ADDR, v2->id);
         INST(STORE, type, n, 3);
     }
@@ -73,13 +75,13 @@ decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
 const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
 {
     selector::reg v;
-    src = p->expression(src, v);
+    src = f->expression(src, v);
     if (src == NULL) return NULL;
 
-    auto r = p->scopes.bind_var(name, v, attr);
+    auto r = f->scopes.bind_var(name, v, attr);
     if (r == NULL)
     {
-        auto r = p->scopes.new_var(name, attr);
+        auto r = f->scopes.new_var(name, attr);
         if ((r == NULL) || (r->reg.ptr == NULL))
         {
             LOGE("Can not create var : %s", VIEW(name));
@@ -91,7 +93,7 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, DA
 
     if ((attr & REG) == 0)
     {
-        auto n = p->regs.tmp();
+        auto n = f->regs.tmp();
         INST(SET, n, TYPE_ADDR, r->id);
         INST(STORE, v, n, 2);
     }
@@ -106,7 +108,7 @@ call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
     std::vector<selector::reg> rets;
-    return p->call_func(src, toks[0], rets);
+    return f->call_func(src, toks[0], rets);
 }
 
 assign_var::assign_var(parser* p) : parser::op(p)
@@ -126,17 +128,17 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     const std::string_view& name = toks[0].name;
     auto reload = [this, name](int attr, uint64_t id)
         {
-            auto n = p->regs.tmp();
+            auto n = f->regs.tmp();
             INST(SET, n, TYPE_ADDR, id);
-            auto vv = p->regs.tmp();
+            auto vv = f->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
         };
     int attr = 0;
-    auto k = p->scopes.find_var(name, attr, reload);
+    auto k = f->scopes.find_var(name, attr, reload);
 
     selector::reg v;
-    src = p->expression(src, v);
+    src = f->expression(src, v);
     switch (toks[1].info.type)
     {
     case Assign:
@@ -180,13 +182,13 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     int attr = 0;
     auto reload = [this, name](int attr, uint64_t id)
         {
-            auto n = p->regs.tmp();
+            auto n = f->regs.tmp();
             INST(SET, n, TYPE_ADDR, id);
-            auto vv = p->regs.tmp();
+            auto vv = f->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
         };
-    auto k = p->scopes.find_var(name, attr, reload);
+    auto k = f->scopes.find_var(name, attr, reload);
 
     int v = 0;
     bool o = can_literally_optimize(toks[2], v);
@@ -196,7 +198,7 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     case i:                                                     \
         if (o == false)                                         \
         {                                                       \
-            auto r = p->regs.tmp();                             \
+            auto r = f->regs.tmp();                             \
             switch (toks[2].info.type)                          \
             {                                                   \
             case TYPE_SIGNED:                                   \
@@ -254,12 +256,12 @@ int cmp_op_not(int op)
     }
 }
 
-inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<int>& j, int (*cmp)(int))
+inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int>& j, int (*cmp)(int))
 {
     selector::reg r;
     int end = 0;
     bool result = false;
-    src = p->expression(src, r, &end, [&j, &result, label, cmp](parser* p, int op, const token& a, const token* b, const selector::reg* r)
+    src = f->expression(src, r, &end, [&j, &result, label, cmp](func* f, int op, const token& a, const token* b, const selector::reg* r)
         {
             switch (op)
             {
@@ -275,14 +277,14 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
                 result = false;
                 return selector::reg();
             }
-            auto& insts = p->insts;
+            auto& insts = f->insts;
             int c = -1;
             c = cmp(op);
             int ll = 0;
             selector::reg ret;
             if (can_literally_optimize(a, ll) == false)
             {
-                ret = p->token_2_reg(a);
+                ret = f->token_2_reg(a);
                 ll = ret;
             }
             else
@@ -299,7 +301,7 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
             {
                 if (can_literally_optimize(*b, rr) == false)
                 {
-                    ret = p->token_2_reg(*b);
+                    ret = f->token_2_reg(*b);
                     rr = ret;
                 }
                 else
@@ -308,7 +310,7 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
                 }
             }
             INST(JCMP, ll, rr, c, 0);
-            j.jump(label, p->insts.back(), p->insts.size());
+            j.jump(label, f->insts->back(), f->insts->size());
             if (ret.ptr == NULL)
             {
                 ret.ptr = (decltype(ret.ptr))(uintptr_t)-1;
@@ -316,11 +318,11 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
             return ret;
         });
 
-    auto& insts = p->insts;
+    auto& insts = f->insts;
     if (result == false)
     {
         INST(JCMP, r, 1, (cmp != cmp_op) | 0x40, 0);
-        j.jump(label, p->insts.back(), p->insts.size());
+        j.jump(label, f->insts->back(), f->insts->size());
     }
     return src;
 }
@@ -334,28 +336,28 @@ const char* if_else::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    src = cmp_jump_expr(src, 0, p, jump, cmp_op_not);
+    src = cmp_jump_expr(src, 0, f, jump, cmp_op_not);
 
-    src = p->statements(src, NULL);
+    src = f->statements(src, NULL);
 
     token tok;
-    auto o = p->next_token(src, tok);
+    auto o = f->parse->next_token(src, tok);
     if (tok.info.type == Else)
     {
         INST(JUMP, 0);
-        jump.jump(1, insts.back(), insts.size());
+        jump.jump(1, insts->back(), insts->size());
 
-        jump.label(0, insts.size());
+        jump.label(0, insts->size());
 
-        src = p->statements(o, NULL);
+        src = f->statements(o, NULL);
 
-        jump.label(1, insts.size());
+        jump.label(1, insts->size());
     }
     else
     {
-        jump.label(0, insts.size());
+        jump.label(0, insts->size());
     }
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 do_while::do_while(parser* p) : parser::op(p)
@@ -367,25 +369,25 @@ const char* do_while::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
-    src = p->statements(src - 1, jump, 2, 1);
+    src = f->statements(src - 1, jump, 2, 1);
 
-    jump.label(1, insts.size());
+    jump.label(1, insts->size());
 
     token tok;
-    src = p->next_token(src, tok);
+    src = f->parse->next_token(src, tok);
     if (tok.info.type != While)
     {
         LOGE("do {...} MUST end with while !!!");
         return NULL;
     }
 
-    src = cmp_jump_expr(src, 0, p, jump, cmp_op);
+    src = cmp_jump_expr(src, 0, f, jump, cmp_op);
 
-    jump.label(2, insts.size());
+    jump.label(2, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 while_loop::while_loop(parser* p) : parser::op(p)
@@ -397,18 +399,18 @@ const char* while_loop::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
-    src = cmp_jump_expr(src, 2, p, jump, cmp_op_not);
+    src = cmp_jump_expr(src, 2, f, jump, cmp_op_not);
 
-    src = p->statements(src, jump, 2, 0);
+    src = f->statements(src, jump, 2, 0);
 
     INST(JUMP, 0);
-    jump.jump(0, p->insts.back(), p->insts.size());
+    jump.jump(0, f->insts->back(), f->insts->size());
 
-    jump.label(2, insts.size());
+    jump.label(2, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 for_loop::for_loop(parser* p) : parser::op(p)
@@ -420,23 +422,23 @@ const char* for_loop::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    src = p->statement(src);
+    src = f->statement(src);
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
     insts_t expr3;
     switch (*(src - 1))
     {
     case ';':
         {
-            src = cmp_jump_expr(src, 5, p, jump, cmp_op_not);
+            src = cmp_jump_expr(src, 5, f, jump, cmp_op_not);
 
-            expr3.swap(p->insts);
-            src = p->statement(src);
-            expr3.swap(p->insts);
+            expr3.swap(*f->insts);
+            src = f->statement(src);
+            expr3.swap(*f->insts);
 
             token tok;
-            src = p->next_token(src, tok);
+            src = f->parse->next_token(src, tok);
             if (tok.info.type != ')')
             {
                 LOGE("for loop condition must end with ) !!!");
@@ -451,19 +453,19 @@ const char* for_loop::go(const char* src, const token* toks, int count)
         return NULL;
     }
 
-    src = p->statements(src, jump, 5, 0);
+    src = f->statements(src, jump, 5, 0);
 
     for (auto& it : expr3)
     {
-        insts.emplace_back(it);
+        insts->emplace_back(it);
     }
 
     INST(JUMP, 0);
-    jump.jump(0, p->insts.back(), p->insts.size());
+    jump.jump(0, f->insts->back(), f->insts->size());
 
-    jump.label(5, insts.size());
+    jump.label(5, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 

@@ -10,8 +10,6 @@
 #include "structs.h"
 
 
-#define INST(c, ...)   insts.emplace_back(new instv<CODE_##c>(#c, __VA_ARGS__));
-
 struct inst;
 typedef std::deque<inst*>               insts_t;
 

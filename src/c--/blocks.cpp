@@ -5,6 +5,7 @@
 #include "common.h"
 #include "statements.h"
 
+#include "func.h"
 
 uint32_t         blocks::var_id  = 1;
 
@@ -70,7 +71,7 @@ bool blocks::leave()
 
 blocks::block::~block()
 {
-    insts_t& insts = cur->insts;
+    insts_t* insts = cur->insts;
     selector& regs = cur->regs;
     int n = (vars.size() > 0) ? regs.tmp() : -1;
     for (auto& it : vars)
