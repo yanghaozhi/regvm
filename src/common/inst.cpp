@@ -168,6 +168,7 @@ bool instv<CODE_SET>::scan(const char* s)
         SCAN_V(TYPE_SIGNED, sint, strtoll, 10);
         SCAN_V(TYPE_UNSIGNED, uint, strtoull, 10);
         SCAN_V(TYPE_DOUBLE, dbl, strtod);
+        SCAN_V(TYPE_ADDR, uint, strtoull, 10);
 #undef SCAN_V
     case TYPE_STRING:
         while ((*p == ' ') || (*p == '\t'))
@@ -176,6 +177,7 @@ bool instv<CODE_SET>::scan(const char* s)
         }
         return change_str(p);
     default:
+        LOGE("Does NOT support type : %d", type);
         return false;
     }
 }

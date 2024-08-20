@@ -7,6 +7,7 @@
 
 #include "../include/structs.h"
 
+#include <debug.h>
 
 
 namespace ext
@@ -34,6 +35,8 @@ public:
     virtual int vtype(void) const override                {return type;}
 
     bool store_from(core::regv& v);
+
+    void dump(var_cb cb, void* arg, regvm_var_info* info) const;
 };
 
 }

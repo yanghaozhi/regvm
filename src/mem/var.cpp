@@ -155,3 +155,14 @@ bool var::store_from(core::regv& r)
     return true;
 }
 
+void var::dump(var_cb cb, void* arg, regvm_var_info* info) const
+{
+    info->ref = ref;
+    info->type = type;
+    info->reg = (reg != NULL) ? reg->idx : -1;
+    info->var_id = id;
+    info->value.sint = value.sint;
+    info->attr = 0;
+    cb(arg, info);
+}
+

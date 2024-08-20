@@ -92,74 +92,62 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extr
     }
 }
 
+template <typename F> int vm_store(regvm* vm, int id, F&& func)
+{
+    auto& e = vm->reg.id(id);
+    switch (e.type)
+    {
+    case TYPE_STRING:
+        return 0;
+    case TYPE_ADDR:
+        return func(e.value.uint);
+    default:
+        //auto vm = this;
+        //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+        vm->fatal = true;
+        return 0;
+    }
+}
+
 int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto& r = vm->reg.id(code.a);
+    const int a = code.a;
     switch (code.c)
     {
     case 0:     //原始加载的变量（如无，则无操作）
-        return r.store();
-    case 1:
-    case 2:
-        {
-            auto& e = vm->reg.id(code.b);
-            switch (e.type)
+        return vm->reg.id(code.a).store();
+    case 1:     //global
+        break;
+    case 2:     //set
+        return vm_store(vm, code.b, [vm, a](uint64_t vid)
             {
-            case TYPE_STRING:
-                return 0;
-            case TYPE_ADDR:
+                auto& r = vm->reg.id(a);
+                auto v = VM->get(vid);
+                if (v != NULL)
                 {
-                    auto vid = VM->var_id(e.value.uint);
-                    auto v = VM->get(vid);
-                    if (v != NULL)
+                    if (v->store_from(r) == true)
                     {
-                        if (v->store_from(r) == true)
-                        {
-                            return 1;
-                        }
+                        return 1;
                     }
-                    return VM->add(vid, r.type)->store_from(r);
                 }
-            default:
-                //auto vm = this;
-                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
-                vm->fatal = true;
-                return 0;
-            }
-        }
-        break;
-    case 3:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
-        {
-            auto& n = vm->reg.id(code.b);
-            auto vid = VM->var_id(n.value.uint);
-            auto v = VM->get(vid);
-            if (v != NULL)
+                return (int)VM->add(vid, r.type)->store_from(r);
+            });
+    case 3:     //new
+        return vm_store(vm, code.b, [vm, a](uint64_t vid)
             {
-                return (v->type == code.a) ? true : false;
-            }
-            v = VM->add(vid, code.a);
-            return (v != NULL) ? 1 : 0;
-        }
-    case 4:     //只在顶层scope（全局变量）中查找或新建
-        break;
-    case 5:
-        {
-            auto& e = vm->reg.id(code.b);
-            auto vid = VM->var_id(e.value.uint);
-            switch (e.type)
+                auto v = VM->get(vid);
+                if (v != NULL)
+                {
+                    return (v->type == a) ? 1 : 0;
+                }
+                v = VM->add(vid, a);
+                return (v != NULL) ? 1 : 0;
+            });
+    case 4:     //del
+        return vm_store(vm, code.b, [vm, a](uint64_t vid)
             {
-            case TYPE_STRING:
-                return 0;
-            case TYPE_ADDR:
                 return VM->del(vid);
-            default:
-                //auto vm = this;
-                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
-                vm->fatal = true;
-                return 0;
-            }
-        }
-        break;
+            });
     default:
         return 0;
     }
@@ -264,25 +252,14 @@ bool regvm_mem::del(uint64_t id)
 
 void regvm_mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
 {
-    //for (auto& f : frames)
-    //{
-    //    info->func_id = f.frame >> 32;
-    //    info->call_id = f.frame & 0xFFFFFFFF;
-    //    auto it = vm->funcs.find(info->func_id);
-    //    if (it != vm->funcs.end())
-    //    {
-    //        info->func_name = it->second.src.func;
-    //    }
-    //    else
-    //    {
-    //        info->func_name = NULL;
-    //    }
-
-    //    for (auto& s : f.scopes)
-    //    {
-    //        s.dump(cb, arg, info);
-    //    }
-    //}
+    for (auto& v : vars)
+    {
+        info->func_id = v.first >> 32;
+        info->call_id = (v.first & 0xFFFF0000) >> 16;
+        info->var_id = (v.first & 0xFFFF);
+        info->raw = v.second;
+        v.second->dump(cb, arg, info);
+    }
 }
 
 #ifdef __cplusplus
