@@ -28,12 +28,12 @@ bool regvm_mem::vm_exit()
 core::var* regvm_mem::vm_var(int id)
 {
     auto& r = reg.id(id);
-    auto v = new var(r.type, (uint64_t)r);
+    auto v = new var(r.type, (uint64_t)-1);
     v->store_from(r);
     return v;
 }
 
-core::var* regvm_mem::vm_var(int type, uint64_t id)
+core::var* regvm_mem::vm_var(int type, int64_t id)
 {
     return new var(type, id); 
 }
@@ -125,10 +125,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                 auto v = VM->get(vid);
                 if (v != NULL)
                 {
-                    if (v->store_from(r) == true)
-                    {
-                        return 1;
-                    }
+                    return (v->store_from(r) == true) ? 1 : 0;
                 }
                 return (int)VM->add(vid, r.type)->store_from(r);
             });
@@ -192,6 +189,7 @@ var* regvm_mem::add(uint64_t id, const int type)
     auto r = vars.emplace(id, v);
     if (r.second == false)
     {
+        LOGE("try to add var : %llu, but failed", (unsigned long long)id);
         v->release();
         return NULL;
     }

@@ -51,6 +51,8 @@ public:
                 return (T)value.uint;
             case TYPE_DOUBLE:
                 return (T)value.dbl;
+            case TYPE_ADDR:
+                return (T)value.uint;
 #ifdef NULL_AS_0
             case TYPE_NULL:
                 return (T)0;

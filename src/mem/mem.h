@@ -39,7 +39,7 @@ public:
     CRTP_FUNC(vm_exit,  bool, 0);
     CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
     CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, uint64_t);
+    CRTP_FUNC(vm_var,   core::var*, 2, int, int64_t);
 
 #undef CRTP_FUNC
 

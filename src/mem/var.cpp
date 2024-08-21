@@ -12,7 +12,7 @@
 
 using namespace ext;
 
-var::var(uint8_t t, uint64_t i) :
+var::var(uint8_t t, int64_t i) :
     type(t),
     id(i)
 {
@@ -122,6 +122,7 @@ bool var::store_from(core::regv& r)
 
     if (type != r.type)
     {
+        LOGE("type mismatch : %d - %d", type, r.type);
         return false;
     }
 

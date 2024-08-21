@@ -20,12 +20,12 @@ private:
     friend class scope;
 
 public:
-    var(uint8_t type, uint64_t id);
+    var(uint8_t type, int64_t id);
     ~var();
 
     const uint16_t      type;
 
-    const uint64_t      id;
+    const int64_t       id;
 
 
     virtual bool set_val(const core::regv& reg) override;

@@ -11,7 +11,7 @@ SET     4   7   1
 # watch ：1/2/3/4
 TRAP    1   4   0
 # abc = $2
-STORE   2   4   1
+STORE   2   4   2
 # $2.from != NULL, $2.ref = 2
 TRAP    2   1   1
 # abc.reg == 2, abc.ref = 2
