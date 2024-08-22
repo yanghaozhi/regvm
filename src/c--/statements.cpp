@@ -468,4 +468,34 @@ const char* for_loop::go(const char* src, const token* toks, int count)
     return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
+decl_func::decl_func(parser* p) : var_crtp<decl_func>(p)
+{
+    p->add(this, Int, Id, '(', -1);
+    p->add(this, Double, Id, '(', -1);
+    p->add(this, Register, Int, Id, '(', -1);
+    p->add(this, Register, Double, Id, '(', -1);
+}
+
+const char* decl_func::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+{
+    func* cur = NULL;
+    auto it = p->funcs.find(name);
+    if (it != p->funcs.end())
+    {
+        if (it->second.insts->size() > 0)
+        {
+            LOGW("function %d:%s is already exists !!!", it->second.id, VIEW(it->first));
+            return NULL;
+        }
+        cur = &it->second;
+    }
+    else
+    {
+        cur = &p->funcs.emplace(name, p).first->second;
+    }
+
+    src = cur->go(src);
+    return src;
+}
+
 

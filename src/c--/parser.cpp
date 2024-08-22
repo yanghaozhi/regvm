@@ -36,9 +36,9 @@ parser::~parser()
 {
 }
 
-bool parser::go(const char* src, insts_t& out)
+bool parser::go(const char* f, const char* src, insts_t& out)
 {
-    LOGD("%s", src);
+    file = f;
 
     decl_var_only       dvo(this);
     decl_var_init       dvi(this);
@@ -50,13 +50,17 @@ bool parser::go(const char* src, insts_t& out)
     while_loop          wl(this);
     for_loop            fl(this);
 
-    func entry(0, this, regs);
-    bool r = entry.go(src);
-    if (r == true)
+    find_line_ending(src);
+
+    func entry(this);
+
+    src = entry.go(src);
+    if (src == NULL)
     {
-        out.swap(*entry.insts);
+        return false;
     }
-    return r;
+    out.swap(*entry.insts);
+    return true;
 }
 
 const char* parser::find_statement(const char* src, func* f)
@@ -189,10 +193,7 @@ const char* parser::next_token(const char* src, token& tok)
             next = strchr(next, '\n');
             continue;
         case '\n':
-            //TODO
-            //LOGD("%s", std::string(last_line, src - last_line).c_str());
-            //last_line = src;
-            //lineno += 1;
+            find_line_ending(src);
             break;
         case '\'':  //字符
             tok.info.type = Num;
@@ -309,3 +310,27 @@ const char* parser::next_token(const char* src, token& tok)
     return next;
 }
 
+void parser::find_line_ending(const char* src)
+{
+    lineno += 1;
+    const char* p = strchr(src, '\n');
+    if (p != NULL)
+    {
+        line = std::string_view(src, p - src);
+    }
+    else
+    {
+        line = std::string_view(src);
+    }
+    LOGD("%d : %s", lineno, VIEW(line));
+}
+
+void parser::show_error(const char* fmt, ...)
+{
+    LOGE("%s : %d - %s ...", file.c_str(), lineno, VIEW(line));
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+    printf("\n");
+}

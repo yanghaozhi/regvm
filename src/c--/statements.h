@@ -28,6 +28,12 @@ struct decl_var_init : public var_crtp<decl_var_init>
     const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr);
 };
 
+struct decl_func : public var_crtp<decl_func>
+{
+    decl_func(parser* p);
+    const char* go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr);
+};
+
 struct call_func_no_ret : public parser::op
 {
     call_func_no_ret(parser* p);

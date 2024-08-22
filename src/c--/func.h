@@ -11,6 +11,7 @@
 #include "blocks.h"
 #include "labels.h"
 #include "common.h"
+#include "parser.h"
 #include "inst.h"
 
 
@@ -21,18 +22,17 @@ class parser;
 class func
 {
 public:
-    func(int32_t id, parser* p, selector& s);
+    func(parser* p);
     ~func();
 
     const int32_t           id;
-    int                     lineno      = 0;
     parser*                 parse       = NULL;
     //insts_t                 codes;
     insts_t*                insts;
     selector&               regs;
     blocks                  scopes;
 
-    bool go(const char* src);
+    const char* go(const char* src);
 
 
     template <typename T> const char* statements(const char* src, labels<T>& jump, const T& break_label, const T& continue_label)
@@ -65,7 +65,36 @@ public:
 
     const char* call_func(const char* src, const token& name, std::vector<selector::reg>& rets);
 
-    const char* comma(const char* src, std::vector<selector::reg>& rets);
+    template <typename F> const char* comma(const char* src, F&& func)
+    {
+        while ((src != NULL) && (*src != '\0'))
+        {
+            int end = func(src);
+
+            //selector::reg reg; 
+            //int end = -1;
+            //src = expression(src, reg, &end, NULL);
+            //if (reg.ptr == NULL)
+            //{
+            //}
+            //rets.emplace_back(reg);
+
+            switch (end)
+            {
+            case ',':
+                break;
+            case ';':
+                LOGW("will comma expression end with ; ?");
+                [[fallthrough]];
+            case ')':
+                return src;
+            default:
+                LOGE("%d : comma expression should NOT end with %d - %c\n", parse->lineno, end, (char)end);
+                return NULL;
+            }
+        }
+        return src;
+    }
 
     selector::reg token_2_reg(const token& tok);
 

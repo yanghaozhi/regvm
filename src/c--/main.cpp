@@ -94,7 +94,7 @@ int main(int argc, char** argv)
     }
 
     parser par;
-    auto r = par.go(src, insts);
+    auto r = par.go(argv[1], src, insts);
     LOGD("parse : %d", r);
     if (r == false)
     {

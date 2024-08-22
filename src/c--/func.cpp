@@ -17,7 +17,7 @@
 
 
 
-func::func(int32_t i, parser* p, selector& s) : id(i), parse(p), insts(new insts_t()), regs(s), scopes(insts, regs)
+func::func(parser* p) : id(p->func_id++), parse(p), insts(new insts_t()), regs(p->regs), scopes(insts, regs)
 {
 }
 
@@ -27,13 +27,8 @@ func::~func()
     delete insts;
 }
 
-bool func::go(const char* src)
+const char* func::go(const char* src)
 {
-    LOGD("%s", src);
-
-    last_line = src;
-    lineno = 0;
-
     scopes.enter();
     while ((src != NULL) && (*src != '\0'))
     {
@@ -41,7 +36,7 @@ bool func::go(const char* src)
     }
     scopes.leave();
 
-    return (src != NULL) ? true : false;
+    return src;
 }
 
 const char* func::statements(const char* src, std::function<void (const token&)> cb)
@@ -98,13 +93,13 @@ const char* func::statement(const char* src, std::function<void (const token&)> 
         break;
     }
 
-    src = parse->find_statement(src, this);
-    if (src == NULL)
+    p = parse->find_statement(src, this);
+    if (p == NULL)
     {
-        LOGE("%d : no valid function op !!!", lineno);
+        parse->show_error("no valid function op");
         return NULL;
     }
-    return src;
+    return p;
 }
 
 const char* func::statement(const char* src)
@@ -229,7 +224,7 @@ selector::reg func::token_2_reg(const token& tok)
         }
         break;
     default:
-        LOGE("%d : invalid expression %d - %s !!!", lineno, tok.info.type, std::string(tok.name).c_str());
+        LOGE("%d : invalid expression %d - %s !!!", parse->lineno, tok.info.type, std::string(tok.name).c_str());
         break;
     }
     return selector::reg();
@@ -334,7 +329,7 @@ inline selector::reg calc_a_b(func* p, int op, const token& a, const selector::r
         INST(CMP, r, r, cmp_op(op));
         break;
     default:
-        LOGE("%d : UNKNOWN operator of expression %d - %c !!!", p->lineno, op, (char)op);
+        p->parse->show_error("UNKNOWN operator of expression %d - %c !!!", op, (char)op);
         return selector::reg();
     }
     return r;
@@ -453,19 +448,25 @@ const char* func::call_func(const char* src, const token& name, std::vector<sele
 {
     if (name.info.type != Id)
     {
-        LOGE("%d : invalid function name %d - %s !!!", lineno, name.info.type, std::string(name.name).c_str());
+        LOGE("%d : invalid function name %d - %s !!!", parse->lineno, name.info.type, std::string(name.name).c_str());
         return NULL;
     }
     //TODO : need to check func name valid !!!
     if (name.name == "echo")
     {
         std::vector<selector::reg> args;
-        src = comma(src, args);
-        if (src == NULL)
-        {
-            LOGE("invalid of comma expression !!!");
-            return NULL;
-        }
+        src = comma(src, [this, &args, &rets](const char* src)
+            {
+                selector::reg reg; 
+                int end = -1;
+                src = expression(src, reg, &end, NULL);
+                if (reg.ptr == NULL)
+                {
+                    LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
+                }
+                rets.emplace_back(reg);
+                return end;
+            });
 
         std::vector<int> a;
         for (auto& it : args)
@@ -511,7 +512,7 @@ const char* func::expression(const char* src, selector::reg& reg, int* end, cons
                 }
                 return src;
             default:
-                LOGE("%d : invalid token of expression %d - %c - %s !!!", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
+                LOGE("%d : invalid token of expression %d - %c - %s !!!", parse->lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
                 return NULL;
             }
         }
@@ -565,35 +566,5 @@ const char* func::expression(const char* src, selector::reg& reg, int* end, cons
     return src;
 }
 
-const char* func::comma(const char* src, std::vector<selector::reg>& rets)
-{
-    while ((src != NULL) && (*src != '\0'))
-    {
-        selector::reg reg; 
-        int end = -1;
-        src = expression(src, reg, &end, NULL);
-        if (reg.ptr == NULL)
-        {
-            LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
-            return NULL;
-        }
-        rets.emplace_back(reg);
-
-        switch (end)
-        {
-        case ',':
-            break;
-        case ';':
-            LOGW("will comma expression end with ; ?");
-            [[fallthrough]];
-        case ')':
-            return src;
-        default:
-            LOGE("%d : comma expression should NOT end with %d - %c\n", lineno, end, (char)end);
-            return NULL;
-        }
-    }
-    return src;
-}
 
 
