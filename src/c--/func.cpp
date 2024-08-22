@@ -17,7 +17,7 @@
 
 
 
-func::func() : insts(new insts_t()), regs(), scopes(insts, regs)
+func::func(int32_t i, parser* p, selector& s) : id(i), parse(p), insts(new insts_t()), regs(s), scopes(insts, regs)
 {
 }
 

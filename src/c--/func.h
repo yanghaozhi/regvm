@@ -21,14 +21,15 @@ class parser;
 class func
 {
 public:
-    func();
+    func(int32_t id, parser* p, selector& s);
     ~func();
 
+    const int32_t           id;
     int                     lineno      = 0;
     parser*                 parse       = NULL;
     //insts_t                 codes;
     insts_t*                insts;
-    selector                regs;
+    selector&               regs;
     blocks                  scopes;
 
     bool go(const char* src);

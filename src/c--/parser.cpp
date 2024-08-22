@@ -50,7 +50,13 @@ bool parser::go(const char* src, insts_t& out)
     while_loop          wl(this);
     for_loop            fl(this);
 
-    return true;
+    func entry(0, this, regs);
+    bool r = entry.go(src);
+    if (r == true)
+    {
+        out.swap(*entry.insts);
+    }
+    return r;
 }
 
 const char* parser::find_statement(const char* src, func* f)

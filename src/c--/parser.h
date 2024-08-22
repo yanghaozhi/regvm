@@ -31,8 +31,6 @@ public:
         virtual const char* go(const char* src, const token* toks, int count)    = 0;
     };
 
-    selector                        regs;
-    int                             depth       = 0;
 
     bool go(const char* src, insts_t& insts);
 
@@ -49,6 +47,8 @@ private:
         std::map<int, trie_tree>    next;
     };
 
+    int                             depth       = 0;
+    selector                        regs;
     trie_tree                       parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
     
