@@ -43,7 +43,7 @@ const char* func::go(const char* src)
                 scopes.bind_arg(it.name, i++, it.attr);
             }
         }
-        return statements(src, NULL);
+        return statements(src - 1, NULL);
     default:
         while ((src != NULL) && (*src != '\0'))
         {
