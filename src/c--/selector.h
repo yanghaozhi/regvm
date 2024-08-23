@@ -45,6 +45,8 @@ public:
         operator int (void) const   { return ptr->id; }
     };
 
+    const reg fixed(int id);
+
     bool bind(const std::string_view& name, const reg& v);
     const reg bind(const std::string_view& name);
 

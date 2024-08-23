@@ -10,7 +10,7 @@ enum TOKEN_T
 {
     S       = 256,   //避免和ascii字符冲突
     Num     = 260, Int, Double, Str, Id, Register,
-    If      = 270, Else, For, Do, While, Break, Continue,
+    If      = 270, Else, For, Do, While, Break, Continue, Return,
     Assign  = 280, AddE, SubE, MulE, DivE, ModE, ShlE, ShrE,
     And     = 290, Or, Not, Eq, Ne, Lt, Gt, Le, Ge,
     Xor     = 300, Shl, Shr,

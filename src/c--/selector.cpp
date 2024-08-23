@@ -7,7 +7,7 @@
 
 selector::selector()
 {
-    for (int i = 0; i < 256; i++)
+    for (unsigned int i = 0; i < sizeof(datas) / sizeof(datas[0]); i++)
     {
         datas[i].id = i;
         datas[i].status = 0;
@@ -15,8 +15,17 @@ selector::selector()
         //datas[i].ref = 0;
         datas[i].ver = 1;
 
-        frees.add(i);
+        if ((int)i < frees.max)
+        {
+            frees.add(i);
+        }
     }
+}
+
+const selector::reg selector::fixed(int id)
+{
+    if (id < frees.max) return reg();
+    return reg(&datas[id]);
 }
 
 bool selector::bind(const std::string_view& name, const selector::reg& v)

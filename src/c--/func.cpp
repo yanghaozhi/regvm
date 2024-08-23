@@ -29,12 +29,28 @@ func::~func()
 
 const char* func::go(const char* src)
 {
-    scopes.enter();
-    while ((src != NULL) && (*src != '\0'))
+    token tok;
+    const char* p = parse->next_token(src, tok);
+    switch (tok.info.type)
     {
-        src = statement(src);
+    case ';':
+        return p;
+    case '{':
+        {
+            int i = arg_begin;
+            for (auto& it : args)
+            {
+                scopes.bind_arg(it.name, i++, it.attr);
+            }
+        }
+        return statements(src, NULL);
+    default:
+        while ((src != NULL) && (*src != '\0'))
+        {
+            src = statement(src);
+        }
+        break;
     }
-    scopes.leave();
 
     return src;
 }
@@ -108,6 +124,27 @@ const char* func::statement(const char* src)
     return statement(src, NULL, tok);
 }
 
+bool func::fill_var(const token& tok, variable& var)
+{
+    switch (tok.info.type)
+    {
+    case Int:
+        var.type = TYPE_SIGNED;
+        break;
+    case Double:
+        var.type = TYPE_DOUBLE;
+        break;
+    case Register:
+        var.attr |= REG;
+        break;
+    case Id:
+        var.name = tok.name;
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
 
 inline int calc_op(int op)
 {

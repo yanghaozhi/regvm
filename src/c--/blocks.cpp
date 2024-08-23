@@ -10,6 +10,17 @@
 uint32_t         blocks::var_id  = 1;
 
 
+
+const blocks::var* blocks::bind_arg(const std::string_view& name, int r, int attr)
+{
+    auto v = regs.fixed(r);
+    if (v.ptr == NULL)
+    {
+        return NULL;
+    }
+    return &stack.front().vars.emplace(name, var{v, attr, new_id(name)}).first->second;
+}
+
 const blocks::var* blocks::new_var(const std::string_view& name, int attr)
 {
     auto v = (attr == 0) ? regs.bind(name) : regs.lock();

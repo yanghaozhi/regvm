@@ -14,7 +14,7 @@
 #include "inst.h"
 
 
-#define INST(c, ...)   insts->emplace_back(new instv<CODE_##c>(#c, __VA_ARGS__));
+#define INST(c, ...)   insts->emplace_back(new instv<CODE_##c>(#c, ##__VA_ARGS__));
 
 class parser;
 
@@ -31,8 +31,22 @@ public:
     selector&               regs;
     blocks                  scopes;
 
+    struct variable
+    {
+        std::string_view    name;
+        DATA_TYPE           type        = TYPE_NULL;
+        int                 attr        = 0;
+    };
+
+    int                     arg_begin   = -1;
+    int                     ret_begin   = -1;
+
+    std::vector<variable>   args;
+    std::vector<variable>   rets;       //for multi return value extension
+
     const char* go(const char* src);
 
+    bool fill_var(const token& tok, variable& var);
 
     template <typename T> const char* statements(const char* src, labels<T>& jump, const T& break_label, const T& continue_label)
     {

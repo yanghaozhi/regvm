@@ -15,30 +15,15 @@ template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
 
 template <typename T> const char* var_crtp<T>::go(const char* src, const token* toks, int count)
 {
-    DATA_TYPE type = TYPE_NULL;
-    int attr = 0;
-    std::string_view name;
+    func::variable var;
     for (int i = 0; i < count - 1; i ++)
     {
-        switch (toks[i].info.type)
+        if (f->fill_var(toks[i], var) == false)
         {
-        case Int:
-            type = TYPE_SIGNED;
-            break;
-        case Double:
-            type = TYPE_DOUBLE;
-            break;
-        case Register:
-            attr |= REG;
-            break;
-        case Id:
-            name = toks[i].name;
-            break;
-        default:
-            break;
+            return NULL;
         }
     }
-    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, type, name, attr);
+    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, var);
 }
 
 decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
@@ -47,19 +32,19 @@ decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
     p->add(this, Double, Id, ';', -1);
 }
 
-const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+const char* decl_var_only::go2(const char* src, const token* toks, int count, func::variable& var)
 {
-    if ((attr & REG) == 0)
+    if ((var.attr & REG) == 0)
     {
-        auto v2 = f->scopes.new_var(name, attr);
+        auto v2 = f->scopes.new_var(var.name, var.attr);
         if ((v2 == NULL) || (v2->reg.ptr == NULL))
         {
-            LOGE("Can not new reg var : %s", VIEW(name));
+            LOGE("Can not new reg var : %s", VIEW(var.name));
             return NULL;
         }
         auto n = f->regs.tmp();
         INST(SET, (int)n, TYPE_ADDR, v2->id);
-        INST(STORE, type, n, 3);
+        INST(STORE, var.type, n, 3);
     }
     return src;
 }
@@ -72,26 +57,26 @@ decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
     p->add(this, Register, Double, Id, Assign, -1);
 }
 
-const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+const char* decl_var_init::go2(const char* src, const token* toks, int count, func::variable& var)
 {
     selector::reg v;
     src = f->expression(src, v);
     if (src == NULL) return NULL;
 
-    auto r = f->scopes.bind_var(name, v, attr);
+    auto r = f->scopes.bind_var(var.name, v, var.attr);
     if (r == NULL)
     {
-        auto r = f->scopes.new_var(name, attr);
+        auto r = f->scopes.new_var(var.name, var.attr);
         if ((r == NULL) || (r->reg.ptr == NULL))
         {
-            LOGE("Can not create var : %s", VIEW(name));
+            LOGE("Can not create var : %s", VIEW(var.name));
             return NULL;
         }
         INST(MOVE, r->reg, v, 0);
         v = r->reg;
     }
 
-    if ((attr & REG) == 0)
+    if ((var.attr & REG) == 0)
     {
         auto n = f->regs.tmp();
         INST(SET, n, TYPE_ADDR, r->id);
@@ -109,6 +94,31 @@ const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
     std::vector<selector::reg> rets;
     return f->call_func(src, toks[0], rets);
+}
+
+ret_func::ret_func(parser* p) : parser::op(p)
+{
+    p->add(this, Return, -1);
+}
+
+const char* ret_func::go(const char* src, const token* toks, int count)
+{
+    switch (f->rets.size())
+    {
+    case 0:
+        break;
+    case 1:
+        {
+            selector::reg v;
+            src = f->expression(src, v);
+            INST(CONV, f->ret_begin, v, f->rets[0].type);
+        }
+        break;
+    default:
+        break;
+    }
+    INST(RET);
+    return src;
 }
 
 assign_var::assign_var(parser* p) : parser::op(p)
@@ -476,10 +486,10 @@ decl_func::decl_func(parser* p) : var_crtp<decl_func>(p)
     p->add(this, Register, Double, Id, '(', -1);
 }
 
-const char* decl_func::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+const char* decl_func::go2(const char* src, const token* toks, int count, func::variable& var)
 {
     func* cur = NULL;
-    auto it = p->funcs.find(name);
+    auto it = p->funcs.find(var.name);
     if (it != p->funcs.end())
     {
         if (it->second.insts->size() > 0)
@@ -488,10 +498,40 @@ const char* decl_func::go2(const char* src, const token* toks, int count, DATA_T
             return NULL;
         }
         cur = &it->second;
+        src = strchr(src, ')') + 1;
     }
     else
     {
-        cur = &p->funcs.emplace(name, p).first->second;
+        cur = &p->funcs.emplace(var.name, p).first->second;
+
+        cur->rets.emplace_back(var);
+
+        src = f->comma(src, [this, var, cur](const char* src, int* end)
+            {
+                func::variable arg;
+                token tok;
+                while ((src != NULL) && (*src != '\0'))
+                {
+                    src = p->next_token(src, tok);
+                    switch (tok.info.type)
+                    {
+                    case ',':
+                    case ';':
+                    case ')':
+                        *end = tok.info.type;
+                        cur->args.emplace_back(arg);
+                        return src;
+                    default:
+                        if (f->fill_var(tok, arg) == false)
+                        {
+                            src = NULL;
+                            return src;
+                        }
+                        break;
+                    }
+                }
+                return src;
+            });
     }
 
     src = cur->go(src);

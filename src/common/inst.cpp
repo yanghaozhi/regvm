@@ -403,6 +403,42 @@ void instv<CODE_ECHO>::print_asm(FILE* fp) const
     }
 }
 
+bool instv<CODE_CALL>::scan(const char* src)
+{
+    return sscanf(src, "%d %d", &info, &func) == 2;
+}
 
+void instv<CODE_CALL>::print(FILE* fp) const
+{
+    fprintf(fp, "# func id : %d", func);
+    if (func > 0x7FFF)
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, (func & 0xFF) + 0xFF00);
+        data_print(fp, func >> 8);
+    }
+    else
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, func);
+    }
+}
+
+void instv<CODE_CALL>::print_bin(FILE* fp) const
+{
+    code_t code;
+    code.id = CODE_SET;
+    code.a = info;
+    code.b2 = (func > 0x7FFF) ? (func & 0xFF) + 0xFF00 : func;
+    fwrite(&code, sizeof(code_t), 1, fp);
+
+    if (func > 0x7FFF)
+    {
+        data_print_bin(fp, func >> 8);
+    }
+}
+
+void instv<CODE_CALL>::print_asm(FILE* fp) const
+{
+    fprintf(fp, "%-8s %d\t%d\n", name, info, func);
+}
 
 

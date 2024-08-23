@@ -180,3 +180,31 @@ template <> struct instv<CODE_ECHO> : public inst
     bool change_str(const char* n);
 };
 template struct instv<CODE_ECHO>;
+
+template <> struct instv<CODE_RET> : public inst
+{
+    instv(const char* n) : inst(CODE_RET, n)   {}
+
+    virtual int count(void) const           {return 1;};
+    virtual bool scan(const char* src)      {return true;};
+    virtual void print(FILE* fp) const      {fprintf(fp, "%-8s\n", name);};
+    virtual void print_bin(FILE* fp) const  {fprintf(fp, "%-8s\n", name);};
+    virtual void print_asm(FILE* fp) const  {fprintf(fp, "%-8s\n", name);};
+};
+template struct instv<CODE_RET>;
+
+template <> struct instv<CODE_CALL> : public inst
+{
+    int     info;
+    int     func;
+
+    instv(const char* n) : inst(CODE_CALL, n)   {}
+    instv(const char* n, int i, int f) : inst(CODE_CALL, n), info(i), func(f)   {}
+
+    virtual int count(void) const   {return (func > 0x7FFF) ? 2 : 1;};
+    virtual bool scan(const char* src);
+    virtual void print(FILE* fp) const;
+    virtual void print_bin(FILE* fp) const;
+    virtual void print_asm(FILE* fp) const;
+};
+template struct instv<CODE_CALL>;

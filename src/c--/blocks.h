@@ -21,6 +21,7 @@ public:
         const uint64_t  id;
     };
 
+    const var* bind_arg(const std::string_view& name, int r, int attr);
     const var* bind_var(const std::string_view& name, const selector::reg& v, int attr);
     const var* new_var(const std::string_view& name, int attr);
     template <typename F> const var* find_var(const std::string_view& name, int& attr, F reload)

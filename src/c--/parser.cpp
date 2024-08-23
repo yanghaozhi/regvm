@@ -29,6 +29,7 @@ parser::parser() : regs()
     keywords.emplace("while", While);
     keywords.emplace("break", Break);
     keywords.emplace("continue", Continue);
+    keywords.emplace("return", Return);
 }
 
 
@@ -49,6 +50,8 @@ bool parser::go(const char* f, const char* src, insts_t& out)
     do_while            dw(this);
     while_loop          wl(this);
     for_loop            fl(this);
+    decl_func           df(this);
+    ret_func            rf(this);
 
     find_line_ending(src);
 

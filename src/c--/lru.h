@@ -2,21 +2,22 @@
 
 #include <string.h>
 
-template <typename T, int max> class lru
+template <typename T, int MAX> class lru
 {
 public:
-    lru()
+    lru() : max(MAX)
     {
         memset(datas, 0xFF, sizeof(datas));
     }
 
-    int     size = 0;
+    const int   max;
+    int         size = 0;
 
     int get()     {return used(0);}
 
     int add(T v)  //if return >= 0 means it swap this old one
     {
-        if (size >= max) 
+        if (size >= MAX) 
         {
             T r = datas[0];
             datas[0] = v;
@@ -68,7 +69,7 @@ public:
     }
 
 private:
-    T       datas[max];
+    T       datas[MAX];
 
     int used(int id)
     {
