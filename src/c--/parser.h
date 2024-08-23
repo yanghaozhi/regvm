@@ -11,9 +11,10 @@
 #include "blocks.h"
 #include "labels.h"
 #include "common.h"
+#include "func.h"
 #include "inst.h"
 
-class func;
+#define COMPILE_ERROR(p, fmt, ...)  p->show_error(" | %s:%d | " fmt, __FILE__, __LINE__, ##__VA_ARGS__);
 
 class parser
 {
@@ -56,6 +57,7 @@ private:
     };
 
     int                             lineno      = 0;
+    const char*                     line_end    = NULL;
     std::string_view                line;
     std::string                     file;
     int                             depth       = 0;

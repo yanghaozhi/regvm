@@ -32,13 +32,13 @@ struct var
     std::string_view    name;
 };
 
-struct func
-{
-    DATA_TYPE           ret;
-    std::vector<var>    args;
-};
-
-std::unordered_map<std::string_view, func> funcs;
+//struct func
+//{
+//    DATA_TYPE           ret;
+//    std::vector<var>    args;
+//};
+//
+//std::unordered_map<std::string_view, func> funcs;
 
 
 

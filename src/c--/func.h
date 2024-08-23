@@ -11,7 +11,6 @@
 #include "blocks.h"
 #include "labels.h"
 #include "common.h"
-#include "parser.h"
 #include "inst.h"
 
 
@@ -69,15 +68,8 @@ public:
     {
         while ((src != NULL) && (*src != '\0'))
         {
-            int end = func(src);
-
-            //selector::reg reg; 
-            //int end = -1;
-            //src = expression(src, reg, &end, NULL);
-            //if (reg.ptr == NULL)
-            //{
-            //}
-            //rets.emplace_back(reg);
+            int end = -1;
+            src = func(src, &end);
 
             switch (end)
             {
@@ -89,7 +81,7 @@ public:
             case ')':
                 return src;
             default:
-                LOGE("%d : comma expression should NOT end with %d - %c\n", parse->lineno, end, (char)end);
+                LOGE("comma expression should NOT end with %d - %c", end, (char)end);
                 return NULL;
             }
         }

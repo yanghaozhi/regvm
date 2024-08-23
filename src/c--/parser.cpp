@@ -193,7 +193,7 @@ const char* parser::next_token(const char* src, token& tok)
             next = strchr(next, '\n');
             continue;
         case '\n':
-            find_line_ending(src);
+            find_line_ending(next);
             break;
         case '\'':  //字符
             tok.info.type = Num;
@@ -312,25 +312,29 @@ const char* parser::next_token(const char* src, token& tok)
 
 void parser::find_line_ending(const char* src)
 {
+    if ((line_end != NULL) && (src <= line_end)) return;
+
     lineno += 1;
-    const char* p = strchr(src, '\n');
-    if (p != NULL)
+    line_end = strchr(src, '\n');
+    if (line_end != NULL)
     {
-        line = std::string_view(src, p - src);
+        line = std::string_view(src, line_end - src);
     }
     else
     {
         line = std::string_view(src);
+        line_end = src + strlen(src);
     }
     LOGD("%d : %s", lineno, VIEW(line));
 }
 
 void parser::show_error(const char* fmt, ...)
 {
-    LOGE("%s : %d - %s ...", file.c_str(), lineno, VIEW(line));
+    fprintf(stderr, "\e[1;35m %s : %d ", file.c_str(), lineno);
     va_list ap;
     va_start(ap, fmt);
-    vprintf(fmt, ap);
+    vfprintf(stderr, fmt, ap);
     va_end(ap);
-    printf("\n");
+    fprintf(stderr, "\n\t%s \e[0m\n", VIEW(line));
 }
+
