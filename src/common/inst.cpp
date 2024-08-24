@@ -200,7 +200,12 @@ void instv<CODE_SET>::print(FILE* fp) const
         fprintf(fp, "# %s\n", ex.str);
         fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
         break;
+    case TYPE_ADDR:
+        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        return;
     default:
+        LOGW("Unknown type : %d", type);
         break;
     }
 
@@ -245,7 +250,7 @@ void instv<CODE_SET>::print_asm(FILE* fp) const
         fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
         return;
     default:
-        assert(0);
+        LOGW("Unknown type : %d", type);
         break;
     }
 }
@@ -344,6 +349,10 @@ void instv<CODE_ECHO>::print(FILE* fp) const
         fprintf(fp, "\t%d", it);
     }
     fprintf(fp, "\n");
+    if (args.size() == 0)
+    {
+        LOGW("Should NOT echo with 0 args !!!");
+    }
 }
 
 void instv<CODE_ECHO>::print_bin(FILE* fp) const
@@ -355,6 +364,10 @@ void instv<CODE_ECHO>::print_bin(FILE* fp) const
     switch (args.size())
     {
     case 0:
+        LOGW("Should NOT echo with 0 args !!!");
+        code.b = 0;
+        code.c = 0;
+        fwrite(&code, sizeof(code_t), 1, fp);
         break;
     case 2:
         code.c = args[1];
@@ -385,6 +398,7 @@ void instv<CODE_ECHO>::print_asm(FILE* fp) const
     switch (args.size())
     {
     case 0:
+        LOGW("Should NOT echo with 0 args !!!");
         fprintf(fp, "\t%d\t%d\n", 0, 0);
         break;
     case 1:

@@ -512,7 +512,7 @@ const char* func::call_func(const char* src, const token& name, std::vector<sele
     if (name.name == "echo")
     {
         std::vector<selector::reg> args;
-        src = comma(src, [this, &args, &rets](const char* src, int* end)
+        src = comma(src, [this, &args](const char* src, int* end)
             {
                 selector::reg reg; 
                 src = expression(src, reg, end, NULL);
@@ -520,7 +520,7 @@ const char* func::call_func(const char* src, const token& name, std::vector<sele
                 {
                     LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
                 }
-                rets.emplace_back(reg);
+                args.emplace_back(reg);
                 return src;
             });
 
