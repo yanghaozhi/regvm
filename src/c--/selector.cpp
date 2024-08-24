@@ -25,7 +25,9 @@ selector::selector()
 const selector::reg selector::fixed(int id)
 {
     if (id < frees.max) return reg();
-    return reg(&datas[id]);
+    data& r = datas[id];
+    r.status = FIXED;
+    return reg(&r);
 }
 
 bool selector::bind(const std::string_view& name, const selector::reg& v)
@@ -175,6 +177,8 @@ bool selector::active(const reg& r)
         return binds.active(r.ptr->id) != -1;
     case LOCKED:
         return locks.active(r.ptr->id) != -1;
+    case FIXED:
+        return true;
     default:
         return false;
     }

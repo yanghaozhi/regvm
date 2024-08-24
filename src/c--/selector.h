@@ -23,6 +23,7 @@ public:
         FREED,
         BINDED,
         LOCKED,
+        FIXED,
     };
 
     struct data
@@ -76,9 +77,9 @@ public:
 private:
     data                    datas[256];
 
-    lru<uint8_t, 256>       frees;
+    lru<uint8_t, 128>       frees;
     lru<uint8_t, 64>        binds;
-    lru<uint8_t, 64>        locks;
+    lru<uint8_t, 32>        locks;
 };
 
 

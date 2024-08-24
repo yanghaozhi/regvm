@@ -11,14 +11,8 @@
 class blocks
 {
 public:
-    blocks(insts_t* i, selector& s) : insts(i), regs(s)
-    {
-        enter();
-    };
-    ~blocks()
-    {
-        leave();
-    };
+    blocks(insts_t* i, selector& s) : insts(i), regs(s) {}
+    ~blocks()   {}
 
     struct var
     {

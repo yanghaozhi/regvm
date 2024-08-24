@@ -12,7 +12,7 @@
 
 struct inst;
 typedef std::deque<inst*>               insts_t;
-
+typedef void (inst::*inst_print_t)(FILE*) const;
 struct inst
 {
     inst(int id, const char* name);

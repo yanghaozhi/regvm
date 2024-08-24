@@ -111,7 +111,7 @@ const char* ret_func::go(const char* src, const token* toks, int count)
         {
             selector::reg v;
             src = f->expression(src, v);
-            INST(CONV, f->ret_begin, v, f->rets[0].type);
+            INST(CONV, f->infos.ret, v, f->rets[0].type);
         }
         break;
     default:

@@ -26,7 +26,6 @@ public:
 
     const int32_t           id;
     parser*                 parse       = NULL;
-    //insts_t                 codes;
     insts_t*                insts;
     selector&               regs;
     blocks                  scopes;
@@ -38,8 +37,12 @@ public:
         int                 attr        = 0;
     };
 
-    int                     arg_begin   = -1;
-    int                     ret_begin   = -1;
+    struct
+    {
+        const int           info        = 128;
+        const int           ret         = info + 1;
+        int                 arg         = -1;
+    }                       infos;
 
     std::vector<variable>   args;
     std::vector<variable>   rets;       //for multi return value extension
@@ -104,8 +107,11 @@ public:
 
     selector::reg token_2_reg(const token& tok);
 
+    void print(inst_print_t op, FILE* fp) const;
+
 private:
-    const char*                     last_line   = NULL;
+    insts_t                 instss;
+    const char*             last_line   = NULL;
 
     const char* statement(const char* src, std::function<void (const token&)> cb, token& tok);
 };

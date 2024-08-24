@@ -17,18 +17,20 @@
 
 
 
-func::func(parser* p) : id(p->func_id++), parse(p), insts(new insts_t()), regs(p->regs), scopes(insts, regs)
+func::func(parser* p) : id(p->func_id++), parse(p), insts(&instss), regs(p->regs), scopes(insts, regs)
 {
 }
 
 
 func::~func()
 {
-    delete insts;
 }
 
 const char* func::go(const char* src)
 {
+    infos.arg = infos.ret + rets.size();
+    LOGT("func : %d - ret : %d, arg : %d", id, infos.ret, infos.arg);
+
     token tok;
     const char* p = parse->next_token(src, tok);
     switch (tok.info.type)
@@ -36,23 +38,37 @@ const char* func::go(const char* src)
     case ';':
         return p;
     case '{':
+        scopes.enter();
+        if (args.size() > 0)
         {
-            int i = arg_begin;
+            int i = infos.arg;
             for (auto& it : args)
             {
                 scopes.bind_arg(it.name, i++, it.attr);
             }
         }
-        return statements(src - 1, NULL);
+        src = statements(src, NULL);
+        scopes.leave();
+        break;
     default:
+        scopes.enter();
         while ((src != NULL) && (*src != '\0'))
         {
             src = statement(src);
         }
+        scopes.leave();
         break;
     }
 
     return src;
+}
+
+void func::print(inst_print_t op, FILE* fp) const
+{
+    for (auto& it : instss)
+    {
+        (it->*op)(fp);
+    }
 }
 
 const char* func::statements(const char* src, std::function<void (const token&)> cb)
@@ -112,7 +128,7 @@ const char* func::statement(const char* src, std::function<void (const token&)> 
     p = parse->find_statement(src, this);
     if (p == NULL)
     {
-        parse->show_error("no valid function op");
+        COMPILE_ERROR(parse, "no valid function op");
         return NULL;
     }
     return p;
@@ -366,7 +382,7 @@ inline selector::reg calc_a_b(func* p, int op, const token& a, const selector::r
         INST(CMP, r, r, cmp_op(op));
         break;
     default:
-        p->parse->show_error("UNKNOWN operator of expression %d - %c !!!", op, (char)op);
+        COMPILE_ERROR(p->parse, "UNKNOWN operator of expression %d - %c !!!", op, (char)op);
         return selector::reg();
     }
     return r;

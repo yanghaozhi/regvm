@@ -16,8 +16,10 @@ const blocks::var* blocks::bind_arg(const std::string_view& name, int r, int att
     auto v = regs.fixed(r);
     if (v.ptr == NULL)
     {
+        LOGE("Can NOT bind arg %s at block %d", VIEW(name), (int)stack.size());
         return NULL;
     }
+    LOGT("bind arg %d:%d:%s at block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
     return &stack.front().vars.emplace(name, var{v, attr, new_id(name)}).first->second;
 }
 
@@ -26,6 +28,7 @@ const blocks::var* blocks::new_var(const std::string_view& name, int attr)
     auto v = (attr == 0) ? regs.bind(name) : regs.lock();
     if (v.ptr == NULL)
     {
+        LOGE("Can NOT add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
         return NULL;
     }
     LOGT("add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
@@ -69,13 +72,13 @@ const blocks::var* blocks::bind_var(const std::string_view& name, const selector
 bool blocks::enter()
 {
     stack.emplace_front(this);
-    LOGT("enter block %d", (int)stack.size());
+    LOGT("%p enter block %d", this, (int)stack.size());
     return true;
 }
 
 bool blocks::leave()
 {
-    LOGT("leave block %d", (int)stack.size());
+    LOGT("%p leave block %d", this, (int)stack.size());
     stack.pop_front();
     return true;
 }

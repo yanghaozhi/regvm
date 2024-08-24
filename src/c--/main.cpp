@@ -78,6 +78,87 @@ options:
     -o              output to file
 )";
 
+bool op_run(const std::string_view& name, const func* f, insts_t* insts)
+{
+    auto op = &inst::print_bin;
+    char* codes = NULL;
+    size_t bytes = 0;
+    FILE* fp = open_memstream(&codes, &bytes);
+
+    if (f != NULL)
+    {
+        f->print(op, fp);
+    }
+    else
+    {
+        for (auto& it : *insts)
+        {
+            (it->*op)(fp);
+        }
+    }
+
+    fclose(fp);
+
+    if LOG_ENBALE_D
+    {
+        LOGI("func : %s ...", VIEW(name));
+        const int line = 16;
+        int j = 0;
+        const unsigned char* p = (const unsigned char*)codes;
+        for (int i = 0; i < (int)bytes; i++)
+        {
+            if (j++ >= line)
+            {
+                printf("\n");
+                j = 1;
+            }
+            printf("%02X ", p[i]);
+        }
+        printf("\n\n");
+    }
+
+    static auto vm = regvm_init();
+    if (f == NULL)
+    {
+
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
+
+        regvm_exit(vm);
+        vm = NULL;
+
+        LOGI("run : %d\n", r);
+    }
+    else
+    {
+        regvm_func(vm, f->id, (code_t*)codes, bytes >> 2, NULL, VM_CODE_COPY);
+    }
+
+    free(codes);
+
+    return true;
+}
+
+bool op_show(const std::string_view& name, const func* f, insts_t* insts)
+{
+    LOGI("func : %s ...", VIEW(name));
+    auto op = &inst::print_asm;
+
+    if (f != NULL)
+    {
+        f->print(op, stdout);
+    }
+    else
+    {
+        for (auto& it : *insts)
+        {
+            (it->*op)(stdout);
+        }
+    }
+
+    printf("\n");
+    return true;
+}
 
 int main(int argc, char** argv)
 {
@@ -102,85 +183,86 @@ int main(int argc, char** argv)
     }
 
 
-    void (inst::*op)(FILE*) const = &inst::print_asm;
     const char* opts = "rps";
     int opt = 0;
-    FILE* fp = stdout;
-    char* codes = NULL;
-    size_t bytes = 0;
+    bool (*op)(const std::string_view&, const func*, insts_t*) = NULL;
     while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
     {
         switch (opt)
         {
         case 'r':
-            op = &inst::print_bin;
-            fp = open_memstream(&codes, &bytes);
+            op = op_run;
             break;
         case 'p':
-            op = &inst::print;
+            //op = &inst::print;
             break;
         case 's':
-            op = &inst::print_asm;
+            op = op_show;
+            //op = &inst::print_asm;
             break;
         default:
             break;
         }
     }
 
-    for (auto& it : insts)
+    for (auto& it : par.funcs)
     {
-        (it->*op)(fp);
+        op(it.first, &it.second, NULL);
     }
+    op(".start", NULL, &insts);
 
-    if (fp != stdout)
-    {
-        fclose(fp);
-    }
+    //for (auto& it : insts)
+    //{
+    //    (it->*op)(fp);
+    //}
 
-    if (codes != NULL)
-    {
-        if LOG_ENBALE_D
-        {
-            const int line = 16;
-            int j = 0;
-            const unsigned char* p = (const unsigned char*)codes;
-            for (int i = 0; i < (int)bytes; i++)
-            {
-                if (j++ >= line)
-                {
-                    printf("\n");
-                    j = 1;
-                }
-                printf("%02X ", p[i]);
-            }
-            printf("\n\n");
-        }
+    //if (fp != stdout)
+    //{
+    //    fclose(fp);
+    //}
+
+    //if (codes != NULL)
+    //{
+    //    if LOG_ENBALE_D
+    //    {
+    //        const int line = 16;
+    //        int j = 0;
+    //        const unsigned char* p = (const unsigned char*)codes;
+    //        for (int i = 0; i < (int)bytes; i++)
+    //        {
+    //            if (j++ >= line)
+    //            {
+    //                printf("\n");
+    //                j = 1;
+    //            }
+    //            printf("%02X ", p[i]);
+    //        }
+    //        printf("\n\n");
+    //    }
 
 
-        auto vm = regvm_init();
+    //    auto vm = regvm_init();
 
-        int64_t exit = 0;
-        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
+    //    int64_t exit = 0;
+    //    bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
 
-        regvm_exit(vm);
+    //    regvm_exit(vm);
 
-        LOGI("run : %d\n", r);
+    //    LOGI("run : %d\n", r);
 
-        free(codes);
-    }
-    //auto r = grammar(t2);
-    //printf("grammar : %d\n", r);
-    //
-    for (auto& it : insts)
-    {
-        delete it;
-    }
+    //    free(codes);
+    //}
 
-    if (fd >= 0)
-    {
-        munmap((void*)src, st.st_size);
-        close(fd);
-    }
+    //for (auto& it : insts)
+    //{
+    //    delete it;
+    //}
+
+    //if (fd >= 0)
+    //{
+    //    munmap((void*)src, st.st_size);
+    //    close(fd);
+    //}
 
     return 0;
 }
