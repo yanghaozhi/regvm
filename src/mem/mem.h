@@ -43,6 +43,10 @@ public:
 
 #undef CRTP_FUNC
 
+    static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
+
 private:
     uint64_t                    cur_call;
     std::map<uint64_t, var_t*>  vars;
@@ -53,9 +57,6 @@ private:
         return cur_call + id;
     }
 
-    static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
-    static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);
-    static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
 };
 
 }

@@ -93,7 +93,19 @@ call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
     std::vector<selector::reg> rets;
-    return f->call_func(src, toks[0], rets);
+    auto it_func = p->funcs.find(toks[0].name);
+    if (it_func != p->funcs.end())
+    {
+        //TODO
+        return src;
+    }
+    auto it_cmd = p->cmds.find(toks[0].name);
+    if (it_cmd != p->cmds.end())
+    {
+        return it_cmd->second(src, f, toks[0], rets);
+    }
+    COMPILE_ERROR(p, "Can NOT find function : %s to call !!!", VIEW(toks[0].name));
+    return NULL;
 }
 
 ret_func::ret_func(parser* p) : parser::op(p)

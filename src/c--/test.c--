@@ -41,3 +41,5 @@ for (int m = 0; m < i; m += 1)
 {
     echo(m);
 }
+
+test1(10, 20);

@@ -132,7 +132,7 @@ const char* func::statement(const char* src, std::function<void (const token&)> 
     p = parse->find_statement(src, this);
     if (p == NULL)
     {
-        COMPILE_ERROR(parse, "no valid function op");
+        COMPILE_ERROR(parse, "Can NOT find any statement to deal with this line");
         return NULL;
     }
     return p;
@@ -501,36 +501,31 @@ template <typename T, typename O> selector::reg pop_and_calc(func* p, T& toks, O
     return b;
 }
 
-const char* func::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
+const char* func::call(const char* src, func& sub, std::vector<selector::reg>& rets)
+//const char* func::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
 {
-    if (name.info.type != Id)
-    {
-        LOGE("%d : invalid function name %d - %s !!!", parse->lineno, name.info.type, std::string(name.name).c_str());
-        return NULL;
-    }
-    //TODO : need to check func name valid !!!
-    if (name.name == "echo")
-    {
-        std::vector<selector::reg> args;
-        src = comma(src, [this, &args](const char* src, int* end)
-            {
-                selector::reg reg; 
-                src = expression(src, reg, end, NULL);
-                if (reg.ptr == NULL)
-                {
-                    LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
-                }
-                args.emplace_back(reg);
-                return src;
-            });
-
-        std::vector<int> a;
-        for (auto& it : args)
-        {
-            a.emplace_back((int)it);
-        }
-        INST(ECHO, a);
-    }
+    //if (name.info.type != Id)
+    //{
+    //    LOGE("%d : invalid function name %d - %s !!!", parse->lineno, name.info.type, std::string(name.name).c_str());
+    //    return NULL;
+    //}
+    ////TODO : need to check func name valid !!!
+    //if (name.name == "echo")
+    //{
+    //    std::vector<int> args;
+    //    src = comma(src, [this, &args](const char* src, int* end)
+    //        {
+    //            selector::reg reg; 
+    //            src = expression(src, reg, end, NULL);
+    //            if (reg.ptr == NULL)
+    //            {
+    //                LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
+    //            }
+    //            args.emplace_back((int)reg);
+    //            return src;
+    //        });
+    //    INST(ECHO, args);
+    //}
     return src;
 }
 
@@ -587,16 +582,16 @@ const char* func::expression(const char* src, selector::reg& reg, int* end, cons
                 *end = op.info.type;
             }
             return src;
-        case '(':   //函数调用
-            {
-                std::vector<selector::reg> rets;
-                src = call_func(src, toks.back(), rets);
-                if (rets.size() >= 1)
-                {
-                    toks.back().reg = rets[0];
-                }
-            }
-            break;
+        //case '(':   //函数调用
+        //    {
+        //        std::vector<selector::reg> rets;
+        //        src = call_func(src, toks.back(), rets);
+        //        if (rets.size() >= 1)
+        //        {
+        //            toks.back().reg = rets[0];
+        //        }
+        //    }
+        //    break;
         default:
             {
                 if (ops.size() > 0)

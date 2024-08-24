@@ -186,15 +186,24 @@ int regvm_mem::vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* ext
     return 1;
 }
 
+struct mem_init
+{
+    mem_init()
+    {
+#define REG_OP(x)   vm_ops[CODE_##x - CODE_TRAP] = regvm_mem::vm_CODE_##x;
+        REG_OP(LOAD);
+        REG_OP(STORE);
+        //REG_OP(GLOBAL);
+        //REG_OP(NEW);
+        //REG_OP(BLOCK);
+#undef REG_OP
+    }
+};
+
+static mem_init     s_init;
+
 regvm_mem::regvm_mem()
 {
-#define REG_OP(x)   ops[CODE_##x - CODE_TRAP] = vm_CODE_##x;
-    REG_OP(LOAD);
-    REG_OP(STORE);
-    //REG_OP(GLOBAL);
-    //REG_OP(NEW);
-    //REG_OP(BLOCK);
-#undef REG_OP
 }
 
 var* regvm_mem::add(uint64_t id, const int type)

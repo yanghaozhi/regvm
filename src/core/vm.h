@@ -18,6 +18,9 @@
 
 typedef int (*vm_op_t)(regvm* vm, code_t inst, int offset, const void* extra);
 
+extern vm_op_t      vm_ops[256 - CODE_TRAP];
+
+
 struct regvm
 {
     bool            exit        = false;
@@ -33,7 +36,6 @@ struct regvm
 
     std::map<int32_t, core::func>   funcs;
 
-    vm_op_t         ops[256 - CODE_TRAP];
 
     regvm();
     virtual ~regvm();

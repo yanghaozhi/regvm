@@ -30,6 +30,8 @@ parser::parser() : regs()
     keywords.emplace("break", Break);
     keywords.emplace("continue", Continue);
     keywords.emplace("return", Return);
+
+    cmds.emplace("echo", cmd_echo);
 }
 
 
@@ -339,5 +341,24 @@ void parser::show_error(const char* fmt, ...)
     vfprintf(stderr, fmt, ap);
     va_end(ap);
     fprintf(stderr, "\n\t%s \e[0m\n", VIEW(line));
+}
+
+const char* parser::cmd_echo(const char* src, func* f, const token& name, std::vector<selector::reg>& rets)
+{
+    insts_t* insts = f->insts;
+    std::vector<int> args;
+    src = f->comma(src, [&args, f](const char* src, int* end)
+        {
+            selector::reg reg; 
+            src = f->expression(src, reg, end, NULL);
+            if (reg.ptr == NULL)
+            {
+                LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
+            }
+            args.emplace_back((int)reg);
+            return src;
+        });
+    INST(ECHO, args);
+    return src;
 }
 

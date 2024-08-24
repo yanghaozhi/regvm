@@ -5,6 +5,9 @@
 #include "ext.h"
 
 
+vm_op_t      vm_ops[256 - CODE_TRAP]    = {NULL};
+//vm_op_t*     vm_ops = vm_ops_impl;
+
 extern "C"
 {
 
@@ -24,7 +27,7 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
-regvm::regvm() : reg(), ops{NULL}
+regvm::regvm() : reg()
 {
 #ifdef DEBUG
     memset(code_names, 0, sizeof(code_names));
@@ -35,7 +38,10 @@ regvm::regvm() : reg(), ops{NULL}
 
 #define SET_1(name)                                                 \
     extern int vm_CODE_##name(regvm*, code_t, int, const void*);    \
-    ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;
+    if (vm_ops[CODE_##name - CODE_TRAP] == NULL)                    \
+    {                                                               \
+        vm_ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;           \
+    }
 #define SET_0(name)
 #define SET_OPS(func, name)     MLIB_CAT(SET_, func)(name); SET_NAME(name);
 

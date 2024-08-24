@@ -517,7 +517,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
     default:
         if (likely(code >= CODE_TRAP))
         {
-            auto f = vm->ops[code - CODE_TRAP];
+            auto f = vm_ops[code - CODE_TRAP];
             if (likely(f != NULL))
             {
                 int r = f(vm, inst, offset, extra);

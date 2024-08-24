@@ -79,7 +79,7 @@ public:
     const char* expression(const char* src, selector::reg& reg, int* end, const calc_t& calc);
     const char* expression(const char* src, selector::reg& reg);
 
-    const char* call_func(const char* src, const token& name, std::vector<selector::reg>& rets);
+    const char* call(const char* src, func& sub, std::vector<selector::reg>& rets);
 
     template <typename F> const char* comma(const char* src, F&& func)
     {
