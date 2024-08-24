@@ -24,6 +24,10 @@ func::func(parser* p) : id(p->func_id++), parse(p), insts(&instss), regs(p->regs
 
 func::~func()
 {
+    for (auto& it : instss)
+    {
+        delete it;
+    }
 }
 
 const char* func::go(const char* src)
