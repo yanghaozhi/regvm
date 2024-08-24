@@ -70,6 +70,7 @@ public:
         }
     };
 
+    int     flow    = 0;
 
     friend class error;
 
@@ -106,7 +107,7 @@ public:
             assert(0);
         }
 #endif
-        return values[i];
+        return values[ ((i >> 7) * flow) + i ];
     }
 
     //uint8_t type(const int id);
