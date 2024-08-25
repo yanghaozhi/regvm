@@ -43,6 +43,7 @@ public:
         const int           ret         = info + 1;
         int                 arg         = -1;
     }                       infos;
+    //info - rets - args
 
     std::vector<variable>   args;
     std::vector<variable>   rets;       //for multi return value extension
@@ -79,7 +80,7 @@ public:
     const char* expression(const char* src, selector::reg& reg, int* end, const calc_t& calc);
     const char* expression(const char* src, selector::reg& reg);
 
-    const char* call(const char* src, func& sub, std::vector<selector::reg>& rets);
+    const char* call(const char* src, func& sub, int retc, std::vector<selector::reg>& rets);
 
     template <typename F> const char* comma(const char* src, F&& func)
     {

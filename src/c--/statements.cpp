@@ -96,8 +96,8 @@ const char* call_func_no_ret::go(const char* src, const token* toks, int count)
     auto it_func = p->funcs.find(toks[0].name);
     if (it_func != p->funcs.end())
     {
-        //TODO
-        return src;
+        std::vector<selector::reg> rets;
+        return f->call(src, it_func->second, 0, rets);
     }
     auto it_cmd = p->cmds.find(toks[0].name);
     if (it_cmd != p->cmds.end())

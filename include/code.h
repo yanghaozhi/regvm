@@ -289,6 +289,7 @@ enum CODE_ID
     CODE_AND,
     CODE_OR,
     CODE_XOR,
+    CODE_SHIFT,
     CODE_JUMP,
     CODE_JCMP,
     CODE_JEQ,

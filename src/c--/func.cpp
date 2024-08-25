@@ -501,31 +501,49 @@ template <typename T, typename O> selector::reg pop_and_calc(func* p, T& toks, O
     return b;
 }
 
-const char* func::call(const char* src, func& sub, std::vector<selector::reg>& rets)
-//const char* func::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
+const char* func::call(const char* src, func& sub, int retc, std::vector<selector::reg>& rets)
 {
-    //if (name.info.type != Id)
-    //{
-    //    LOGE("%d : invalid function name %d - %s !!!", parse->lineno, name.info.type, std::string(name.name).c_str());
-    //    return NULL;
-    //}
-    ////TODO : need to check func name valid !!!
-    //if (name.name == "echo")
-    //{
-    //    std::vector<int> args;
-    //    src = comma(src, [this, &args](const char* src, int* end)
-    //        {
-    //            selector::reg reg; 
-    //            src = expression(src, reg, end, NULL);
-    //            if (reg.ptr == NULL)
-    //            {
-    //                LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
-    //            }
-    //            args.emplace_back((int)reg);
-    //            return src;
-    //        });
-    //    INST(ECHO, args);
-    //}
+    if ((size_t)retc > sub.rets.size())
+    {
+        COMPILE_ERROR(parse, "Call function %d ERROR, want %d rets, but only %zd give", sub.id, retc, sub.rets.size());
+        return NULL;
+    }
+
+    int sub_info = 128 + rets.size() + args.size() + 1;
+
+    int i = 0;
+    const int begin = sub_info + sub.rets.size() + 1;
+    src = comma(src, [this, &sub, &i, begin](const char* src, int* end)
+        {
+            selector::reg reg; 
+            src = expression(src, reg, end, NULL);
+            if (reg.ptr == NULL)
+            {
+                LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
+            }
+            INST(MOVE, begin + i, (int)reg, sub.args[i].type);
+            i += 1;
+            return src;
+        });
+    if ((size_t)i != sub.args.size())
+    {
+        COMPILE_ERROR(parse, "Call function %d ERROR, need %zd args, but %d give", sub.id, sub.args.size(), i);
+        return NULL;
+    }
+
+    int64_t info = sub.id;
+    info <<= 32;
+    info += (sub.rets.size() << 8) + sub.args.size();
+    INST(SET, sub_info, TYPE_SIGNED, info);
+
+    INST(CALL, sub_info, sub.id);
+
+    for (int j = 0; j < retc; j++)
+    {
+        auto n = regs.tmp();
+        INST(MOVE, n, sub_info + j + 1, sub.rets[j].type);
+    }
+
     return src;
 }
 
