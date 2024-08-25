@@ -20,7 +20,7 @@ const blocks::var* blocks::bind_arg(const std::string_view& name, int r, int att
         return NULL;
     }
     LOGT("bind arg %d:%d:%s at block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-    return &stack.front().vars.emplace(name, var{v, attr, new_id(name)}).first->second;
+    return &stack.front().vars.try_emplace(name, v, attr, new_id(name)).first->second;
 }
 
 const blocks::var* blocks::new_var(const std::string_view& name, int attr)
@@ -32,7 +32,7 @@ const blocks::var* blocks::new_var(const std::string_view& name, int attr)
         return NULL;
     }
     LOGT("add var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-    auto r = stack.front().vars.emplace(name, var{v, attr, new_id(name)});
+    auto r = stack.front().vars.try_emplace(name, v, attr, new_id(name));
     return &r.first->second;
 }
 
@@ -53,7 +53,7 @@ const blocks::var* blocks::bind_var(const std::string_view& name, const selector
             return NULL;
         }
         LOGT("bind var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
-        stack.front().vars.emplace(name, var{v, attr, new_id(name)});
+        stack.front().vars.try_emplace(name, v, attr, new_id(name));
     }
     else
     {
@@ -65,7 +65,7 @@ const blocks::var* blocks::bind_var(const std::string_view& name, const selector
         LOGT("lock var %d:%d:%s to block %d", (int)v, v.ver, VIEW(name), (int)stack.size());
     }
 
-    auto r = stack.front().vars.emplace(name, var{v, attr, new_id(name)});
+    auto r = stack.front().vars.try_emplace(name, v, attr, new_id(name));
     return &r.first->second;
 }
 

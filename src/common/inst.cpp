@@ -186,23 +186,23 @@ void instv<CODE_SET>::print(FILE* fp) const
     {
     case TYPE_SIGNED:
         fprintf(fp, "# %lld\n", (long long)ex.sint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%ld\n", name, id, reg, type, ex.sint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_UNSIGNED:
         fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_DOUBLE:
         fprintf(fp, "# %.17g\n", ex.dbl);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_STRING:
         fprintf(fp, "# %s\n", ex.str);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_ADDR:
         fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         return;
     default:
         LOGW("Unknown type : %d", type);
@@ -424,7 +424,7 @@ bool instv<CODE_CALL>::scan(const char* src)
 
 void instv<CODE_CALL>::print(FILE* fp) const
 {
-    fprintf(fp, "# func id : %d", func);
+    fprintf(fp, "# func id : %d\n", func);
     if (func > 0x7FFF)
     {
         fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, (func & 0xFF) + 0xFF00);
@@ -439,7 +439,7 @@ void instv<CODE_CALL>::print(FILE* fp) const
 void instv<CODE_CALL>::print_bin(FILE* fp) const
 {
     code_t code;
-    code.id = CODE_SET;
+    code.id = CODE_CALL;
     code.a = info;
     code.b2 = (func > 0x7FFF) ? (func & 0xFF) + 0xFF00 : func;
     fwrite(&code, sizeof(code_t), 1, fp);

@@ -21,10 +21,11 @@ class parser;
 class func
 {
 public:
-    func(parser* p);
+    func(parser* p, const std::string_view& name);
     ~func();
 
     const int32_t           id;
+    const std::string_view  name;
     parser*                 parse       = NULL;
     insts_t*                insts;
     selector&               regs;

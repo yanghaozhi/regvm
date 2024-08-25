@@ -57,7 +57,7 @@ bool parser::go(const char* f, const char* src, insts_t& out)
 
     find_line_ending(src);
 
-    func entry(this);
+    func entry(this, ".crt.entry");
 
     src = entry.go(src);
     if (src == NULL)

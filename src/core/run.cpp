@@ -250,21 +250,33 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
 
 int vm_CODE_CALL(regvm* vm, code_t code, int offset, const void* extra)
 {
-    //auto& r = vm->reg.id(reg);
-    //if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
-    //{
-    //    return 0;
-    //}
-    //if (vm->exit == true)
-    //{
-    //    return 1;
-    //}
+    uint32_t id = code.b2;
+    int next = 1;
+    if (unlikely(id > 0x7FFF))
+    {
+        code_t* p = (code_t*)extra;
+        if (unlikely(p->id != CODE_DATA))
+        {
+            VM_ERROR(ERR_RUNTIME, code, offset, "call function : %u, but does NOT find CODE after", id);
+            return 0;
+        }
+        id += (((uint32_t)p->a3) << 8);
+        next += 1;
+    }
+
+    if (unlikely(vm->call(id, code, offset) == false))
+    {
+        VM_ERROR(ERR_RUNTIME, code, offset, "call function : %d ERROR", id);
+        return 0;
+    }
+
+    return next;
     return 1;
 }
 
 int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra)
 {
-    return 1;
+    return 0;
 }
 
 

@@ -207,7 +207,7 @@ bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
 }
 
 frame::frame(frame& cur, func* f, code_t c, int o) :
-    depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm)
+    depth(cur.depth + 1), running(f), id(gen_id()), reg_info(c.a), vm(cur.vm)
 {
     caller.code = c;
     caller.offset = o;
@@ -223,6 +223,7 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
     up->down = this;
 
     vm->call_stack = this;
+    vm->reg.flow = reg_info;
 
     if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
     {
@@ -232,13 +233,15 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
 }
 
 frame::frame(regvm* v, func* f, code_t c, int o) :
-    depth(0), running(f), id(gen_id()), vm(v)
+    depth(0), running(f), id(gen_id()), reg_info(128), vm(v)
 {
     caller.code = c;
     caller.offset = o;
     up = NULL;
     down = NULL;
     vm->call_stack = this;
+    vm->reg.flow = reg_info;
+
     if (unlikely(vm->vm_call(c, o, id) == false))
     {
         VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
@@ -256,6 +259,7 @@ frame::~frame()
 
     if (up != NULL)
     {
+        vm->reg.flow = up->reg_info;
         up->down = NULL;
     }
     vm->call_stack = up;
@@ -273,7 +277,7 @@ int frame::run(void)
 {
     int32_t offset = 0;
     int rest = running->count;
-    LOGT("running : %d - %d", offset, rest);
+    LOGT("running : %lld - %d - %d @ %d - %d", (long long)id, running->id, depth, offset, rest);
     const code_t* cur = running->codes + offset;
     reason = END;
     while (rest > 0)
@@ -493,27 +497,9 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         vm->exit = true;
         reason = EXIT;
         return 0;
-    case CODE_CALL:
-        {
-            int32_t id = inst.a3;
-            if (unlikely(id < 0))
-            {
-                id = id & 0xFFFF;
-                code_t* p = (code_t*)extra;
-                id += (p->a3 << 16);
-                next += 1;
-            }
-            if (unlikely(vm->call(id, inst, offset) == false))
-            {
-                VM_ERROR(ERR_RUNTIME, inst, offset, "call function : %d ERROR", id);
-                return 0;
-            }
-            return next;
-        }
-        break;
     case CODE_RET:
         reason = RET;
-        return 0;
+        return vm_ops[CODE_RET - CODE_TRAP](vm, inst, offset, extra);
     default:
         if (likely(code >= CODE_TRAP))
         {

@@ -34,6 +34,7 @@ public:
     regvm_src_location* cur     = NULL;
 
     const int64_t       id;
+    const int           reg_info;
 
     enum REASON
     {

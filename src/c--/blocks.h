@@ -16,6 +16,8 @@ public:
 
     struct var
     {
+        var(const selector::reg& r, int a, uint64_t i) : reg(r), attr(a), id(i) {}
+
         selector::reg   reg;
         const int       attr;
         const uint64_t  id;

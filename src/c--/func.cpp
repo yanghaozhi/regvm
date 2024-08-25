@@ -17,7 +17,7 @@
 
 
 
-func::func(parser* p) : id(p->func_id++), parse(p), insts(&instss), regs(p->regs), scopes(insts, regs)
+func::func(parser* p, const std::string_view& n) : id(p->func_id++), name(n), parse(p), insts(&instss), regs(p->regs), scopes(insts, regs)
 {
 }
 
@@ -277,6 +277,11 @@ selector::reg func::token_2_reg(const token& tok)
                     INST(LOAD, v->reg, n, 0);
                     return v->reg;
                 });
+            if ((v == NULL) || (v->reg.ptr == NULL))
+            {
+                COMPILE_ERROR(parse, "Can NOT find var : %s at func %d", VIEW(tok.name), id);
+                return selector::reg();
+            }
             return v->reg;
         }
         break;

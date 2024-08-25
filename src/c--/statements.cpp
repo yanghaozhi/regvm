@@ -514,7 +514,7 @@ const char* decl_func::go2(const char* src, const token* toks, int count, func::
     }
     else
     {
-        cur = &p->funcs.emplace(var.name, p).first->second;
+        cur = &p->funcs.try_emplace(var.name, p, var.name).first->second;
 
         cur->rets.emplace_back(var);
 
