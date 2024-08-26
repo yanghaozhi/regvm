@@ -16,13 +16,13 @@ var::var(uint8_t t, uint64_t i) :
     type(t),
     id(i)
 {
-    LOGD("create var %p - %d", this, ref);
+    LOGD("create var %016llx - %d - %p", (long long)id, ref, this);
     value.uint = 0;
 }
 
 var::~var()
 {
-    LOGD("delete var %p - %d", this, ref);
+    LOGD("delete var %016llx - %d - %p", (long long)id, ref, this);
     if (reg != NULL)
     {
         reg->set_from(NULL);
@@ -109,8 +109,9 @@ bool var::release(void) const
     if (ref == 0)
     {
         //delete this;
-        this->~var();
-        free((void*)this);
+        delete this;
+        //this->~var();
+        //free((void*)this);
     }
 
     return false;

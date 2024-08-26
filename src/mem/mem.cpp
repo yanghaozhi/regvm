@@ -60,7 +60,7 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
             return false;
         }
         calls.pop_back();
-        cur_call = calls.back();
+        cur_call = (calls.empty() == false) ? calls.back() : 0;
 
         auto first = vars.lower_bound(id);
         auto last = first;

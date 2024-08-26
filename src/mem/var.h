@@ -20,7 +20,7 @@ private:
 
 public:
     var(uint8_t type, uint64_t id);
-    ~var();
+    virtual ~var();
 
     const uint16_t      type;
 
