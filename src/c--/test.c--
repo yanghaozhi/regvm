@@ -43,4 +43,5 @@ int test1(int a, int b)
 //    echo(m);
 //}
 
-test1(10, 20);
+int n = test1(10, 20);
+echo(n);

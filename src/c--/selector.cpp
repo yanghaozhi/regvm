@@ -39,13 +39,18 @@ bool selector::bind(const std::string_view& name, const selector::reg& v)
     }
 
     data& r = datas[v.ptr->id];
-    if (r.status != FREED)
+    switch (r.status)
     {
+    case FREED:
+        r.status = BINDED;
+        [[fallthrough]];
+    case FIXED:
+        break;
+    default:
         LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
         return false;
     }
 
-    r.status = BINDED;
     r.var = name;
     int d = binds.add(v);
     if (d < 0)
@@ -92,13 +97,18 @@ bool selector::lock(const selector::reg& v)
     }
 
     data& r = datas[v.ptr->id];
-    if (r.status != FREED)
+    switch (r.status)
     {
+    case FREED:
+        r.status = LOCKED;
+        [[fallthrough]];
+    case FIXED:
+        break;
+    default:
         LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
         return false;
     }
 
-    r.status = LOCKED;
     r.var = "";
     int d = locks.add(v);
     if (d < 0)

@@ -506,13 +506,29 @@ template <typename T, typename O> selector::reg pop_and_calc(func* p, T& toks, O
     return b;
 }
 
-const char* func::call(const char* src, func& sub, int retc, std::vector<selector::reg>& rets)
+const char* func::call(const char* src, const std::string_view& name, int& ret)
 {
-    if ((size_t)retc > sub.rets.size())
+    auto it_func = parse->funcs.find(name);
+    if (it_func != parse->funcs.end())
     {
-        COMPILE_ERROR(parse, "Call function %d ERROR, want %d rets, but only %zd give", sub.id, retc, sub.rets.size());
-        return NULL;
+        return call(src, it_func->second, ret);
     }
+    auto it_cmd = parse->cmds.find(name);
+    if (it_cmd != parse->cmds.end())
+    {
+        return it_cmd->second(src, this, name, ret);
+    }
+    COMPILE_ERROR(parse, "Can NOT find function : %s to call !!!", VIEW(name));
+    return NULL;
+}
+
+const char* func::call(const char* src, func& sub, int& ret)
+{
+    //if ((size_t)retc > sub.rets.size())
+    //{
+    //    COMPILE_ERROR(parse, "Call function %d ERROR, want %d rets, but only %zd give", sub.id, retc, sub.rets.size());
+    //    return NULL;
+    //}
 
     int sub_info = 128 + rets.size() + args.size() + 1;
 
@@ -543,11 +559,7 @@ const char* func::call(const char* src, func& sub, int retc, std::vector<selecto
 
     INST(CALL, sub_info, sub.id);
 
-    for (int j = 0; j < retc; j++)
-    {
-        auto n = regs.tmp();
-        INST(MOVE, n, sub_info + j + 1, sub.rets[j].type);
-    }
+    ret = sub_info + 1;
 
     return src;
 }
@@ -605,16 +617,16 @@ const char* func::expression(const char* src, selector::reg& reg, int* end, cons
                 *end = op.info.type;
             }
             return src;
-        //case '(':   //函数调用
-        //    {
-        //        std::vector<selector::reg> rets;
-        //        src = call_func(src, toks.back(), rets);
-        //        if (rets.size() >= 1)
-        //        {
-        //            toks.back().reg = rets[0];
-        //        }
-        //    }
-        //    break;
+        case '(':   //函数调用
+            {
+                int ret = -1;
+                src = call(src, toks.back().name, ret);
+                if (ret >= 0)
+                {
+                    toks.back().reg = regs.fixed(ret);
+                }
+            }
+            break;
         default:
             {
                 if (ops.size() > 0)

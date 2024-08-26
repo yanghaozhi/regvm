@@ -63,6 +63,13 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, fu
     src = f->expression(src, v);
     if (src == NULL) return NULL;
 
+    if ((int)v > 128)
+    {
+        auto n = f->regs.tmp();
+        INST(MOVE, n, v, var.type);
+        n = v;
+    }
+
     auto r = f->scopes.bind_var(var.name, v, var.attr);
     if (r == NULL)
     {
@@ -92,20 +99,8 @@ call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 
 const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
-    std::vector<selector::reg> rets;
-    auto it_func = p->funcs.find(toks[0].name);
-    if (it_func != p->funcs.end())
-    {
-        std::vector<selector::reg> rets;
-        return f->call(src, it_func->second, 0, rets);
-    }
-    auto it_cmd = p->cmds.find(toks[0].name);
-    if (it_cmd != p->cmds.end())
-    {
-        return it_cmd->second(src, f, toks[0], rets);
-    }
-    COMPILE_ERROR(p, "Can NOT find function : %s to call !!!", VIEW(toks[0].name));
-    return NULL;
+    int ret;
+    return f->call(src, toks[0].name, ret);
 }
 
 ret_func::ret_func(parser* p) : parser::op(p)

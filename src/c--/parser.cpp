@@ -343,7 +343,7 @@ void parser::show_error(const char* fmt, ...)
     fprintf(stderr, "\n\t%s \e[0m\n", VIEW(line));
 }
 
-const char* parser::cmd_echo(const char* src, func* f, const token& name, std::vector<selector::reg>& rets)
+const char* parser::cmd_echo(const char* src, func* f, const std::string_view& name, int& ret)
 {
     insts_t* insts = f->insts;
     std::vector<int> args;

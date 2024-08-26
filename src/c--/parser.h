@@ -47,7 +47,7 @@ public:
     int32_t                         func_id     = 0;
     std::unordered_map<std::string_view, func>  funcs;
 
-    typedef const char* (*cmd_t)(const char* src, func* f, const token& name, std::vector<selector::reg>& rets);
+    typedef const char* (*cmd_t)(const char* src, func* f, const std::string_view& name, int& ret);
     std::unordered_map<std::string_view, cmd_t> cmds;
 
 private:
@@ -73,6 +73,6 @@ private:
 
     void find_line_ending(const char* src);
 
-    static const char* cmd_echo(const char* src, func* f, const token& name, std::vector<selector::reg>& rets);
+    static const char* cmd_echo(const char* src, func* f, const std::string_view& name, int& ret);
 };
 
