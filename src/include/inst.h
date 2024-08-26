@@ -188,7 +188,13 @@ template <> struct instv<CODE_RET> : public inst
     virtual int count(void) const           {return 1;};
     virtual bool scan(const char* src)      {return true;};
     virtual void print(FILE* fp) const      {fprintf(fp, "%-8s\n", name);};
-    virtual void print_bin(FILE* fp) const  {fprintf(fp, "%-8s\n", name);};
+    virtual void print_bin(FILE* fp) const
+    {
+        code_t code;
+        code.id = CODE_RET;
+        code.a3 = 0;
+        fwrite(&code, sizeof(code_t), 1, fp);
+    };
     virtual void print_asm(FILE* fp) const  {fprintf(fp, "%-8s\n", name);};
 };
 template struct instv<CODE_RET>;

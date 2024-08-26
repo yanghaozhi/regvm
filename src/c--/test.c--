@@ -1,5 +1,6 @@
 int test1(int a, int b)
 {
+    echo(a, b);
     return a + b;
 }
 
