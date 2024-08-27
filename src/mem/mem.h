@@ -29,6 +29,7 @@ public:
     var* get(uint64_t id) const;
 
     bool del(uint64_t id);
+    bool del(uint64_t first, uint64_t last);
 
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 

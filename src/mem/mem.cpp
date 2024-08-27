@@ -143,23 +143,24 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     case 4:     //只在顶层scope（全局变量）中查找或新建
         break;
     case 5:
-        {
-            auto& e = vm->reg.id(code.b);
-            auto vid = VM->var_id(e.value.uint);
-            switch (e.type)
-            {
-            case TYPE_STRING:
-                return 0;
-            case TYPE_ADDR:
-                return VM->del(vid);
-            default:
-                //auto vm = this;
-                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
-                vm->fatal = true;
-                return 0;
-            }
-        }
-        break;
+        return VM->del(code.a, code.b);
+        //{
+        //    //auto& e = vm->reg.id(code.b);
+        //    //auto vid = VM->var_id(e.value.uint);
+        //    //switch (e.type)
+        //    //{
+        //    //case TYPE_STRING:
+        //    //    return 0;
+        //    //case TYPE_ADDR:
+        //    //    return VM->del(vid);
+        //    //default:
+        //    //    //auto vm = this;
+        //    //    //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+        //    //    vm->fatal = true;
+        //    //    return 0;
+        //    //}
+        //}
+        //break;
     default:
         return 0;
     }
@@ -247,6 +248,17 @@ bool regvm_mem::del(uint64_t id)
     return false;
 }
 
+bool regvm_mem::del(uint64_t first, uint64_t last)
+{
+    auto f = vars.lower_bound(first);
+    if (unlikely(f == vars.end()))
+    {
+        return false;
+    }
+    auto l = vars.lower_bound(last);
+    vars.erase(f, l);
+    return true;
+}
 //regvm_mem::context::context(int64_t f) : frame(f)
 //{
 //    scopes.emplace_front(0);
