@@ -50,6 +50,7 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
     {
         cur_call = id;
         calls.push_back(id);
+        return true;
     }
     else
     {
@@ -62,17 +63,8 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
         calls.pop_back();
         cur_call = (calls.empty() == false) ? calls.back() : 0;
 
-        auto first = vars.lower_bound(id);
-        auto last = first;
-        while ((last != vars.end()) && (last->first & 0xFFFFFFFFFFFF0000) == (uint64_t)id)
-        {
-            last->second->release();
-            ++last;
-        }
-        vars.erase(first, last);
+        return del(id, id + 0xFFFF);
     }
-
-    return true;
 }
 
 int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
@@ -207,6 +199,14 @@ regvm_mem::regvm_mem()
 {
 }
 
+regvm_mem::~regvm_mem()
+{
+    for (auto& it : vars)
+    {
+        it.second->release();
+    }
+}
+
 var* regvm_mem::add(uint64_t id, const int type)
 {
     auto v = new var(type, id);
@@ -256,6 +256,10 @@ bool regvm_mem::del(uint64_t first, uint64_t last)
         return false;
     }
     auto l = vars.lower_bound(last);
+    for (auto it = f; it != l; ++it)
+    {
+        it->second->release();
+    }
     vars.erase(f, l);
     return true;
 }

@@ -72,7 +72,7 @@ struct regv
     uvalue                  value;
     mutable var*            from;
     uint8_t                 type;
-    int8_t                  idx;
+    uint8_t                 idx;
     mutable bool            need_free;
 
     inline bool clear()

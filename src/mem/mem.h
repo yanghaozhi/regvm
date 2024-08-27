@@ -21,6 +21,7 @@ public:
     typedef var     var_t;
 
     regvm_mem();
+    virtual ~regvm_mem();
 
     bool store();
 

@@ -321,6 +321,7 @@ inline bool literally_calc(func* p, int op, const token& a, const selector::reg&
     {
     case selector::BINDED:
     case selector::LOCKED:
+    case selector::FIXED:
         return false;
     default:
         break;
@@ -415,6 +416,7 @@ inline selector::reg calc_a_b(func* p, int op, const token& a, const token& b)
             {
             case selector::BINDED:
             case selector::LOCKED:
+            case selector::FIXED:
                 break;
             default:
                 INST(CALC, v1, v, calc_op(op));
@@ -623,7 +625,9 @@ const char* func::expression(const char* src, selector::reg& reg, int* end, cons
                 src = call(src, toks.back().name, ret);
                 if (ret >= 0)
                 {
-                    toks.back().reg = regs.fixed(ret);
+                    auto n = regs.tmp();
+                    INST(MOVE, n, ret, 0);
+                    toks.back().reg = n;
                 }
             }
             break;

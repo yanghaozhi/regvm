@@ -271,7 +271,6 @@ int vm_CODE_CALL(regvm* vm, code_t code, int offset, const void* extra)
     }
 
     return next;
-    return 1;
 }
 
 int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra)

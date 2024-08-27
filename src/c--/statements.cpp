@@ -63,13 +63,6 @@ const char* decl_var_init::go2(const char* src, const token* toks, int count, fu
     src = f->expression(src, v);
     if (src == NULL) return NULL;
 
-    if ((int)v > 128)
-    {
-        auto n = f->regs.tmp();
-        INST(MOVE, n, v, var.type);
-        n = v;
-    }
-
     auto r = f->scopes.bind_var(var.name, v, var.attr);
     if (r == NULL)
     {
