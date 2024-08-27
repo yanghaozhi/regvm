@@ -34,7 +34,6 @@ public:
     regvm_src_location* cur     = NULL;
 
     const int64_t       id;
-    const int           reg_info;
 
     enum REASON
     {
@@ -67,12 +66,14 @@ private:
     }                   caller;
     bool                valid   = true;
     enum REASON         reason;
+    int                 call_info;
 
     inline int64_t gen_id(void) const;
 //    scope&              globals;
 //    std::list<scope>    scopes;
 
     inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
+    inline bool set_call_info(int info);
 };
 
 

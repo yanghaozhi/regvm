@@ -207,7 +207,7 @@ bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
 }
 
 frame::frame(frame& cur, func* f, code_t c, int o) :
-    depth(cur.depth + 1), running(f), id(gen_id()), reg_info(c.a), vm(cur.vm)
+    depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm)
 {
     caller.code = c;
     caller.offset = o;
@@ -216,6 +216,7 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
     {
         VM_ERROR(ERR_FUNCTION_CALL, c, o, "stack is OVERFLOWED !!! : %d", cur.depth);
         valid = false;
+        return;
     }
 
     up = vm->call_stack;
@@ -223,7 +224,7 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
     up->down = this;
 
     vm->call_stack = this;
-    vm->reg.flow = reg_info;
+    set_call_info(c.a);
 
     if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
     {
@@ -233,14 +234,14 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
 }
 
 frame::frame(regvm* v, func* f, code_t c, int o) :
-    depth(0), running(f), id(gen_id()), reg_info(128), vm(v)
+    depth(0), running(f), id(gen_id()), vm(v)
 {
     caller.code = c;
     caller.offset = o;
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    vm->reg.flow = reg_info;
+    set_call_info(128);
 
     if (unlikely(vm->vm_call(c, o, id) == false))
     {
@@ -259,10 +260,27 @@ frame::~frame()
 
     if (up != NULL)
     {
-        vm->reg.flow = up->reg_info;
+        vm->reg.flow = up->call_info - 128;
         up->down = NULL;
     }
     vm->call_stack = up;
+}
+
+inline bool frame::set_call_info(int info)
+{
+    auto& next = vm->reg.id(info);
+    int last = vm->reg.flow + ((next.value.uint >> 8) & 0xFF) + ((next.value.uint & 0xFF)) + info;
+    if (unlikely(last > 0xFF))
+    {
+        LOGT("last reg : %d", last);
+        call_info = 128;
+    }
+    else
+    {
+        call_info = info;
+    }
+    vm->reg.flow = call_info - 128;
+    return true;
 }
 
 int64_t frame::gen_id(void) const
