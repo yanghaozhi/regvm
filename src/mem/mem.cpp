@@ -253,7 +253,7 @@ bool regvm_mem::del(uint64_t first, uint64_t last)
     auto f = vars.lower_bound(first);
     if (unlikely(f == vars.end()))
     {
-        return false;
+        return true;
     }
     auto l = vars.lower_bound(last);
     for (auto it = f; it != l; ++it)

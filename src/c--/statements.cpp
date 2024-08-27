@@ -146,6 +146,11 @@ const char* assign_var::go(const char* src, const token* toks, int count)
         };
     int attr = 0;
     auto k = f->scopes.find_var(name, attr, reload);
+    if (unlikely(k == NULL))
+    {
+        COMPILE_ERROR(p, "Can NOT find var : %s", VIEW(name));
+        return NULL;
+    }
 
     selector::reg v;
     src = f->expression(src, v);

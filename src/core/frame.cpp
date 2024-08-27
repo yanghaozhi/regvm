@@ -260,7 +260,7 @@ frame::~frame()
 
     if (up != NULL)
     {
-        vm->reg.flow = up->call_info - 128;
+        vm->reg.flow = up->flow;
         up->down = NULL;
     }
     vm->call_stack = up;
@@ -274,12 +274,14 @@ inline bool frame::set_call_info(int info)
     {
         LOGT("last reg : %d", last);
         call_info = 128;
+        vm->reg.flow = 0;
     }
     else
     {
         call_info = info;
+        vm->reg.flow += call_info - 128;
     }
-    vm->reg.flow = call_info - 128;
+    flow = vm->reg.flow;
     return true;
 }
 
@@ -295,7 +297,7 @@ int frame::run(void)
 {
     int32_t offset = 0;
     int rest = running->count;
-    LOGT("running : %lld - %d - %d @ %d - %d", (long long)id, running->id, depth, offset, rest);
+    LOGT("running : %lld - %d - %d @ %d - %d : %d", (long long)id, running->id, depth, offset, rest, vm->reg.flow);
     const code_t* cur = running->codes + offset;
     reason = END;
     while (rest > 0)

@@ -67,6 +67,7 @@ private:
     bool                valid   = true;
     enum REASON         reason;
     int                 call_info;
+    int                 flow;
 
     inline int64_t gen_id(void) const;
 //    scope&              globals;
