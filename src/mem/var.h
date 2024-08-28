@@ -26,6 +26,7 @@ public:
 
     const uint64_t      id;
 
+    int                 reload  = -1;
 
     virtual bool set_val(const core::regv& reg) override;
     virtual bool set_reg(const core::regv* reg) const override;

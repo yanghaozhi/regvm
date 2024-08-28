@@ -48,6 +48,16 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 
     if (id > 0)
     {
+        scan_local_vars(cur_call, [](var* v)
+            {
+                if (likely(v->reg != NULL))
+                {
+                    v->reg->store();
+                    v->reload = v->reg->idx;
+                    LOGT("auto store %d -> %lld", v->reg->idx, (long long)v->id);
+                }
+            });
+
         cur_call = id;
         calls.push_back(id);
         return true;
@@ -62,6 +72,17 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
         }
         calls.pop_back();
         cur_call = (calls.empty() == false) ? calls.back() : 0;
+
+        scan_local_vars(cur_call, [this](var* v)
+            {
+                if (likely(v->reload >= 0))
+                {
+                    auto& r = reg.id(v->reload);
+                    LOGT("auto reload : %d <- %lld", v->reg->idx, (long long)v->id);
+                    r.load(v);
+                    v->reload = -1;
+                }
+            });
 
         return del(id, id + 0xFFFF);
     }
@@ -308,6 +329,20 @@ void regvm_mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) cons
     //        s.dump(cb, arg, info);
     //    }
     //}
+}
+
+template <typename F> inline void regvm_mem::scan_local_vars(uint64_t id, F&& func)
+{
+    auto f = vars.lower_bound(id);
+    if (unlikely(f == vars.end()))
+    {
+        return;
+    }
+    auto l = vars.lower_bound(id + 0x10000);
+    for (auto it = f; it != l; ++it)
+    {
+        func(it->second);
+    }
 }
 
 #ifdef __cplusplus

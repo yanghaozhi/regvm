@@ -344,14 +344,25 @@ template <typename F> inline void cmd_args(const std::vector<int>& args, const i
 void instv<CODE_ECHO>::print(FILE* fp) const
 {
     fprintf(fp, "%-8s %02X\t%d", name, id, (int)args.size());
-    for (auto& it : args)
+    switch (args.size())
     {
-        fprintf(fp, "\t%d", it);
-    }
-    fprintf(fp, "\n");
-    if (args.size() == 0)
-    {
+    case 0:
         LOGW("Should NOT echo with 0 args !!!");
+        fprintf(fp, "\t%d\t%d\n", 0, 0);
+        break;
+    case 1:
+        fprintf(fp, "\t%d\t%d\n", args[0], 0);
+        break;
+    case 2:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+        break;
+    default:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+        cmd_args(args, 2, [fp](int a, int b, int c)
+            {
+                fprintf(fp, "DATA     \t%d\t%d\t%d\n", a, b, c);
+            });
+        break;
     }
 }
 
@@ -395,25 +406,14 @@ void instv<CODE_ECHO>::print_bin(FILE* fp) const
 void instv<CODE_ECHO>::print_asm(FILE* fp) const
 {
     fprintf(fp, "%-8s %d", name, (int)args.size());
-    switch (args.size())
+    for (auto& it : args)
     {
-    case 0:
+        fprintf(fp, "\t%d", it);
+    }
+    fprintf(fp, "\n");
+    if (args.size() == 0)
+    {
         LOGW("Should NOT echo with 0 args !!!");
-        fprintf(fp, "\t%d\t%d\n", 0, 0);
-        break;
-    case 1:
-        fprintf(fp, "\t%d\t%d\n", args[0], 0);
-        break;
-    case 2:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
-        break;
-    default:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
-        cmd_args(args, 2, [fp](int a, int b, int c)
-            {
-                fprintf(fp, "DATA     %d\t%d\t%d\n", a, b, c);
-            });
-        break;
     }
 }
 

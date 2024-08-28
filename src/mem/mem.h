@@ -59,6 +59,7 @@ private:
         return cur_call + id;
     }
 
+    template <typename F> inline void scan_local_vars(uint64_t id, F&& func);
 };
 
 }
