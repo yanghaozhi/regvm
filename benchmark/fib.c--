@@ -1,0 +1,17 @@
+int n = 35;
+
+int calc(int n)
+{
+    if (n <= 2)
+    {
+        return 1;
+    }
+    else
+    {
+        int a = calc(n - 1);
+        int b = calc(n - 2);
+        return a + b;
+    }
+}
+
+echo(calc(n));

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILE=pi
+FILE=${1:-pi}
 
 cd ../src/
 
@@ -13,7 +13,7 @@ declare -A scripts=(["lua"]="lua" ["python3"]="py" ["qjs"]="js" ["duk"]="js" ["n
 for k in "${!scripts[@]}"
 do
     which $k > /dev/null
-    if [ $? -eq 0 ]
+    if [ $? -eq 0 ] && [ -f ${FILE}.${scripts[$k]} ]
     then
         echo
         echo
@@ -23,12 +23,15 @@ do
 done
 
 
-echo
-echo
-echo test vasm ...
-time ../out/vasm ./pi.vasm -r
+declare -A vm=(["vasm"]="vasm" ["vcc"]="c--")
+for k in "${!vm[@]}"
+do
+    if [ -f ${FILE}.${vm[$k]} ]
+    then
+        echo
+        echo
+        echo testing $k ${FILE}.${vm[$k]} ...
+        time ../out/$k ${FILE}.${vm[$k]} -r
+    fi
+done
 
-echo
-echo
-echo test vcc ...
-time ../out/vcc ./pi.c-- -r

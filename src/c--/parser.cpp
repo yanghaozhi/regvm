@@ -102,8 +102,14 @@ const char* parser::find_statement(const char* src, func* f, trie_tree& cur, tok
         auto it = cur.next.find(tok.info.type);
         if (it == cur.next.end())
         {
-            //LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
-            return (cur.func != NULL) ? cur.func->go(src, toks, idx) : NULL;
+            if (cur.func == NULL)
+            {
+                //LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
+                return NULL;
+            }
+            cur.func->f = f;
+            cur.func->insts = f->insts;
+            return cur.func->go(src, toks, idx);
         }
 
         const char* r = find_statement(src, f, it->second, toks, idx + 1, max);
