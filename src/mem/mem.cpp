@@ -78,7 +78,7 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
                 if (likely(v->reload >= 0))
                 {
                     auto& r = reg.id(v->reload);
-                    LOGT("auto reload : %d <- %lld", v->reg->idx, (long long)v->id);
+                    LOGT("auto reload : %d <- %lld", v->reload, (long long)v->id);
                     r.load(v);
                     v->reload = -1;
                 }
