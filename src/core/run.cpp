@@ -443,10 +443,10 @@ int vm_CODE_LPUSH(regvm* vm, code_t code, int offset, const void* extra)
     switch (code.b)
     {
     case 0:
-        l.value.list_v->push_back(CRTP_CALL(vm_var, code.c));
+        l.value.list_v->push_back(vm_ext_ops.var_create_from_reg(vm, code.c));
         break;
     case 1:
-        l.value.list_v->push_front(CRTP_CALL(vm_var, code.c));
+        l.value.list_v->push_front(vm_ext_ops.var_create_from_reg(vm, code.c));
         break;
     default:
         return 0;
@@ -485,7 +485,7 @@ int vm_CODE_LINSERT(regvm* vm, code_t code, int offset, const void* extra)
     const int idx = list_idx(vm, l.value.list_v, code.b);
     if (likely(idx > 0))
     {
-        l.value.list_v->emplace(l.value.list_v->begin() + idx, CRTP_CALL(vm_var, code.c));
+        l.value.list_v->emplace(l.value.list_v->begin() + idx, vm_ext_ops.var_create_from_reg(vm, code.c));
         return 1;
     }
     else
@@ -548,7 +548,7 @@ int vm_CODE_DSET(regvm* vm, code_t code, int offset, const void* extra)
     auto it = v.value.dict_v->find(k.value.str);
     if (it == v.value.dict_v->end())
     {
-        v.value.dict_v->emplace(k.value.str, CRTP_CALL(vm_var, code.c));
+        v.value.dict_v->emplace(k.value.str, vm_ext_ops.var_create_from_reg(vm, code.c));
     }
     else
     {

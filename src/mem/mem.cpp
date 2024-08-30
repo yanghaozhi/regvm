@@ -10,82 +10,106 @@
 #include "../core/vm.h"
 
 
-#define VM static_cast<regvm_mem*>(vm)
+#define VM static_cast<regvm_mem*>(vm->exts[g_idx])
 
 using namespace ext;
 
-bool regvm_mem::vm_init()
+static int g_idx = -1;
+
+void mem_init(void)
 {
+    vm_add_ext(NULL, regvm_mem::init, regvm_mem::exit);
+}
+
+bool regvm_mem::init(regvm* vm, int idx, void* arg)
+{
+    vm->exts[idx] = new regvm_mem();
+    g_idx = idx;
+#define REG_OP(x)   vm_code_ops[CODE_##x - CODE_TRAP] = regvm_mem::vm_CODE_##x;
+        REG_OP(LOAD);
+        REG_OP(STORE);
+        //REG_OP(GLOBAL);
+        //REG_OP(NEW);
+        //REG_OP(BLOCK);
+#undef REG_OP
+    vm_ext_ops.var_create = regvm_mem::var_create;
+    vm_ext_ops.var_create_from_reg = regvm_mem::var_create_from_reg;
+    vm_ext_ops.var_set_val = var::set_val;
+    vm_ext_ops.var_set_reg = var::set_reg;
+    vm_ext_ops.var_release = var::release;
     return true;
 }
 
-bool regvm_mem::vm_exit()
+bool regvm_mem::exit(regvm* vm, int idx, void* arg)
 {
-    //frames.clear();
+    delete (regvm_mem*)vm->exts[idx];
+    vm->exts[idx] = NULL;
     return true;
 }
 
-core::var* regvm_mem::vm_var(int id)
+core::var* regvm_mem::var_create_from_reg(regvm* vm, int id)
 {
-    auto& r = reg.id(id);
+    auto& r = vm->reg.id(id);
     auto v = new var(r.type, (uint64_t)r);
     v->store_from(r);
     return v;
 }
 
-core::var* regvm_mem::vm_var(int type, uint64_t id)
+core::var* regvm_mem::var_create(regvm* vm, int type, uint64_t id)
 {
     return new var(type, id); 
 }
 
 bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 {
-    if (unlikely(id == 0))
-    {
-        cur_call = 0;
-        return true;
-    }
+    //TODO
+    return 0;
+    //if (unlikely(id == 0))
+    //{
+    //    cur_call = 0;
+    //    return true;
+    //}
 
-    if (id > 0)
-    {
-        scan_local_vars(cur_call, [](var* v)
-            {
-                if (likely(v->reg != NULL))
-                {
-                    v->reg->store();
-                    v->reload = v->reg->idx;
-                    LOGT("auto store %d -> %lld", v->reg->idx, (long long)v->id);
-                }
-            });
+    //if (id > 0)
+    //{
+    //    scan_local_vars(cur_call, [](var* v)
+    //        {
+    //            if (likely(v->reg != NULL))
+    //            {
+    //                v->reg->store();
+    //                v->reload = v->reg->idx;
+    //                LOGT("auto store %d -> %lld", v->reg->idx, (long long)v->id);
+    //            }
+    //        });
 
-        cur_call = id;
-        calls.push_back(id);
-        return true;
-    }
-    else
-    {
-        id = -id;
-        if (unlikely(id != calls.back()))
-        {
-            LOGE("exist call %lld, but it's NOT match %lld", (long long)id, (long long)calls.back());
-            return false;
-        }
-        calls.pop_back();
-        cur_call = (calls.empty() == false) ? calls.back() : 0;
+    //    cur_call = id;
+    //    calls.push_back(id);
+    //    return true;
+    //}
+    //else
+    //{
+    //    id = -id;
+    //    if (unlikely(id != calls.back()))
+    //    {
+    //        LOGE("exist call %lld, but it's NOT match %lld", (long long)id, (long long)calls.back());
+    //        return false;
+    //    }
+    //    calls.pop_back();
+    //    cur_call = (calls.empty() == false) ? calls.back() : 0;
 
-        scan_local_vars(cur_call, [this](var* v)
-            {
-                if (likely(v->reload >= 0))
-                {
-                    auto& r = reg.id(v->reload);
-                    LOGT("auto reload : %d <- %lld", v->reload, (long long)v->id);
-                    r.load(v);
-                    v->reload = -1;
-                }
-            });
+    //    scan_local_vars(cur_call, [this](var* v)
+    //        {
+    //            if (likely(v->reload >= 0))
+    //            {
+    //                auto& r = reg.id(v->reload);
+    //                LOGT("auto reload : %d <- %lld", v->reload, (long long)v->id);
+    //                r.load(v);
+    //                v->reload = -1;
+    //            }
+    //        });
 
-        return del(id, id + 0xFFFF);
-    }
+    //    return del(id, id + 0xFFFF);
+    //}
 }
 
 int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
@@ -148,7 +172,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
             auto v = VM->get(vid);
             if (v != NULL)
             {
-                return (v->type == code.a) ? true : false;
+                return (v->type() == code.a) ? true : false;
             }
             v = VM->add(vid, code.a);
             return (v != NULL) ? 1 : 0;
@@ -199,22 +223,6 @@ int regvm_mem::vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* ext
 
     return 1;
 }
-
-struct mem_init
-{
-    mem_init()
-    {
-#define REG_OP(x)   vm_ops[CODE_##x - CODE_TRAP] = regvm_mem::vm_CODE_##x;
-        REG_OP(LOAD);
-        REG_OP(STORE);
-        //REG_OP(GLOBAL);
-        //REG_OP(NEW);
-        //REG_OP(BLOCK);
-#undef REG_OP
-    }
-};
-
-static mem_init     s_init;
 
 regvm_mem::regvm_mem()
 {
@@ -356,7 +364,7 @@ bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
     memset(&info, 0, sizeof(info));
     cb(arg, NULL);
 
-    auto m = static_cast<regvm_mem*>(vm);
+    auto m = VM;
     if (m != NULL)
     {
         m->dump(vm, cb, arg, &info);

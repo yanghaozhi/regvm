@@ -10,12 +10,15 @@
 
 #include "log.h"
 
+#define VAR     static_cast<ext::var*>(var)
+#define CVAR    static_cast<const ext::var*>(var)
+
 using namespace ext;
 
 var::var(uint8_t t, uint64_t i) :
-    type(t),
     id(i)
 {
+    typev = t;
     LOGD("create var %016llx - %d - %p", (long long)id, ref, this);
     value.uint = 0;
 }
@@ -27,17 +30,17 @@ var::~var()
     {
         reg->set_from(NULL);
     }
-    free_uvalue(type, value);
+    free_uvalue(typev, value);
 }
 
 bool var::set_val(const core::regv& reg)
 {
-    if (type != reg.type)
+    if (typev != reg.type)
     {
         return false;
     }
 
-    switch (type)
+    switch (typev)
     {
 #define AGGREGATE(T, V, CP, ...)                    \
     case T:                                         \
@@ -45,7 +48,7 @@ bool var::set_val(const core::regv& reg)
         {                                           \
             if (value.V != NULL)                    \
             {                                       \
-                core::free_uvalue(type, value);     \
+                core::free_uvalue(typev, value);    \
             }                                       \
             if (reg.need_free == true)              \
             {                                       \
@@ -97,31 +100,11 @@ bool var::set_reg(const core::regv* new_reg) const
     return true;
 }
 
-bool var::release(void) const
-{
-    if (--ref > 0)
-    {
-        LOGD("var %p ref : %d", this, ref);
-        return true;
-    }
-    LOGD("var %p ref : %d", this, ref);
-
-    if (ref == 0)
-    {
-        //delete this;
-        delete this;
-        //this->~var();
-        //free((void*)this);
-    }
-
-    return false;
-}
-
 bool var::store_from(core::regv& r)
 {
     if (reg == &r) return r.store();
 
-    if (type != r.type)
+    if (typev != r.type)
     {
         return false;
     }

@@ -4,24 +4,60 @@
 
 #include "ext.h"
 
+#include <vector>
 
-vm_op_t      vm_ops[256 - CODE_TRAP]    = {NULL};
+
+struct regvm_ext
+{
+    void*   arg;
+    bool (*init)(regvm* vm, int idx, void* arg);
+    bool (*exit)(regvm* vm, int idx, void* arg);
+};
+std::vector<regvm_ext>  exts;
+
+vm_op_t                 vm_code_ops[256 - CODE_TRAP]    = {NULL};
+regvm_ext_op            vm_ext_ops;
 //vm_op_t*     vm_ops = vm_ops_impl;
 
 extern "C"
 {
 
+void vm_add_ext(void* arg, vm_ext_t init, vm_ext_t exit)
+{
+    exts.push_back({arg, init, exit});
+}
+
 struct regvm* regvm_init(void)
 {
-    auto vm = new REGVM_IMPL();
-    CRTP_CALL(vm_init);
+    //auto vm = new REGVM_IMPL();
+    //CRTP_CALL(vm_init);
+    const int s = sizeof(regvm) + sizeof(void*) * exts.size();
+    char* p = (char*)malloc(s);
+    memset(p, 0, s);
+    auto vm = new (p) regvm();
+
+    int i = 0;
+    for (auto& it : exts)
+    {
+        it.init(vm, i++, it.arg);
+    }
+
     return vm;
 }
 
 bool regvm_exit(struct regvm* vm)
 {
-    CRTP_CALL(vm_exit);
-    delete vm;
+    //CRTP_CALL(vm_exit);
+    //delete vm;
+    int i = 0;
+    for (auto& it : exts)
+    {
+        it.exit(vm, i++, it.arg);
+    }
+
+    vm->~regvm();
+    free(vm);
+
     return true;
 }
 
@@ -38,9 +74,9 @@ regvm::regvm() : reg()
 
 #define SET_1(name)                                                 \
     extern int vm_CODE_##name(regvm*, code_t, int, const void*);    \
-    if (vm_ops[CODE_##name - CODE_TRAP] == NULL)                    \
+    if (vm_code_ops[CODE_##name - CODE_TRAP] == NULL)               \
     {                                                               \
-        vm_ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;           \
+        vm_code_ops[CODE_##name - CODE_TRAP] = vm_CODE_##name;      \
     }
 #define SET_0(name)
 #define SET_OPS(func, name)     MLIB_CAT(SET_, func)(name); SET_NAME(name);

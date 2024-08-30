@@ -117,6 +117,10 @@ bool op_run(const std::string_view& name, const func* f, insts_t* insts)
         printf("\n\n");
     }
 
+
+    extern void mem_init(void);
+    mem_init();
+
     static auto vm = regvm_init();
     if (insts != NULL)
     {

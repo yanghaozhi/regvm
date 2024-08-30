@@ -226,11 +226,12 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
     vm->call_stack = this;
     set_call_info(c.a);
 
-    if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
-    {
-        VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
-        valid = false;
-    }
+    //TODO
+    //if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
+    //{
+    //    VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
+    //    valid = false;
+    //}
 }
 
 frame::frame(regvm* v, func* f, code_t c, int o) :
@@ -243,20 +244,22 @@ frame::frame(regvm* v, func* f, code_t c, int o) :
     vm->call_stack = this;
     set_call_info(128);
 
-    if (unlikely(vm->vm_call(c, o, id) == false))
-    {
-        VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
-        valid = false;
-    }
+    //TODO
+    //if (unlikely(vm->vm_call(c, o, id) == false))
+    //{
+    //    VM_ERROR(ERR_FUNCTION_CALL, c, o, "Can not get function info : %lu", id);
+    //    valid = false;
+    //}
 }
 
 frame::~frame()
 {
-    if (unlikely(vm->vm_call(caller.code, caller.offset, -id) == false))
-    {
-        VM_ERROR(ERR_FUNCTION_CALL, caller.code, caller.offset, "Can not get function info : %lu", id);
-        valid = false;
-    }
+    //TODO
+    //if (unlikely(vm->vm_call(caller.code, caller.offset, -id) == false))
+    //{
+    //    VM_ERROR(ERR_FUNCTION_CALL, caller.code, caller.offset, "Can not get function info : %lu", id);
+    //    valid = false;
+    //}
 
     if (up != NULL)
     {
@@ -519,11 +522,11 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         return 0;
     case CODE_RET:
         reason = RET;
-        return vm_ops[CODE_RET - CODE_TRAP](vm, inst, offset, extra);
+        return vm_code_ops[CODE_RET - CODE_TRAP](vm, inst, offset, extra);
     default:
         if (likely(code >= CODE_TRAP))
         {
-            auto f = vm_ops[code - CODE_TRAP];
+            auto f = vm_code_ops[code - CODE_TRAP];
             if (likely(f != NULL))
             {
                 int r = f(vm, inst, offset, extra);

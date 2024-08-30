@@ -9,13 +9,16 @@
 #include <debug.h>
 #include <ext.h>
 
+#include <vm.h>
+
+extern void mem_init(void);
 
 namespace ext
 {
 
 class var;
 
-struct regvm_mem : public regvm
+struct regvm_mem : public regvm::ext
 {
 public:
     typedef var     var_t;
@@ -34,16 +37,13 @@ public:
 
     void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
 
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
-    virtual ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) override;
+    static bool init(regvm* vm, int idx, void* arg);
+    static bool exit(regvm* vm, int idx, void* arg);
 
-    CRTP_FUNC(vm_init,  bool, 0);
-    CRTP_FUNC(vm_exit,  bool, 0);
-    CRTP_FUNC(vm_call,  bool, 3, code_t, int, int64_t);
-    CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, uint64_t);
+    static core::var* var_create_from_reg(regvm* vm, int id);
+    static core::var* var_create(regvm* vm, int type, uint64_t id);
 
-#undef CRTP_FUNC
+    bool vm_call(code_t code, int offset, int64_t id);
 
     static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
     static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);

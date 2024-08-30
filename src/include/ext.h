@@ -6,50 +6,33 @@
 #include "mlib.h"
 #include "ext_type.h"
 
-#include "vm.h"
-
-#include <map>
 
 
-#define CRTP_CALL(name, ...)    static_cast<REGVM_IMPL*>(vm)->name(__VA_ARGS__)
+struct regvm;
 
-
-#ifdef REGVM_EXT
-
-#include "regvm_ext.h"
-
-#else
-namespace ext
+extern "C"
 {
-struct var : public core::var_crtp<var>
-{
-    const uint16_t      type;
-    bool release(void) const    {return false;};
+    typedef int (*vm_op_t)(regvm* vm, code_t inst, int offset, const void* extra);
+    extern vm_op_t      vm_code_ops[256 - CODE_TRAP];
+
+    typedef bool (*vm_ext_t)(regvm* vm, int idx, void* arg);
+    extern void vm_add_ext(void* arg, vm_ext_t init, vm_ext_t exit);
 };
-}
 
-#if 0
-struct regvm_core : public regvm_crtp<regvm_core>
+namespace core
 {
-    typedef ext::var     var_t;
-    bool release(void) const    {return false;};
-
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
-    ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
-
-    CRTP_FUNC(vm_init,  bool, 0);
-    CRTP_FUNC(vm_exit,  bool, 0);
-    CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);   //type, name
-
-    CRTP_FUNC(vm_new,   bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_store, bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_load,  bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_block, bool, 5, int, int, int, int, int64_t);
-    CRTP_FUNC(vm_call,  bool, 5, int, int, int, int, int64_t);
-
-#undef CRTP_FUNC
+    class var;
+    class regv;
 };
-#endif
-#endif
 
+struct regvm_ext_op
+{
+    core::var*  (*var_create)(regvm* vm, int type, uint64_t id);
+    core::var*  (*var_create_from_reg)(regvm* vm, int reg_id);
+
+    bool        (*var_set_val)(core::var* var, const core::regv& r);
+    bool        (*var_set_reg)(const core::var* var, const core::regv* r);
+    bool        (*var_release)(const core::var* var);
+};
+
+extern regvm_ext_op     vm_ext_ops;

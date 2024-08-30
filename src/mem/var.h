@@ -8,6 +8,7 @@
 #include "../include/structs.h"
 
 
+#include "log.h"
 
 namespace ext
 {
@@ -22,17 +23,35 @@ public:
     var(uint8_t type, uint64_t id);
     virtual ~var();
 
-    const uint16_t      type;
-
     const uint64_t      id;
 
     int                 reload  = -1;
 
-    virtual bool set_val(const core::regv& reg) override;
-    virtual bool set_reg(const core::regv* reg) const override;
-    virtual bool release(void) const override;
+    inline bool set_val(const core::regv& reg);
+    inline bool set_reg(const core::regv* reg) const;
+    inline bool release(void) const
+    {
+        if (--ref > 0)
+        {
+            LOGD("var %p ref : %d", this, ref);
+            return true;
+        }
+        LOGD("var %p ref : %d", this, ref);
 
-    virtual int vtype(void) const override                {return type;}
+        if (ref == 0)
+        {
+            //delete this;
+            delete this;
+            //this->~var();
+            //free((void*)this);
+        }
+
+        return false;
+    }
+
+    static bool set_val(core::var* v, const core::regv& r)          {return v->set_val(r);};
+    static bool set_reg(const core::var* v, const core::regv* r)    {return v->set_reg(r);};
+    static bool release(const core::var* v)                         {return v->release();};
 
     bool store_from(core::regv& v);
 };
