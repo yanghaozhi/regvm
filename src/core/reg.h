@@ -21,6 +21,8 @@ namespace core
 class reg
 {
 public:
+    static const int        SIZE    = 32;
+
     struct v : public core::regv
     {
         inline operator double () const    {return conv<double>(type);};
@@ -70,52 +72,60 @@ public:
         }
     };
 
-    int     flow    = 0;
+    template <int SIZE> struct page
+    {
+        page()  {memset(values, 0, sizeof(v) * SIZE);}
+        ~page() {cleanup();}
+        inline void cleanup()
+        {
+            for (int i = 0; i < SIZE; i++)
+            {
+                if (values[i].from != NULL)
+                {
+                    values[i].set_from(NULL);
+                }
+                if (unlikely(values[i].need_free == true))
+                {
+                    free_uvalue(values[i].type, values[i].value);
+                }
+            }
+            memset(values, 0, sizeof(v) * SIZE);
+        }
+        inline int id(const v& r)
+        {
+            auto i = &r - values;
+            return ((0 <= i) && (i < SIZE)) ? i : -1;
+        }
+
+        v           values[SIZE];
+    };
 
     friend class error;
-
-    reg()
-    {
-        memset(values, 0, sizeof(values));
-        for (int i = 0; i < SIZE; i++)
-        {
-            values[i].idx = i;
-        }
-    }
-
-    ~reg()
-    {
-        for (int i = 0; i < SIZE; i++)
-        {
-            if (values[i].from != NULL)
-            {
-                values[i].from->release();
-                //values[i].set_from(NULL);
-            }
-            if(values[i].need_free == true)
-            {
-                free_uvalue(values[i].type, values[i].value);
-            }
-        }
-    }
 
     inline v& id(int i)
     {
 #ifdef DEBUG
-        if (i < 0 || (i >= SIZE))
+        if (i < 0 || (i >= SIZE * 2))
         {
             assert(0);
         }
 #endif
-        return values[ ((i >> 7) * flow) + i ];
+        return (i < SIZE) ? cur->values[i] : sub->values[i - SIZE];
     }
 
-    //uint8_t type(const int id);
+    inline int id(const v& r)
+    {
+        auto i = cur->id(r);
+        if (i >= 0) return i;
 
-private:
-    static const int    SIZE = 256;
-    v                   values[SIZE];
+        i = sub->id(r);
+        if (i >= 0) return i + SIZE;
 
+        return -1;
+    }
+
+    page<SIZE>*     cur = NULL;
+    page<SIZE>*     sub = NULL;
 };
 
 

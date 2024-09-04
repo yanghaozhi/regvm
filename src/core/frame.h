@@ -35,6 +35,8 @@ public:
 
     const int64_t       id;
 
+    core::reg::page<core::reg::SIZE>    sub_func;
+
     enum REASON
     {
         ERROR   = 0,
@@ -74,7 +76,6 @@ private:
 //    std::list<scope>    scopes;
 
     inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
-    inline bool set_call_info(int info);
 };
 
 

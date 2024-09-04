@@ -123,7 +123,8 @@ int main(int argc, char** argv)
             printf("\n\n");
         }
 
-        auto vm = regvm_init();
+        extern int mem_init(void);
+        auto vm = regvm_init(1, mem_init);
 
         int64_t exit = 0;
         bool r = regvm_exec(vm, (code_t*)buf, size >> 2, &exit);

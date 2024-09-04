@@ -31,12 +31,12 @@ public:
     inline bool set_reg(const core::regv* reg) const;
     inline bool release(void) const
     {
+        LOGD("release var %016llx - %d - %p", (long long)id, ref, this);
         if (--ref > 0)
         {
             LOGD("var %p ref : %d", this, ref);
             return true;
         }
-        LOGD("var %p ref : %d", this, ref);
 
         if (ref == 0)
         {
@@ -49,9 +49,9 @@ public:
         return false;
     }
 
-    static bool set_val(core::var* v, const core::regv& r)          {return v->set_val(r);};
-    static bool set_reg(const core::var* v, const core::regv* r)    {return v->set_reg(r);};
-    static bool release(const core::var* v)                         {return v->release();};
+    static bool set_val(core::var* v, const core::regv& r);
+    static bool set_reg(const core::var* v, const core::regv* r);
+    static bool release(const core::var* v);
 
     bool store_from(core::regv& v);
 };

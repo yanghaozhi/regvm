@@ -27,11 +27,11 @@ struct regvm
     const char*     str_tab     = NULL;
 
     core::reg       reg;
-    //scope           globals;
     core::error     err;
     core::ivt       idt;
 
-    std::map<int32_t, core::func>   funcs;
+    core::reg::page<core::reg::SIZE>    root;
+    std::map<int32_t, core::func>       funcs;
 
 
     regvm();

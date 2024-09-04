@@ -224,7 +224,6 @@ frame::frame(frame& cur, func* f, code_t c, int o) :
     up->down = this;
 
     vm->call_stack = this;
-    set_call_info(c.a);
 
     //TODO
     //if ((unlikely(valid == false)) || (unlikely(vm->vm_call(c, o, id) == false)))
@@ -242,7 +241,6 @@ frame::frame(regvm* v, func* f, code_t c, int o) :
     up = NULL;
     down = NULL;
     vm->call_stack = this;
-    set_call_info(128);
 
     //TODO
     //if (unlikely(vm->vm_call(c, o, id) == false))
@@ -263,29 +261,9 @@ frame::~frame()
 
     if (up != NULL)
     {
-        vm->reg.flow = up->flow;
         up->down = NULL;
     }
     vm->call_stack = up;
-}
-
-inline bool frame::set_call_info(int info)
-{
-    auto& next = vm->reg.id(info);
-    int last = vm->reg.flow + ((next.value.uint >> 8) & 0xFF) + ((next.value.uint & 0xFF)) + info;
-    if (unlikely(last > 0xFF))
-    {
-        LOGT("last reg : %d", last);
-        call_info = 128;
-        vm->reg.flow = 0;
-    }
-    else
-    {
-        call_info = info;
-        vm->reg.flow += call_info - 128;
-    }
-    flow = vm->reg.flow;
-    return true;
 }
 
 int64_t frame::gen_id(void) const
@@ -300,7 +278,7 @@ int frame::run(void)
 {
     int32_t offset = 0;
     int rest = running->count;
-    LOGT("running : %lld - %d - %d @ %d - %d : %d", (long long)id, running->id, depth, offset, rest, vm->reg.flow);
+    LOGT("running : %lld - %d - %d @ %d - %d", (long long)id, running->id, depth, offset, rest);
     const code_t* cur = running->codes + offset;
     reason = END;
     while (rest > 0)
@@ -359,7 +337,8 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             const auto& b = vm->reg.id(inst.b);                             \
             const auto& c = vm->reg.id(inst.c);                             \
             int t = (b.type > c.type) ? b.type : c.type;                    \
-            vm_conv_impl(vm, r, t);                                         \
+            r.set_from(NULL);                                               \
+            r.type = t;                                                     \
             switch (t)                                                      \
             {                                                               \
             case TYPE_SIGNED:                                               \

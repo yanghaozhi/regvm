@@ -27,8 +27,22 @@ void vm_add_ext(void* arg, vm_ext_t init, vm_ext_t exit)
     exts.push_back({arg, init, exit});
 }
 
-struct regvm* regvm_init(void)
+struct regvm* regvm_init(int ext_inits, ...)
 {
+    va_list ap;
+    va_start(ap, ext_inits);
+    for (int i = 0; i < ext_inits; i++)
+    {
+        auto f = va_arg(ap, regvm_ext_init);
+        int r = f();
+        if (r != 0)
+        {
+            LOGE("extension %d init FAILED : %d", i, r);
+            return NULL;
+        }
+    }
+    va_end(ap);
+
     //auto vm = new REGVM_IMPL();
     //CRTP_CALL(vm_init);
     const int s = sizeof(regvm) + sizeof(void*) * exts.size();
@@ -157,6 +171,10 @@ bool regvm::run(const code_t* start, int count)
     regvm_src_location src = {0, "NULL", "..."};
     core::func f(start, count, 0, &src, VM_CODE_SHARE);
     core::frame entry(this, &f, *start, 0);
+
+    reg.cur = &root;
+    reg.sub = &entry.sub_func;
+
     return (bool)entry.run();
 }
 
@@ -183,8 +201,19 @@ bool regvm::call(int32_t id, code_t code, int offset)
         return false;
     }
 
-    core::frame f(*call_stack, &it->second, code, offset);
-    return (bool)f.run();
+    core::frame sub(*call_stack, &it->second, code, offset);
+
+    auto* prev = reg.cur;
+    reg.cur = reg.sub;
+    reg.sub = &sub.sub_func;
+
+    bool r = sub.run();
+
+    reg.sub->cleanup();
+    reg.sub = reg.cur;
+    reg.cur = prev;
+
+    return r;
 }
 
 

@@ -18,6 +18,8 @@ class selector
 public:
     selector();
 
+    static const int        SIZE    = 32;
+
     enum STATUS
     {
         FREED,
@@ -45,6 +47,8 @@ public:
 
         operator int (void) const   { return ptr->id; }
     };
+
+    bool set_fixed(int reserved);
 
     const reg fixed(int id);
 
@@ -75,11 +79,13 @@ public:
     //void cleanup(bool var_only);
 
 private:
-    data                    datas[256];
+    data                    datas[SIZE];
 
-    lru<uint8_t, 128>       frees;
-    lru<uint8_t, 64>        binds;
-    lru<uint8_t, 32>        locks;
+    int                     reserved    = -1;
+
+    lru<uint8_t, SIZE>      frees;
+    lru<uint8_t, SIZE/2>    binds;
+    lru<uint8_t, SIZE/4>    locks;
 };
 
 

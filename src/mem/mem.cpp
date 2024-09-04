@@ -16,9 +16,10 @@ using namespace ext;
 
 static int g_idx = -1;
 
-void mem_init(void)
+int mem_init(void)
 {
     vm_add_ext(NULL, regvm_mem::init, regvm_mem::exit);
+    return 0;
 }
 
 bool regvm_mem::init(regvm* vm, int idx, void* arg)
@@ -42,7 +43,7 @@ bool regvm_mem::init(regvm* vm, int idx, void* arg)
 
 bool regvm_mem::exit(regvm* vm, int idx, void* arg)
 {
-    delete (regvm_mem*)vm->exts[idx];
+    delete vm->exts[idx];
     vm->exts[idx] = NULL;
     return true;
 }
@@ -114,9 +115,9 @@ bool regvm_mem::vm_call(code_t code, int offset, int64_t id)
 
 int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
 {
-    auto& e = vm->reg.id(code.b);
     auto& r = vm->reg.id(code.a);
-    auto v = VM->get(e);
+    auto vid = VM->var_id(vm->reg.id(code.b));
+    auto v = VM->get(vid);
     if (v == NULL)
     {
         //auto vm = this;
@@ -146,7 +147,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                 return 0;
             case TYPE_ADDR:
                 {
-                    auto vid = VM->var_id(e.value.uint);
+                    auto vid = VM->var_id(e);
                     auto v = VM->get(vid);
                     if (v != NULL)
                     {
@@ -167,8 +168,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
         break;
     case 3:     //写入到新的变量中（不查询上级scope的同名变量，如本级scope找不到则新建）
         {
-            auto& n = vm->reg.id(code.b);
-            auto vid = VM->var_id(n.value.uint);
+            auto vid = VM->var_id(vm->reg.id(code.b));
             auto v = VM->get(vid);
             if (v != NULL)
             {

@@ -33,9 +33,9 @@ var::~var()
     free_uvalue(typev, value);
 }
 
-bool var::set_val(const core::regv& reg)
+inline bool var::set_val(const core::regv& r)
 {
-    if (typev != reg.type)
+    if (typev != r.type)
     {
         return false;
     }
@@ -44,16 +44,16 @@ bool var::set_val(const core::regv& reg)
     {
 #define AGGREGATE(T, V, CP, ...)                    \
     case T:                                         \
-        if (value.V != reg.value.V)                 \
+        if (value.V != r.value.V)                   \
         {                                           \
             if (value.V != NULL)                    \
             {                                       \
                 core::free_uvalue(typev, value);    \
             }                                       \
-            if (reg.need_free == true)              \
+            if (r.need_free == true)                \
             {                                       \
-                value.V = reg.value.V;              \
-                reg.need_free = false;              \
+                value.V = r.value.V;                \
+                r.need_free = false;                \
             }                                       \
             else                                    \
             {                                       \
@@ -62,19 +62,19 @@ bool var::set_val(const core::regv& reg)
         }                                           \
         break;
 
-        AGGREGATE(TYPE_STRING, str, strdup, reg.value.str);
-        AGGREGATE(TYPE_LIST, list_v, new core::uvalue::list_t, reg.value.list_v->begin(), reg.value.list_v->end());
-        AGGREGATE(TYPE_DICT, dict_v, new core::uvalue::dict_t, reg.value.dict_v->begin(), reg.value.dict_v->end());
+        AGGREGATE(TYPE_STRING, str, strdup, r.value.str);
+        AGGREGATE(TYPE_LIST, list_v, new core::uvalue::list_t, r.value.list_v->begin(), r.value.list_v->end());
+        AGGREGATE(TYPE_DICT, dict_v, new core::uvalue::dict_t, r.value.dict_v->begin(), r.value.dict_v->end());
 
 #undef AGGREGATE
     default:
-        value = reg.value;
+        value = r.value;
         break;
     }
     return true;
 }
 
-bool var::set_reg(const core::regv* new_reg) const
+inline bool var::set_reg(const core::regv* new_reg) const
 {
     if (new_reg == reg) return true;
 
@@ -139,3 +139,6 @@ bool var::store_from(core::regv& r)
     return true;
 }
 
+bool var::set_val(core::var* v, const core::regv& r)          {return static_cast<var*>(v)->set_val(r);};
+bool var::set_reg(const core::var* v, const core::regv* r)    {return static_cast<const var*>(v)->set_reg(r);};
+bool var::release(const core::var* v)                         {return static_cast<const var*>(v)->release();};

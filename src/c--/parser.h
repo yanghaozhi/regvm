@@ -64,7 +64,6 @@ private:
     std::string_view                line;
     std::string                     file;
     int                             depth       = 0;
-    selector                        regs;
     trie_tree                       parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
     

@@ -11,7 +11,7 @@
 
 #include <vm.h>
 
-extern void mem_init(void);
+extern int mem_init(void);
 
 namespace ext
 {
@@ -54,9 +54,9 @@ private:
     std::map<uint64_t, var_t*>  vars;
     std::vector<int64_t>        calls;
 
-    inline uint64_t var_id(uint64_t id) const
+    inline uint64_t var_id(const core::regv& r) const
     {
-        return cur_call + id;
+        return cur_call + r.value.uint;
     }
 
     template <typename F> inline void scan_local_vars(uint64_t id, F&& func);

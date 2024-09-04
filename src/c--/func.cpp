@@ -17,7 +17,7 @@
 
 
 
-func::func(parser* p, const std::string_view& n) : id(p->func_id++), name(n), parse(p), insts(&instss), regs(p->regs), scopes(insts, regs)
+func::func(parser* p, const std::string_view& n) : id(p->func_id++), name(n), parse(p), insts(&instss), scopes(insts, regs)
 {
 }
 
@@ -32,6 +32,8 @@ func::~func()
 
 const char* func::go(const char* src)
 {
+    regs.set_fixed(rets.size() + args.size());
+
     infos.arg = infos.ret + rets.size();
     LOGT("func : %d - ret : %d, arg : %d", id, infos.ret, infos.arg);
 
@@ -532,10 +534,10 @@ const char* func::call(const char* src, func& sub, int& ret)
     //    return NULL;
     //}
 
-    int sub_info = 128 + rets.size() + args.size() + 1;
+    int sub_info = regs.SIZE;
 
     int i = 0;
-    const int begin = sub_info + sub.rets.size() + 1;
+    const int begin = sub_info + sub.rets.size();
     src = comma(src, [this, &sub, &i, begin](const char* src, int* end)
         {
             selector::reg reg; 
@@ -554,14 +556,9 @@ const char* func::call(const char* src, func& sub, int& ret)
         return NULL;
     }
 
-    int64_t info = sub.id;
-    info <<= 32;
-    info += (sub.rets.size() << 8) + sub.args.size();
-    INST(SET, sub_info, TYPE_SIGNED, info);
+    INST(CALL, 0, sub.id);
 
-    INST(CALL, sub_info, sub.id);
-
-    ret = sub_info + 1;
+    ret = sub_info;
 
     return src;
 }

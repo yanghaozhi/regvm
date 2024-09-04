@@ -14,19 +14,30 @@ selector::selector()
         datas[i].var = "";
         //datas[i].ref = 0;
         datas[i].ver = 1;
-
-        if ((int)i < frees.max)
-        {
-            frees.add(i);
-        }
     }
 }
 
+bool selector::set_fixed(int r)
+{
+    reserved = r;
+    for (int i = 0; i < reserved; i++)
+    {
+        datas[i].status = FIXED;
+        datas[i].ver += 1;
+    }
+    for (size_t i = reserved; i < sizeof(datas) / sizeof(datas[0]); i++)
+    {
+        frees.add(i);
+        datas[i].ver += 1;
+    }
+    return true;
+}
+
+
 const selector::reg selector::fixed(int id)
 {
-    if (id < frees.max) return reg();
+    if (id >= reserved) return reg();
     data& r = datas[id];
-    r.status = FIXED;
     return reg(&r);
 }
 

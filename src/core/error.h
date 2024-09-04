@@ -75,11 +75,11 @@ public:
         for (int i = 0; i < reg::SIZE; i++)
         {
             info->id = i;
-            info->ref = (reg.values[i].from != NULL) ? reg.values[i].from->ref : -1;
-            info->type = reg.values[i].type;
-            info->value.sint = reg.values[i].value.sint;
-            info->from = reg.values[i].from;
-            info->attr = reg.values[i].need_free;
+            info->ref = (reg.cur->values[i].from != NULL) ? reg.cur->values[i].from->ref : -1;
+            info->type = reg.cur->values[i].type;
+            info->value.sint = reg.cur->values[i].value.sint;
+            info->from = reg.cur->values[i].from;
+            info->attr = reg.cur->values[i].need_free;
             cb(info);
         }
     }

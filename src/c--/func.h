@@ -28,7 +28,7 @@ public:
     const std::string_view  name;
     parser*                 parse       = NULL;
     insts_t*                insts;
-    selector&               regs;
+    selector                regs;
     blocks                  scopes;
 
     struct variable
@@ -40,8 +40,7 @@ public:
 
     struct
     {
-        const int           info        = 128;
-        const int           ret         = info + 1;
+        const int           ret         = 0;
         int                 arg         = -1;
     }                       infos;
     //info - rets - args

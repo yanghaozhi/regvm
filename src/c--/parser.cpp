@@ -17,7 +17,7 @@
 
 
 
-parser::parser() : regs()
+parser::parser()
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
