@@ -172,10 +172,17 @@ bool regvm::run(const code_t* start, int count)
     core::func f(start, count, 0, &src, VM_CODE_SHARE);
     core::frame entry(this, &f, *start, 0);
 
-    reg.cur = &root;
-    reg.sub = &entry.sub_func;
+    reg.pages[0] = &root;
+    reg.pages[1] = &entry.sub_func;
 
-    return (bool)entry.run();
+    //root.prepare();
+    //entry.sub_func.prepare();
+
+    bool r = entry.run();
+
+    root.cleanup();
+
+    return r;
 }
 
 //bool regvm::call(core::reg::v& addr, code_t code, int offset)
@@ -203,15 +210,19 @@ bool regvm::call(int32_t id, code_t code, int offset)
 
     core::frame sub(*call_stack, &it->second, code, offset);
 
-    auto* prev = reg.cur;
-    reg.cur = reg.sub;
-    reg.sub = &sub.sub_func;
+    auto* p= reg.pages[0];
+    reg.pages[0] = reg.pages[1];
+    reg.pages[1] = &sub.sub_func;
+
+    //sub.sub_func.prepare();
+    LOGT("pages : %p - %p", reg.pages[0], reg.pages[1]);
 
     bool r = sub.run();
 
-    reg.sub->cleanup();
-    reg.sub = reg.cur;
-    reg.cur = prev;
+    sub.sub_func.cleanup();
+
+    reg.pages[1] = reg.pages[0];
+    reg.pages[0] = p;
 
     return r;
 }

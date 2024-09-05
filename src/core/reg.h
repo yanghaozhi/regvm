@@ -75,12 +75,18 @@ public:
     template <int SIZE> struct page
     {
         page()  {memset(values, 0, sizeof(v) * SIZE);}
-        ~page() {cleanup();}
+        ~page() {}
+        inline void prepare()
+        {
+            LOGT("prepare %p", this);
+            //memset(values, 0, sizeof(v) * SIZE);
+        }
         inline void cleanup()
         {
+            LOGT("cleanup %p", this);
             for (int i = 0; i < SIZE; i++)
             {
-                if (values[i].from != NULL)
+                if (unlikely(values[i].from != NULL))
                 {
                     values[i].set_from(NULL);
                 }
@@ -101,6 +107,7 @@ public:
     };
 
     friend class error;
+    friend class ::regvm;
 
     inline v& id(int i)
     {
@@ -110,22 +117,22 @@ public:
             assert(0);
         }
 #endif
-        return (i < SIZE) ? cur->values[i] : sub->values[i - SIZE];
+        return (i < SIZE) ? pages[0]->values[i] : pages[1]->values[i - SIZE];
     }
 
     inline int id(const v& r)
     {
-        auto i = cur->id(r);
+        auto i = pages[0]->id(r);
         if (i >= 0) return i;
 
-        i = sub->id(r);
+        i = pages[1]->id(r);
         if (i >= 0) return i + SIZE;
 
         return -1;
     }
 
-    page<SIZE>*     cur = NULL;
-    page<SIZE>*     sub = NULL;
+private:
+    page<SIZE>*     pages[2];
 };
 
 

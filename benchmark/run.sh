@@ -45,8 +45,7 @@ do
         echo compare time result :
         for r in "${!results[@]}"
         do
-            v=$(echo "scale=3; ${t} / ${results[${r}]}" | bc -l)
-            echo "${r} : ${t} / ${results[${r}]} =" $(printf "%0.2f\n" ${v})
+            echo "${r} : ${t} / ${results[${r}]} =" $(echo "${t} ${results[${r}]}" | awk '{print $1 / $2}')
         done
     fi
 done
