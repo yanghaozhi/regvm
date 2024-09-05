@@ -14,7 +14,7 @@ all: EXTRA := -O0 -g -DLOG_LEVEL=10 -DDEBUG
 
 all: $(NAME)
 
-release: EXTRA := -O3
+release: EXTRA := -O3 -g
 
 release: $(NAME)
 

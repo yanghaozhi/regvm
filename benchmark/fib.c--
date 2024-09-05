@@ -8,9 +8,7 @@ int calc(int n)
     }
     else
     {
-        int a = calc(n - 1);
-        int b = calc(n - 2);
-        return a + b;
+        return calc(n - 1) + calc(n - 2);
     }
 }
 
