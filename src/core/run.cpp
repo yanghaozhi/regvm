@@ -527,7 +527,7 @@ int vm_CODE_LSET(regvm* vm, code_t code, int offset, const void* extra)
 }
 
 #define CHECK_DICT(var, arg)                \
-    auto var = vm->reg.id(code.arg);        \
+    auto& var = vm->reg.id(code.arg);       \
     if (var.type != TYPE_STRING)            \
     {                                       \
         return 0;                           \

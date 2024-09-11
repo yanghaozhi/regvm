@@ -127,7 +127,6 @@ regvm::regvm() : reg()
     SET_OPS(1, CLEAR);
     SET_OPS(1, STORE);
     SET_OPS(1, BLOCK);
-    SET_OPS(1, CONV);
     SET_OPS(1, CALL);
     SET_OPS(1, RET);
 
