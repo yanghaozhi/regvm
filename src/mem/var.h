@@ -50,8 +50,8 @@ public:
     }
 
     static bool set_val(core::var* v, const core::regv& r);
-    static bool set_reg(const core::var* v, const core::regv* r);
     static bool release(const core::var* v);
+    static bool reg_chg_from(const core::regv* r, const core::var* cur, const core::var* next);
 
     bool store_from(core::regv& v);
 };

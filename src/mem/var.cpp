@@ -114,7 +114,7 @@ bool var::store_from(core::regv& r)
         reg->set_from(NULL);
     }
 
-    auto old = r.from;
+    auto old = static_cast<var*>(r.from);
     if (old != NULL)
     {
         //do NOT writeback
@@ -139,6 +139,19 @@ bool var::store_from(core::regv& r)
     return true;
 }
 
+bool var::reg_chg_from(const core::regv* r, const core::var* cur, const core::var* next)
+{
+    if (next != NULL)
+    {
+        static_cast<const var*>(next)->set_reg(r);
+    }
+    if (cur != NULL)
+    {
+        static_cast<const var*>(cur)->set_reg(NULL);
+    }
+    return true;
+}
+
 bool var::set_val(core::var* v, const core::regv& r)          {return static_cast<var*>(v)->set_val(r);};
-bool var::set_reg(const core::var* v, const core::regv* r)    {return static_cast<const var*>(v)->set_reg(r);};
+//bool var::set_reg(const core::var* v, const core::regv* r)    {return static_cast<const var*>(v)->set_reg(r);};
 bool var::release(const core::var* v)                         {return static_cast<const var*>(v)->release();};

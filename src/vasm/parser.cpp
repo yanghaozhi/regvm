@@ -174,7 +174,6 @@ IDS::IDS()
     SET_KEY(CLEAR);
     SET_KEY(STORE);
     SET_KEY(BLOCK);
-    SET_KEY(CONV);
     SET_KEY(CALL);
     SET_KEY(RET);
     SET_KEY(ECHO);

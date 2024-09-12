@@ -19,6 +19,47 @@ extern vm_sub_op_t  CHG_OPS[16];
 
 
 
+inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
+{
+    //if (r.type == to) return true;
+
+    if (likely(r.type != 0))
+    {
+        switch (to)
+        {
+        case TYPE_UNSIGNED:
+            r.value.uint = (uint64_t)r;
+            break;
+        case TYPE_SIGNED:
+            r.value.sint = (int64_t)r;
+            break;
+        case TYPE_DOUBLE:
+            r.value.dbl = (double)r;
+            break;
+        default:
+            LOGE("Can not conv to type %d", to);
+            return false;
+        }
+    }
+
+    r.set_from(NULL);
+    r.type = to;
+
+    return true;
+}
+
+inline int vm_move(regvm* vm, int a, int b, int c)
+{
+    auto& dst = vm->reg.id(a);
+    auto& src = vm->reg.id(b);
+    dst.copy(src);
+    if (unlikely((c != 0) && (c != src.type)))
+    {
+        vm_conv_impl(vm, dst, c);
+    }
+    return 1;
+}
+
 inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
 {
     uint64_t v = c;
@@ -49,35 +90,6 @@ inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
     auto& r = vm->reg.id(a);
     r.write(v, b, (b != r.type));
     return next;
-}
-
-inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
-{
-    if (r.type == to) return true;
-
-    if (likely(r.type != 0))
-    {
-        switch (to)
-        {
-        case TYPE_UNSIGNED:
-            r.value.uint = (uint64_t)r;
-            break;
-        case TYPE_SIGNED:
-            r.value.sint = (int64_t)r;
-            break;
-        case TYPE_DOUBLE:
-            r.value.dbl = (double)r;
-            break;
-        default:
-            LOGE("Can not conv to type %d", to);
-            return false;
-        }
-    }
-
-    r.set_from(NULL);
-    r.type = to;
-
-    return true;
 }
 
 inline int vm_cmp_type(struct regvm* vm, int v, bool i_v)
@@ -411,17 +423,6 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         ONLY_INTEGER(MOD, %);
 #undef ONLY_INTEGER
 
-#define WRITE(i, ...)                                                       \
-    case CODE_##i:                                                          \
-        {                                                                   \
-            auto& r = vm->reg.id(inst.a);                                   \
-            auto& e = vm->reg.id(inst.b);                                   \
-            return r.write(__VA_ARGS__);                                    \
-        }
-        WRITE(MOVE, e.value.uint, e.type, true);
-        WRITE(TYPE, e.type, TYPE_SIGNED, true);
-#undef WRITE
-
 #define SUB_OPS(i, op)                                                      \
     case CODE_##i:                                                          \
         {                                                                   \
@@ -485,14 +486,16 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         JUMPS(JLE, <=);
 #undef JUMPS
 
-    case CODE_SET:
-        return vm_set(vm, inst.a, inst.b, inst.c, extra);
-    case CODE_JUMP:
-        return inst.a3;
-    case CODE_JCMP:
-        return vm_jcmp(vm, inst.a, inst.b, inst.c, extra);
-    case CODE_CALC:
-        return vm_calc(vm, inst.a, inst.b, inst.c);
+#define FUNC(i, func, ...)                                                  \
+    case CODE_##i:                                                          \
+        return func(__VA_ARGS__);
+        FUNC(SET, vm_set, vm, inst.a, inst.b, inst.c, extra);
+        FUNC(MOVE, vm_move, vm, inst.a, inst.b, inst.c);
+        FUNC(JCMP, vm_jcmp, vm, inst.a, inst.b, inst.c, extra);
+        FUNC(CALC, vm_calc, vm, inst.a, inst.b, inst.c);
+        FUNC(TYPE, vm->reg.id(inst.a).write, vm->reg.id(inst.b).type, TYPE_SIGNED, true);
+#undef FUNC
+
     case CODE_EXIT:
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;

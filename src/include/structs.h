@@ -67,7 +67,7 @@ public:
     inline bool release(void) const             {return vm_ext_ops.var_release(this);};
 
     inline bool set_val(const regv& r)          {return vm_ext_ops.var_set_val(this, r);};
-    inline bool set_reg(const regv* r) const    {return vm_ext_ops.var_set_reg(this, r);};
+    //inline bool set_reg(const regv* r) const    {return vm_ext_ops.var_set_reg(this, r);};
 };
 
 struct regv
@@ -136,14 +136,15 @@ struct regv
 
     inline bool set_from(const var* v) const
     {
-        if (v != NULL)
-        {
-            v->set_reg(this);
-        }
-        if (from != NULL)
-        {
-            from->set_reg(NULL);
-        }
+        //if (v != NULL)
+        //{
+        //    v->set_reg(this);
+        //}
+        //if (from != NULL)
+        //{
+        //    from->set_reg(NULL);
+        //}
+        vm_ext_ops.reg_chg_from(this, from, v);
         from = const_cast<decltype(from)>(v);
         return true;
     }

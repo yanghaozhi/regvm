@@ -30,9 +30,9 @@ struct regvm_ext_op
     core::var*  (*var_create)(regvm* vm, int type, uint64_t id);
     core::var*  (*var_create_from_reg)(regvm* vm, int reg_id);
 
-    bool        (*var_set_val)(core::var* var, const core::regv& r);
-    bool        (*var_set_reg)(const core::var* var, const core::regv* r);
     bool        (*var_release)(const core::var* var);
+    bool        (*var_set_val)(core::var* var, const core::regv& r);
+    bool        (*reg_chg_from)(const core::regv* r, const core::var* cur, const core::var* next);
 };
 
 extern regvm_ext_op     vm_ext_ops;

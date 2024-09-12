@@ -36,8 +36,8 @@ bool regvm_mem::init(regvm* vm, int idx, void* arg)
     vm_ext_ops.var_create = regvm_mem::var_create;
     vm_ext_ops.var_create_from_reg = regvm_mem::var_create_from_reg;
     vm_ext_ops.var_set_val = var::set_val;
-    vm_ext_ops.var_set_reg = var::set_reg;
     vm_ext_ops.var_release = var::release;
+    vm_ext_ops.reg_chg_from = var::reg_chg_from;
     return true;
 }
 
