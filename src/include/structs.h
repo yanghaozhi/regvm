@@ -98,7 +98,7 @@ struct regv
         core::var* v = from;
         if (v == NULL)
         {
-            return false;
+            return true;
         }
 
         if (v->reg != this)
