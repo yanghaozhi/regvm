@@ -27,34 +27,6 @@ static void data_print_bin(FILE* fp, int v)
 }
 
 
-bool instv<CODE_JCMP>::scan(const char* src)
-{
-    return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
-}
-
-void instv<CODE_JCMP>::print(FILE* fp) const
-{
-    fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
-    data_print(fp, offset);
-}
-
-void instv<CODE_JCMP>::print_bin(FILE* fp) const
-{
-    code_t code;
-    code.id = id;
-    code.a = a;
-    code.b = b;
-    code.c = c;
-    fwrite(&code, sizeof(code_t), 1, fp);
-
-    data_print_bin(fp, offset);
-}
-
-void instv<CODE_JCMP>::print_asm(FILE* fp) const
-{
-    fprintf(fp, "%-8s %d\t%d\t%d\t%d\n", name, a, b, c, offset);
-}
-
 bool instj::scan(const char* src)
 {
     return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;

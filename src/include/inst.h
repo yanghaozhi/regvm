@@ -147,24 +147,6 @@ JUMP_CMP(CODE_JLT);
 JUMP_CMP(CODE_JLE);
 #undef JUMP_CMP
 
-template <> struct instv<CODE_JCMP> : public instv<CODE_JUMP>
-{
-    int     a;
-    int     b;
-    int     c;
-
-    instv(const char* n) : instv<CODE_JUMP>(CODE_JCMP, n)    {};
-    instv(const char* n, int _a, int _b, int _c, int o) :
-        instv<CODE_JUMP>(CODE_JCMP, n, o), a(_a), b(_b), c(_c)    {};
-
-    virtual bool scan(const char* src);
-    virtual int count(void) const       { return 2; };
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
-};
-template struct instv<CODE_JCMP>;
-
 template <> struct instv<CODE_ECHO> : public inst
 {
     std::vector<int>    args;

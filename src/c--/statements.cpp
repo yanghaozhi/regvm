@@ -278,23 +278,8 @@ inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int
     bool result = false;
     src = f->expression(src, r, &end, [&j, &result, label, cmp](func* f, int op, const token& a, const token* b, const selector::reg* r)
         {
-            switch (op)
-            {
-            case Eq:
-            case Ne:
-            case Gt:
-            case Ge:
-            case Lt:
-            case Le:
-                result = true;
-                break;
-            default:
-                result = false;
-                return selector::reg();
-            }
             auto& insts = f->insts;
-            int c = -1;
-            c = cmp(op);
+            int c = 0;
             int ll = 0;
             selector::reg ret;
             if (can_literally_optimize(a, ll) == false)
@@ -304,7 +289,7 @@ inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int
             }
             else
             {
-                c |= 0x80;
+                c |= 0x02;
             }
             int rr = 0;
             if (r != NULL)
@@ -321,10 +306,27 @@ inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int
                 }
                 else
                 {
-                    c |= 0x40;
+                    c |= 0x01;
                 }
             }
-            INST(JCMP, ll, rr, c, 0);
+            result = true;
+            switch (cmp(op))
+            {
+#define CMP_TYPE(k, cmp)                        \
+            case k:                             \
+                INST(cmp, ll, rr, c, 0);        \
+                break;
+                CMP_TYPE(0, JEQ);
+                CMP_TYPE(1, JNE);
+                CMP_TYPE(2, JGT);
+                CMP_TYPE(3, JGE);
+                CMP_TYPE(4, JLT);
+                CMP_TYPE(5, JLE);
+#undef CMP_TYPE
+            default:
+                result = false;
+                return selector::reg();
+            }
             j.jump(label, f->insts->back(), f->insts->size());
             if (ret.ptr == NULL)
             {
@@ -336,7 +338,15 @@ inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int
     auto& insts = f->insts;
     if (result == false)
     {
-        INST(JCMP, r, 1, (cmp != cmp_op) | 0x40, 0);
+        //if (test) ...
+        if (cmp == cmp_op)
+        {
+            INST(JNE, r, 0, 0x01, 0);
+        }
+        else
+        {
+            INST(JEQ, r, 0, 0x01, 0);
+        }
         j.jump(label, f->insts->back(), f->insts->size());
     }
     return src;

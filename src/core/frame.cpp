@@ -130,8 +130,6 @@ bool frame::one_step(struct regvm* vm, const code_t code, int max, int* next, co
 
 inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const void* extra)
 {
-    int next = 1;
-
 #define STEP_ERROR(e, fmt, ...) VM_ERROR(e, inst, offset, fmt, ##__VA_ARGS__);
 
     const int code = inst.id;
@@ -153,13 +151,13 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             {                                                               \
             case TYPE_SIGNED:                                               \
                 r.value.sint = (int64_t)b op (int64_t)c;                    \
-                return next;                                                \
+                return 1;                                                   \
             case TYPE_UNSIGNED:                                             \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                return next;                                                \
+                return 1;                                                   \
             case TYPE_DOUBLE:                                               \
                 r.value.dbl = (double)b op (double)c;                       \
-                return next;                                                \
+                return 1;                                                   \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, t, inst, offset);                        \
                 break;                                                      \
@@ -182,7 +180,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
             {                                                               \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                return next;                                                \
+                return 1;                                                   \
             }                                                               \
             else                                                            \
             {                                                               \
@@ -206,10 +204,10 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             {                                                               \
             case TYPE_SIGNED:                                               \
                 r.value.sint = (int64_t)b op (int64_t)c;                    \
-                return next;                                                \
+                return 1;                                                   \
             case TYPE_UNSIGNED:                                             \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
-                return next;                                                \
+                return 1;                                                   \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, r.type, inst, offset);                   \
                 break;                                                      \
@@ -283,18 +281,21 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         JUMPS(JLT, <);
         JUMPS(JLE, <=);
 #undef JUMPS
+#undef JUMPS_CMP
 
 #define FUNC(i, func, ...)                                                  \
     case CODE_##i:                                                          \
         return func(__VA_ARGS__);
         FUNC(SET, vm_set, vm, inst.a, inst.b, inst.c, extra);
         FUNC(MOVE, vm_move, vm, inst.a, inst.b, inst.c);
-        FUNC(JCMP, vm_jcmp, vm, inst.a, inst.b, inst.c, extra);
+        //FUNC(JCMP, vm_jcmp, vm, inst.a, inst.b, inst.c, extra);
         FUNC(CALC, vm_calc, vm, inst.a, inst.b, inst.c);
         FUNC(TYPE, vm->reg.id(inst.a).write, vm->reg.id(inst.b).type, TYPE_SIGNED, true);
         FUNC(CLEAR, vm_clear, vm, vm->reg.id(inst.a), inst.b);
 #undef FUNC
 
+    case CODE_JUMP:
+        return inst.a3;
     case CODE_EXIT:
         //vm->exit_code = ((unsigned int)inst.a2 != 255) ? inst.b2 : (int64_t)vm->reg.id(inst.a2);
         vm->exit_code = inst.b2;
@@ -326,7 +327,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
 
     if (likely(vm->fatal == false))
     {
-        return next;
+        return 1;
     }
     else
     {

@@ -113,7 +113,6 @@ regvm::regvm() : reg()
     SET_OPS(0, SHL);
     SET_OPS(0, SHR);
     SET_OPS(0, JUMP);
-    SET_OPS(0, JCMP);
     SET_OPS(0, JEQ);
     SET_OPS(0, JNE);
     SET_OPS(0, JGT);

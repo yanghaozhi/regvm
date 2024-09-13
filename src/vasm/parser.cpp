@@ -161,7 +161,6 @@ IDS::IDS()
     SET_KEY(SHL);
     SET_KEY(SHR);
     SET_KEY(JUMP);
-    SET_KEY(JCMP);
     SET_KEY(JEQ);
     SET_KEY(JNE);
     SET_KEY(JGT);
