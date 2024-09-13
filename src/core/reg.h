@@ -120,7 +120,7 @@ public:
         return (i < SIZE) ? pages[0]->values[i] : pages[1]->values[i - SIZE];
     }
 
-    inline int id(const v& r)
+    inline int idx(const v& r)
     {
         auto i = pages[0]->id(r);
         if (i >= 0) return i;

@@ -9,12 +9,8 @@
 #include "func.h"
 //#include "scope.h"
 
-#define UNSUPPORT_TYPE(op, t, c, o, ...) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
-
 namespace core
 {
-
-typedef int (*vm_sub_op_t)(regvm* vm, int a, int b, int c, int offset);
 
 class frame
 {

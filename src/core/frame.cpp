@@ -6,6 +6,7 @@
 
 #include "vm.h"
 #include "ext.h"
+#include "run.h"
 #include "frame.h"
 
 #include <log.h>
@@ -14,209 +15,6 @@
 using namespace core;
 
 
-
-extern vm_sub_op_t  CHG_OPS[16];
-
-
-
-inline bool vm_conv_impl(struct regvm* vm, reg::v& r, int to)
-{
-    //if (r.type == to) return true;
-
-    if (likely(r.type != 0))
-    {
-        switch (to)
-        {
-        case TYPE_UNSIGNED:
-            r.value.uint = (uint64_t)r;
-            break;
-        case TYPE_SIGNED:
-            r.value.sint = (int64_t)r;
-            break;
-        case TYPE_DOUBLE:
-            r.value.dbl = (double)r;
-            break;
-        default:
-            LOGE("Can not conv to type %d", to);
-            return false;
-        }
-    }
-
-    r.set_from(NULL);
-    r.type = to;
-
-    return true;
-}
-
-inline int vm_move(regvm* vm, int a, int b, int c)
-{
-    auto& dst = vm->reg.id(a);
-    auto& src = vm->reg.id(b);
-    dst.copy(src);
-    if (unlikely((c != 0) && (c != src.type)))
-    {
-        vm_conv_impl(vm, dst, c);
-    }
-    return 1;
-}
-
-inline int vm_set(regvm* vm, int a, int b, int c, const void* extra)
-{
-    uint64_t v = c;
-    int shift = 8;
-    int next = 1;
-    code_t* p = (code_t*)extra;
-    while (p->id == CODE_DATA)
-    {
-        uint64_t vv = (unsigned int)p->a3 & 0xFFFFFF;
-        v += (vv << shift);
-        shift += 24;
-        next += 1;
-        p += 1;
-    }
-
-    if (b == TYPE_STRTAB)
-    {
-        if (unlikely(vm->str_tab == NULL))
-        {
-            LOGE("need to relocate string : %lld, but str tab is NULL", (long long)v);
-            VM_ERROR(ERR_STRING_RELOCATE, code_t{0}, -1, "need to relocate string : %lld, but str tab is NULL", (long long)v);
-            return 0;
-        }
-        const char* s = vm->str_tab + v;
-        v = (uintptr_t)s;
-    }
-
-    auto& r = vm->reg.id(a);
-    r.write(v, b, (b != r.type));
-    return next;
-}
-
-inline int vm_cmp_type(struct regvm* vm, int v, bool i_v)
-{
-    return (i_v == true) ? (int)TYPE_SIGNED : vm->reg.id(v).type;
-}
-
-template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v)
-{
-    return (i_v == true) ? (T)v: (T)vm->reg.id(v);
-}
-
-template <typename T> inline T vm_cmp_val(const int c, const int i, const int* ms, const int* vs, const reg::v** rs)
-{
-    return ((c & ms[i]) != 0) ? (T)vs[i] : (T)*rs[i]; 
-}
-
-inline int vm_jcmp(struct regvm* vm, int a, int b, int c, const void* extra)
-{
-    code_t* p = (code_t*)extra;
-    if (unlikely(p->id != CODE_DATA))
-    {
-        LOGE("Can not find CODE_DATA next to CODE_JCMP");
-        return 0;
-    }
-    const int next = 2;
-    const int dest = p->a3;
-
-    const int ms[] = {0x80, 0x40};
-    const int vs[] = {a, b};
-    const reg::v* rs[] = {&vm->reg.id(a), &vm->reg.id(b)};
-    const int t1 = ((c & 0x80) != 0) ? (int)TYPE_SIGNED : rs[0]->type;
-    const int t2 = ((c & 0x40) != 0) ? (int)TYPE_SIGNED : rs[1]->type;
-    const int t = (t1 > t2) ? t1 : t2;
-
-//#define CMP_VAL(type, idx) (((c & m##idx) != 0) ? (type)v##idx : (type)r##idx)
-#define CMP_VAL(type, idx) vm_cmp_val<type>(c, idx, ms, vs, rs)
-#define CMP_JUMP(type, cmp) return (CMP_VAL(type, 0) cmp CMP_VAL(type, 1)) ? dest : next;
-    switch (c & 0x0F)
-    {
-#define CMP_TYPE(k, cmp)                \
-    case k:                             \
-        switch (t)                      \
-        {                               \
-        case TYPE_SIGNED:               \
-            CMP_JUMP(int64_t, cmp);     \
-        case TYPE_UNSIGNED:             \
-            CMP_JUMP(uint64_t, cmp);    \
-        case TYPE_DOUBLE:               \
-            CMP_JUMP(double, cmp);      \
-        default:                        \
-            return 0;                   \
-        }                               \
-        break;
-        CMP_TYPE(0, ==);
-        CMP_TYPE(1, !=);
-        CMP_TYPE(2, > );
-        CMP_TYPE(3, >=);
-        CMP_TYPE(4, < );
-        CMP_TYPE(5, <=);
-#undef CMP_TYPE
-    }
-#undef CMP_JUMP
-#undef CMP_VAL
-
-    return 0;
-}
-
-inline int vm_calc(struct regvm* vm, int a, int b, int c)
-{
-    auto& v = vm->reg.id(a);
-
-#define ALL(k, op)                                                      \
-    case k:                                                             \
-        switch (v.type)                                                 \
-        {                                                               \
-        case TYPE_SIGNED:                                               \
-            v.value.sint op b;                                          \
-            break;                                                      \
-        case TYPE_UNSIGNED:                                             \
-            v.value.uint op b;                                          \
-            break;                                                      \
-        case TYPE_DOUBLE:                                               \
-            v.value.dbl op b;                                           \
-            break;                                                      \
-        default:                                                        \
-            LOGE("type %d does NOT support op : %s", v.type, #op);      \
-            return 0;                                                   \
-        }                                                               \
-        break;
-
-#define INT(k, op)                                                      \
-    case k:                                                             \
-        switch (v.type)                                                 \
-        {                                                               \
-        case TYPE_SIGNED:                                               \
-            v.value.sint op b;                                          \
-            break;                                                      \
-        case TYPE_UNSIGNED:                                             \
-            v.value.uint op b;                                          \
-            break;                                                      \
-        default:                                                        \
-            LOGE("type %d does NOT support op : %s", v.type, #op);      \
-            return 0;                                                   \
-        }                                                               \
-        break;
-    switch (c)
-    {
-        ALL(0, +=);
-        ALL(1, -=);
-        ALL(2, *=);
-        ALL(3, /=);
-        INT(4, %=);
-        INT(5, <<=);
-        INT(6, >>=);
-    default:
-        return 0;
-    }
-#undef INT
-#undef ALL
-    return 1;
-}
-
-bool vm_conv_type(struct regvm* vm, reg::v& r, int to)
-{
-    return vm_conv_impl(vm, r, to);
-}
 
 frame::frame(frame& cur, func* f, code_t c, int o) :
     depth(cur.depth + 1), running(f), id(gen_id()), vm(cur.vm)
@@ -380,7 +178,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             auto& r = vm->reg.id(inst.a);                                   \
             const auto& b = vm->reg.id(inst.b);                             \
             const auto& c = vm->reg.id(inst.c);                             \
-            vm_conv_impl(vm, r, TYPE_UNSIGNED);                             \
+            vm_conv(vm, r, TYPE_UNSIGNED);                                  \
             if (likely((b.type == TYPE_UNSIGNED) && (c.type == TYPE_UNSIGNED)))    \
             {                                                               \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
@@ -403,7 +201,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             auto& r = vm->reg.id(inst.a);                                   \
             const auto& b = vm->reg.id(inst.b);                             \
             const auto& c = vm->reg.id(inst.c);                             \
-            vm_conv_impl(vm, r, b.type);                                    \
+            vm_conv(vm, r, b.type);                                         \
             switch (r.type)                                                 \
             {                                                               \
             case TYPE_SIGNED:                                               \
@@ -494,6 +292,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         FUNC(JCMP, vm_jcmp, vm, inst.a, inst.b, inst.c, extra);
         FUNC(CALC, vm_calc, vm, inst.a, inst.b, inst.c);
         FUNC(TYPE, vm->reg.id(inst.a).write, vm->reg.id(inst.b).type, TYPE_SIGNED, true);
+        FUNC(CLEAR, vm_clear, vm, vm->reg.id(inst.a), inst.b);
 #undef FUNC
 
     case CODE_EXIT:

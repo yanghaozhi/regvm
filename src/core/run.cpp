@@ -8,12 +8,11 @@
 #include "ext.h"
 #include "reg.h"
 #include "log.h"
+#include "run.h"
 #include "frame.h"
 
 
 using namespace core;
-
-extern bool vm_conv_type(struct regvm* vm, reg::v& r, int to);
 
 extern "C"
 {
@@ -83,39 +82,10 @@ int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra)
     return 1;
 }
 
-inline bool clear_reg(reg::v& r, const int type)
-{
-    switch (type)
-    {
-    case TYPE_LIST:
-        r.clear();
-        r.value.list_v = new uvalue::list_t();
-        r.need_free = true;
-        r.type = type;
-        return true;
-    case TYPE_DICT:
-        r.clear();
-        r.value.dict_v = new uvalue::dict_t();
-        r.need_free = true;
-        r.type = type;
-        return true;
-    case TYPE_SIGNED:
-    case TYPE_UNSIGNED:
-        return r.write(0, type, true);
-    case TYPE_DOUBLE:
-        r.clear();
-        r.type = type;
-        r.value.dbl = 0.0;
-        return true;
-    default:
-        return false;
-    }
-}
-
 int vm_CODE_CLEAR(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
-    return (int)clear_reg(r, code.b);
+    return (int)vm_clear(vm, r, code.b);
 }
 
 int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
@@ -148,7 +118,7 @@ int vm_CODE_CONV(regvm* vm, code_t code, int offset, const void* extra)
     const auto& src = vm->reg.id(code.b);
     auto& res = vm->reg.id(code.a);
     res.copy(src);
-    if (vm_conv_type(vm, res, code.c) == false)
+    if (vm_conv(vm, res, code.c) == false)
     {
         UNSUPPORT_TYPE("conv", code.c, code, offset);
         return 0;
@@ -166,7 +136,7 @@ int vm_CHG_MINUS(regvm* vm, int a, int b, int c, int offset)
     switch (r.type)
     {
     case TYPE_UNSIGNED:
-        vm_conv_type(vm, r, TYPE_SIGNED);
+        vm_conv(vm, r, TYPE_SIGNED);
         [[fallthrough]];
     case TYPE_SIGNED:
         r.value.sint = 0 - r.value.sint;
@@ -193,7 +163,7 @@ int vm_CHG_RECIPROCAL(regvm* vm, int a, int b, int c, int offset)
     }
     else
     {
-        vm_conv_type(vm, r, TYPE_DOUBLE);
+        vm_conv(vm, r, TYPE_DOUBLE);
         r.value.dbl = 1.0 / r.value.dbl;
     }
     return 1;
@@ -240,7 +210,7 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
     else
     {
         auto& r = vm->reg.id(a);
-        vm_conv_type(vm, r, TYPE_STRING);
+        vm_conv(vm, r, TYPE_STRING);
         r.set_from(NULL);
         r.value.str = strdup(s.value.str);
         r.need_free = true;
@@ -607,8 +577,8 @@ int vm_CODE_DITEMS(regvm* vm, code_t code, int offset, const void* extra)
     auto& ks = vm->reg.id(code.b);
     auto& vs = vm->reg.id(code.c);
 
-    clear_reg(ks, TYPE_LIST);
-    clear_reg(vs, TYPE_LIST);
+    vm_clear(vm, ks, TYPE_LIST);
+    vm_clear(vm, vs, TYPE_LIST);
 
     if (v.value.dict_v->empty() == true)
     {
