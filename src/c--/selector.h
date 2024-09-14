@@ -64,19 +64,8 @@ public:
     bool active(const reg& r);
     bool valid(const reg& r);
 
-    //reg get(const std::string_view& name, std::function<reg (void)>&& reload);
 
-    ////get a reg to store var
-    //reg var(const std::string_view& name);
-    ////get a reg and lock it
-    //reg lock(void);
-
-    //reg tmp(void);
-
-    //bool bind(const std::string_view& name, const reg& reg);
-
-    ////cleanup all binded/locked reg to frees
-    //void cleanup(bool var_only);
+    int unused(void) const;
 
 private:
     data                    datas[SIZE];

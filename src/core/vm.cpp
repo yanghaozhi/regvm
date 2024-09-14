@@ -170,17 +170,13 @@ bool regvm::run(const code_t* start, int count)
     core::func f(start, count, 0, &src, VM_CODE_SHARE);
     core::frame entry(this, &f, *start, 0);
 
-    reg.pages[0] = &root;
-    reg.pages[1] = &entry.sub_func;
+    pages.emplace_back();
+    pages.emplace_back();
 
-    //root.prepare();
-    //entry.sub_func.prepare();
+    reg.pages[0] = &pages[0];
+    reg.pages[1] = &pages[1];
 
-    bool r = entry.run();
-
-    root.cleanup();
-
-    return r;
+    return entry.run();
 }
 
 //bool regvm::call(core::reg::v& addr, code_t code, int offset)
@@ -208,19 +204,25 @@ bool regvm::call(int32_t id, code_t code, int offset)
 
     core::frame sub(*call_stack, &it->second, code, offset);
 
-    auto* p= reg.pages[0];
-    reg.pages[0] = reg.pages[1];
-    reg.pages[1] = &sub.sub_func;
+    const int idx = sub.depth;
+    while ((int)pages.size() < idx + 2)
+    {
+        pages.emplace_back();
+    }
 
-    //sub.sub_func.prepare();
-    LOGT("pages : %p - %p", reg.pages[0], reg.pages[1]);
+    reg.pages[0] = &pages[idx];
+    reg.pages[1] = &pages[idx + 1];
+
+    const int info = (uint8_t)code.a2;
+    LOGT("call info %d - (%d : %d : %d), pages : %p - %p", info, info & 0x0F, info >> 3, core::reg::SIZE - (info >> 3), reg.pages[0], reg.pages[1]);
 
     bool r = sub.run();
 
-    sub.sub_func.cleanup();
+    pages[idx + 1].cleanup(info & 0x0F, core::reg::SIZE - (info >> 3));
+    //pages[idx + 1].cleanup(0, core::reg::SIZE);
 
-    reg.pages[1] = reg.pages[0];
-    reg.pages[0] = p;
+    reg.pages[0] = &pages[idx - 1];
+    reg.pages[1] = &pages[idx];
 
     return r;
 }

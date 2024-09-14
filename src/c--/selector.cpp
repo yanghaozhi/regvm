@@ -209,3 +209,15 @@ bool selector::valid(const reg& r)
 {
     return ((r.ptr != NULL) && (r.ptr->ver == r.ver)) ? true : false;
 }
+
+int selector::unused(void) const
+{
+    for (int i = SIZE - 1; i >= 0; i--)
+    {
+        if (datas[i].ver != 2)
+        {
+            return SIZE - i - 1;
+        }
+    }
+    return SIZE;
+}

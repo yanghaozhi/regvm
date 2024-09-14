@@ -15,6 +15,7 @@
 #include "mlib.h"
 
 #include <map>
+#include <deque>
 
 
 
@@ -30,8 +31,8 @@ struct regvm
     core::error     err;
     core::ivt       idt;
 
-    core::reg::page<core::reg::SIZE>    root;
     std::map<int32_t, core::func>       funcs;
+    std::deque<core::reg::page_t>       pages;
 
 
     regvm();

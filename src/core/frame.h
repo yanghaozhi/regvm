@@ -31,7 +31,7 @@ public:
 
     const int64_t       id;
 
-    core::reg::page<core::reg::SIZE>    sub_func;
+    //core::reg::page<core::reg::SIZE>    sub_func;
 
     enum REASON
     {
@@ -64,7 +64,6 @@ private:
     }                   caller;
     bool                valid   = true;
     enum REASON         reason;
-    int                 call_info;
     int                 flow;
 
     inline int64_t gen_id(void) const;

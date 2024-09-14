@@ -42,6 +42,7 @@ public:
     {
         const int           ret         = 0;
         int                 arg         = -1;
+        int                 unused      = -1;
     }                       infos;
     //info - rets - args
 
@@ -113,6 +114,7 @@ public:
 
 private:
     insts_t                 instss;
+    insts_t                 selves;
     const char*             last_line   = NULL;
 
     const char* statement(const char* src, std::function<void (const token&)> cb, token& tok);

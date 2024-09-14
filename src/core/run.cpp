@@ -159,7 +159,7 @@ int vm_CHG_RECIPROCAL(regvm* vm, int a, int b, int c, int offset)
         const auto& s = vm->reg.id(b);
         uvalue v;
         v.dbl = 1.0 / (double)s;
-        r.write(v.uint, TYPE_DOUBLE, true);
+        r.write(v.uint, TYPE_DOUBLE);
     }
     else
     {
@@ -179,7 +179,7 @@ int vm_CHG_NOT(regvm* vm, int a, int b, int c, int offset)
     if (a != b)
     {
         auto& r = vm->reg.id(a);
-        r.write(~s.value.uint, TYPE_UNSIGNED, true);
+        r.write(~s.value.uint, TYPE_UNSIGNED);
     }
     else
     {
@@ -345,7 +345,7 @@ int vm_CODE_SLEN(regvm* vm, code_t code, int offset, const void* extra)
     auto& r = vm->reg.id(code.a);
     auto& s = vm->reg.id(code.b);
     int len = strlen(s.value.str);
-    r.write(len, TYPE_SIGNED, true);
+    r.write(len, TYPE_SIGNED);
     return 1;
 }
 
@@ -387,7 +387,7 @@ int vm_CODE_LLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
     auto& l = vm->reg.id(code.b);
-    r.write(l.value.list_v->size(), TYPE_SIGNED, true);
+    r.write(l.value.list_v->size(), TYPE_SIGNED);
     return 1;
 }
 
@@ -398,7 +398,7 @@ int vm_CODE_LAT(regvm* vm, code_t code, int offset, const void* extra)
     const int idx = list_idx(vm, l.value.list_v, code.c);
     if (unlikely(idx < 0))
     {
-        r.write(0, TYPE_NULL, true);
+        r.write(0, TYPE_NULL);
     }
     else
     {
@@ -507,7 +507,7 @@ int vm_CODE_DLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
     auto& v = vm->reg.id(code.b);
-    r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
+    r.write(v.value.dict_v->size(), TYPE_SIGNED);
     return 1;
 }
 
@@ -536,7 +536,7 @@ int vm_CODE_DGET(regvm* vm, code_t code, int offset, const void* extra)
     auto it = v.value.dict_v->find(k.value.str);
     if (unlikely(it == v.value.dict_v->end()))
     {
-        r.write(0, TYPE_NULL, true);
+        r.write(0, TYPE_NULL);
     }
     else
     {
@@ -567,7 +567,7 @@ int vm_CODE_DHAS(regvm* vm, code_t code, int offset, const void* extra)
     auto& r = vm->reg.id(code.a);
     auto& v = vm->reg.id(code.b);
     auto it = v.value.dict_v->find(k.value.str);
-    r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED, true);
+    r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED);
     return 1;
 }
 

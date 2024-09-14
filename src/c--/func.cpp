@@ -66,6 +66,17 @@ const char* func::go(const char* src)
         break;
     }
 
+    infos.unused = regs.unused();
+    if (selves.size() > 0)
+    {
+        const int info = rets.size() + ((infos.unused << 3) & 0xF0);
+        LOGT("call %d change info to : %d - (%d : %d)", id, info, (int)rets.size(), infos.unused);
+        for (auto& it : selves)
+        {
+            static_cast<instv<CODE_CALL>*>(it)->info = info;
+        }
+    }
+
     return src;
 }
 
@@ -534,10 +545,9 @@ const char* func::call(const char* src, func& sub, int& ret)
     //    return NULL;
     //}
 
-    int sub_info = regs.SIZE;
-
     int i = 0;
-    const int begin = sub_info + sub.rets.size();
+    const int ret_size = sub.rets.size();
+    const int begin = regs.SIZE + ret_size;
     src = comma(src, [this, &sub, &i, begin](const char* src, int* end)
         {
             selector::reg reg; 
@@ -556,9 +566,15 @@ const char* func::call(const char* src, func& sub, int& ret)
         return NULL;
     }
 
-    INST(CALL, 0, sub.id);
+    const int info = (sub.infos.unused < 0) ? ret_size : ret_size + ((sub.infos.unused << 3) & 0xF0);
+    LOGT("call %d info : %d - (%d : %d)", sub.id, info, ret_size, sub.infos.unused);
+    INST(CALL, info, sub.id);
+    if (sub.id == id)
+    {
+        selves.emplace_back(insts->back());
+    }
 
-    ret = sub_info;
+    ret = regs.SIZE;
 
     return src;
 }

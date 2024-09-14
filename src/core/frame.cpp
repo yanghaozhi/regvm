@@ -239,7 +239,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         {
 #define CMP(k, cmp)                             \
     case k:                                     \
-        vm->reg.id(inst.a).write(((int64_t)vm->reg.id(inst.b) cmp 0), TYPE_SIGNED, true);  \
+        vm->reg.id(inst.a).write(((int64_t)vm->reg.id(inst.b) cmp 0), TYPE_SIGNED);  \
         return 1;
             CMP(0, ==);
             CMP(1, !=);
@@ -290,7 +290,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
         FUNC(MOVE, vm_move, vm, inst.a, inst.b, inst.c);
         //FUNC(JCMP, vm_jcmp, vm, inst.a, inst.b, inst.c, extra);
         FUNC(CALC, vm_calc, vm, inst.a, inst.b, inst.c);
-        FUNC(TYPE, vm->reg.id(inst.a).write, vm->reg.id(inst.b).type, TYPE_SIGNED, true);
+        FUNC(TYPE, vm->reg.id(inst.a).write, vm->reg.id(inst.b).type, TYPE_SIGNED);
         FUNC(CLEAR, vm_clear, vm, vm->reg.id(inst.a), inst.b);
 #undef FUNC
 

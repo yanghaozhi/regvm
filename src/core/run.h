@@ -112,7 +112,7 @@ inline int vm_set(regvm* vm, const int a, const int b, const int c, const void* 
         p += 1;
     }
 
-    if (b == TYPE_STRTAB)
+    if (unlikely(b == TYPE_STRTAB))
     {
         if (unlikely(vm->str_tab == NULL))
         {
@@ -125,7 +125,7 @@ inline int vm_set(regvm* vm, const int a, const int b, const int c, const void* 
     }
 
     auto& r = vm->reg.id(a);
-    r.write(v, b, (b != r.type));
+    r.write(v, b);
     return next;
 }
 
@@ -137,62 +137,6 @@ inline int vm_cmp_type(struct regvm* vm, int v, bool i_v)
 template <typename T> inline T vm_cmp_value(struct regvm* vm, int v, bool i_v)
 {
     return (i_v == true) ? (T)v: (T)vm->reg.id(v);
-}
-
-template <typename T> inline T vm_cmp_val(const int c, const int i, const int* ms, const int* vs, const core::reg::v** rs)
-{
-    return ((c & ms[i]) != 0) ? (T)vs[i] : (T)*rs[i]; 
-}
-
-inline int vm_jcmp(struct regvm* vm, const int a, const int b, const int c, const void* extra)
-{
-    code_t* p = (code_t*)extra;
-    if (unlikely(p->id != CODE_DATA))
-    {
-        LOGE("Can not find CODE_DATA next to CODE_JCMP");
-        return 0;
-    }
-    const int next = 2;
-    const int dest = p->a3;
-
-    const int ms[] = {0x80, 0x40};
-    const int vs[] = {a, b};
-    const core::reg::v* rs[] = {&vm->reg.id(a), &vm->reg.id(b)};
-    const int t1 = ((c & 0x80) != 0) ? (int)TYPE_SIGNED : rs[0]->type;
-    const int t2 = ((c & 0x40) != 0) ? (int)TYPE_SIGNED : rs[1]->type;
-    const int t = (t1 > t2) ? t1 : t2;
-
-//#define CMP_VAL(type, idx) (((c & m##idx) != 0) ? (type)v##idx : (type)r##idx)
-#define CMP_VAL(type, idx) vm_cmp_val<type>(c, idx, ms, vs, rs)
-#define CMP_JUMP(type, cmp) return (CMP_VAL(type, 0) cmp CMP_VAL(type, 1)) ? dest : next;
-    switch (c & 0x0F)
-    {
-#define CMP_TYPE(k, cmp)                \
-    case k:                             \
-        switch (t)                      \
-        {                               \
-        case TYPE_SIGNED:               \
-            CMP_JUMP(int64_t, cmp);     \
-        case TYPE_UNSIGNED:             \
-            CMP_JUMP(uint64_t, cmp);    \
-        case TYPE_DOUBLE:               \
-            CMP_JUMP(double, cmp);      \
-        default:                        \
-            return 0;                   \
-        }                               \
-        break;
-        CMP_TYPE(0, ==);
-        CMP_TYPE(1, !=);
-        CMP_TYPE(2, > );
-        CMP_TYPE(3, >=);
-        CMP_TYPE(4, < );
-        CMP_TYPE(5, <=);
-#undef CMP_TYPE
-    }
-#undef CMP_JUMP
-#undef CMP_VAL
-
-    return 0;
 }
 
 inline int vm_calc(struct regvm* vm, const int a, const int b, const int c)
