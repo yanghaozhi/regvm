@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <code.h>
+#include <debug.h>
 
 #define VAR_IMPL    ext::var
 
@@ -17,7 +18,7 @@ namespace ext
 class var : public core::var
 {
 private:
-    friend class scope;
+    friend bool ::regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 
 public:
     var(uint8_t type, uint64_t id);

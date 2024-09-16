@@ -120,8 +120,7 @@ int regvm_mem::vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extr
     auto v = VM->get(vid);
     if (v == NULL)
     {
-        //auto vm = this;
-        //VM_ERROR(ERR_INVALID_VAR, code, reg, ex, offset, "load var name : %s", e.value.str);
+        VM_ERROR(ERR_INVALID_VAR, code, offset, "load var name : %d - %d ERROR", code.a, vid);
         return 0;
     }
     else
@@ -144,6 +143,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
             switch (e.type)
             {
             case TYPE_STRING:
+                VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name can NOT be TYPE_STRING : %s", e.value.str);
                 return 0;
             case TYPE_ADDR:
                 {
@@ -159,8 +159,7 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                     return VM->add(vid, r.type)->store_from(r);
                 }
             default:
-                //auto vm = this;
-                //VM_ERROR(ERR_TYPE_MISMATCH, code, reg, ex, offset, "store name : %d", e.type);
+                VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "store name : %d", e.type);
                 vm->fatal = true;
                 return 0;
             }
@@ -316,29 +315,6 @@ bool regvm_mem::del(uint64_t first, uint64_t last)
 //    scopes.pop_front();
 //}
 
-void regvm_mem::dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const
-{
-    //for (auto& f : frames)
-    //{
-    //    info->func_id = f.frame >> 32;
-    //    info->call_id = f.frame & 0xFFFFFFFF;
-    //    auto it = vm->funcs.find(info->func_id);
-    //    if (it != vm->funcs.end())
-    //    {
-    //        info->func_name = it->second.src.func;
-    //    }
-    //    else
-    //    {
-    //        info->func_name = NULL;
-    //    }
-
-    //    for (auto& s : f.scopes)
-    //    {
-    //        s.dump(cb, arg, info);
-    //    }
-    //}
-}
-
 template <typename F> inline void regvm_mem::scan_local_vars(uint64_t id, F&& func)
 {
     auto f = vars.lower_bound(id);
@@ -364,10 +340,27 @@ bool regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg)
     memset(&info, 0, sizeof(info));
     cb(arg, NULL);
 
-    auto m = VM;
-    if (m != NULL)
+    for (auto& v : VM->vars)
     {
-        m->dump(vm, cb, arg, &info);
+        info.func_id = v.second->id >> 32;
+        info.call_id = (v.second->id & 0xFFFF0000) >> 16;
+        info.var_id = v.second->id & 0xFFFF;
+        auto it = vm->funcs.find(info.func_id);
+        if (it != vm->funcs.end())
+        {
+            info.func_name = it->second.src.func;
+        }
+        else
+        {
+            info.func_name = NULL;
+        }
+
+        info.ref = v.second->ref;
+        info.type = v.second->type();
+        info.reg = (v.second->reg != NULL) ? vm->reg.idx(static_cast<core::reg::v&>(*v.second->reg)) : -1;
+        info.value.uint = v.second->value.uint;
+
+        cb(arg, &info);
     }
 
     cb(arg, (regvm_var_info*)(intptr_t)-1);

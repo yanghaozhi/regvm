@@ -35,8 +35,6 @@ public:
     bool del(uint64_t id);
     bool del(uint64_t first, uint64_t last);
 
-    void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
-
     static bool init(regvm* vm, int idx, void* arg);
     static bool exit(regvm* vm, int idx, void* arg);
 
@@ -50,6 +48,7 @@ public:
     static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
 
 private:
+
     uint64_t                    cur_call;
     std::map<uint64_t, var_t*>  vars;
     std::vector<int64_t>        calls;
@@ -60,6 +59,8 @@ private:
     }
 
     template <typename F> inline void scan_local_vars(uint64_t id, F&& func);
+
+    friend bool ::regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 };
 
 }

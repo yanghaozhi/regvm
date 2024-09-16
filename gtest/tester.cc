@@ -49,7 +49,8 @@ int64_t test_base::go(char* txt, bool expect)
         printf("\n\n");
     }
 
-    auto vm = regvm_init();
+    extern int mem_init(void);
+    auto vm = regvm_init(1, mem_init);
 
     regvm_irq_set(vm, IRQ_TRAP, debug_trap, this);
 
