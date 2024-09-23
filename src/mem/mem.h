@@ -48,8 +48,7 @@ public:
     static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
 
 private:
-
-    uint64_t                    cur_call;
+    uint64_t                    cur_call    = 0;
     std::map<uint64_t, var_t*>  vars;
     std::vector<int64_t>        calls;
 

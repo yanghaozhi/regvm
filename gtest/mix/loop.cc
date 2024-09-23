@@ -21,7 +21,7 @@ CLEAR    2   1   0
 #SETC    2   9   #LABEL:  aaa
 #TRAP    0   5
 # if ($1 > $2) jump $2
-JGT     1   2   -3
+JGT     1   2   0   -3
 TRAP    6   1   0
 # $0 += 10
 CALC    0   10  0

@@ -21,7 +21,7 @@ private:
     friend bool ::regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 
 public:
-    var(uint8_t type, uint64_t id);
+    var(uint8_t type, uint64_t id = (uint64_t)-1);
     virtual ~var();
 
     const uint64_t      id;

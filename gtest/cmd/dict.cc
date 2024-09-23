@@ -72,15 +72,15 @@ TEST(cmd, dict)
 
             CHECK_REG(key, 4, 0, Y, TYPE_DOUBLE,    321.123,    2, 0);
 
-            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,    1,          -1, 0);
+            CHECK_REG(key, 5, 0, Y, TYPE_SIGNED,    1,          2, 0);
 
             CHECK_REG(key, 6, 9, N, TYPE_LIST,      3,          -1, 1);
             CHECK_REG(key, 6, 10, N, TYPE_LIST,     3,          -1, 1);
 
             CHECK_REG(key, 7, 7, N, TYPE_DICT,      2,          -1, 1);
-            CHECK_REG(key, 7, 0, N, TYPE_SIGNED,    1,          -1, 0);
+            CHECK_REG(key, 7, 0, Y, TYPE_SIGNED,    1,          2, 0);
 
-            CHECK_REG(key, 8, 0, N, TYPE_SIGNED,    2,          -1, 0);
+            CHECK_REG(key, 8, 0, Y, TYPE_SIGNED,    2,          2, 0);
             return match;
         },
         [](auto key, auto offset, auto info)

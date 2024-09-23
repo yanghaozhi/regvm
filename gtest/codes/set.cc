@@ -34,14 +34,14 @@ TEST(code, set)
                                                       
             CHECK_REG(key, 2, 2, Y, TYPE_UNSIGNED,  321,        2,  0);
                                                    
-            CHECK_REG(key, 3, 2, N, TYPE_SIGNED,    456,        -1, 0);
+            CHECK_REG(key, 3, 2, Y, TYPE_SIGNED,    456,        2, 0);
             return match;
         },
         [](auto key, auto offset, auto info)
         {
             int match = 0;
-            CHECK_VAR(key, 2, 10, 0, 2,  TYPE_UNSIGNED, 321, 2, 0);
-            CHECK_VAR(key, 3, 10, 0, -1, TYPE_UNSIGNED, 321, 1, 0);
+            CHECK_VAR(key, 2, 10, 0, 2, TYPE_UNSIGNED, 321, 2, 0);
+            CHECK_VAR(key, 3, 10, 0, 2, TYPE_UNSIGNED, 321, 2, 0);
             return match;
             //printf("%d - %d\t%d\t%d\t%s\t%d(%s)\t%d\t%d\t%p\n", key, info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->scope_id, info->raw);
             //printf("%d\n", (strcmp("abc", info->var_name) == 0));

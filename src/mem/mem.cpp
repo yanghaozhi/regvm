@@ -51,7 +51,7 @@ bool regvm_mem::exit(regvm* vm, int idx, void* arg)
 core::var* regvm_mem::var_create_from_reg(regvm* vm, int id)
 {
     auto& r = vm->reg.id(id);
-    auto v = new var(r.type, (uint64_t)r);
+    auto v = new var(r.type);
     v->store_from(r);
     return v;
 }
@@ -134,7 +134,16 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
     auto& r = vm->reg.id(code.a);
     switch (code.c)
     {
-    case 0:     //原始加载的变量（如无，则无操作）
+    case 0:     //回写原始加载的变量（如无，则无操作）
+        if (unlikely(r.from == NULL))
+        {
+            return 1;
+        }
+        if (unlikely(r.type != r.from->type()))
+        {
+            VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "CODE_STORE can NOT change type : %d -> %d", r.from->type(), r.type);
+            return 0;
+        }
         return r.store();
     case 1:
     case 2:
@@ -154,6 +163,11 @@ int regvm_mem::vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* ext
                         if (v->store_from(r) == true)
                         {
                             return 1;
+                        }
+                        else
+                        {
+                            VM_ERROR(ERR_TYPE_MISMATCH, code, offset, "CODE_STORE can NOT change type : %d -> %d", v->type(), r.type);
+                            return 0;
                         }
                     }
                     return VM->add(vid, r.type)->store_from(r);

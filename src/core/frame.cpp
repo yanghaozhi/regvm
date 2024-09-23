@@ -145,18 +145,19 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
             const auto& b = vm->reg.id(inst.b);                             \
             const auto& c = vm->reg.id(inst.c);                             \
             int t = (b.type > c.type) ? b.type : c.type;                    \
-            r.set_from(NULL);                                               \
-            r.type = t;                                                     \
             switch (t)                                                      \
             {                                                               \
             case TYPE_SIGNED:                                               \
                 r.value.sint = (int64_t)b op (int64_t)c;                    \
+                r.type = t;                                                 \
                 return 1;                                                   \
             case TYPE_UNSIGNED:                                             \
                 r.value.uint = (uint64_t)b op (uint64_t)c;                  \
+                r.type = t;                                                 \
                 return 1;                                                   \
             case TYPE_DOUBLE:                                               \
                 r.value.dbl = (double)b op (double)c;                       \
+                r.type = t;                                                 \
                 return 1;                                                   \
             default:                                                        \
                 UNSUPPORT_TYPE(#i, t, inst, offset);                        \

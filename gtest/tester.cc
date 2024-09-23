@@ -77,11 +77,11 @@ void test_base::trap(regvm* vm, code_t code, int offset)
     arg.self = this;
     arg.matches = 0;
     regvm_debug_reg_callback(vm, check_reg, &arg);
-    EXPECT_EQ((int)code.b, arg.matches) << " at TRAP : " << key;
+    EXPECT_EQ((int)code.b, arg.matches) << " at TRAP reg : " << key;
 
     arg.matches = 0;
     regvm_debug_var_callback(vm, check_var, &arg);
-    EXPECT_EQ((int)code.c, arg.matches) << " at TRAP : " << key;
+    EXPECT_EQ((int)code.c, arg.matches) << " at TRAP var : " << key;
 }
 
 int64_t test_base::debug_trap(regvm* vm, void* arg, code_t code, int offset, void* extra)
