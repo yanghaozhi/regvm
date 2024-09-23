@@ -11,6 +11,7 @@
 
 #include <code.h>
 
+#include "ext.h"
 #include "mlib.h"
 
 #define likely(x)       __builtin_expect(!!(x), 1)
@@ -48,6 +49,7 @@ protected:
     friend class error;
 
     mutable int16_t ref         = 1;
+    uint8_t         typev       = TYPE_NULL;
 
 public:
     uvalue          value;
@@ -59,12 +61,13 @@ public:
         return v;
     }
 
-    inline void acquire(void)                   {++ref;};
+    inline int type(void) const                 {return typev;};
 
-    virtual bool set_val(const regv& r)         {return false;};
-    virtual bool set_reg(const regv* r) const   {return false;};
-    virtual int vtype(void) const               {return 0;};
-    virtual bool release(void) const            {return false;};
+    inline void acquire(void)                   {++ref;};
+    inline bool release(void) const             {return vm_ext_ops.var_release(this);};
+
+    inline bool set_val(const regv& r)          {return vm_ext_ops.var_set_val(this, r);};
+    //inline bool set_reg(const regv* r) const    {return vm_ext_ops.var_set_reg(this, r);};
 };
 
 struct regv
@@ -72,7 +75,7 @@ struct regv
     uvalue                  value;
     mutable var*            from;
     uint8_t                 type;
-    int8_t                  idx;
+    //uint8_t                 idx;
     mutable bool            need_free;
 
     inline bool clear()
@@ -95,7 +98,7 @@ struct regv
         core::var* v = from;
         if (v == NULL)
         {
-            return false;
+            return true;
         }
 
         if (v->reg != this)
@@ -123,7 +126,7 @@ struct regv
             v->reg->clear();
         }
 
-        type = v->vtype();
+        type = v->type();
         value = v->value;
         set_from(v);
         need_free = false;
@@ -133,14 +136,15 @@ struct regv
 
     inline bool set_from(const var* v) const
     {
-        if (v != NULL)
-        {
-            v->set_reg(this);
-        }
-        if (from != NULL)
-        {
-            from->set_reg(NULL);
-        }
+        //if (v != NULL)
+        //{
+        //    v->set_reg(this);
+        //}
+        //if (from != NULL)
+        //{
+        //    from->set_reg(NULL);
+        //}
+        vm_ext_ops.reg_chg_from(this, from, v);
         from = const_cast<decltype(from)>(v);
         return true;
     }

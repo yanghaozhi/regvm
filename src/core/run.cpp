@@ -8,12 +8,11 @@
 #include "ext.h"
 #include "reg.h"
 #include "log.h"
+#include "run.h"
 #include "frame.h"
 
 
 using namespace core;
-
-extern bool vm_conv_type(struct regvm* vm, reg::v& r, int to);
 
 extern "C"
 {
@@ -83,39 +82,10 @@ int vm_CODE_TRAP(regvm* vm, code_t code, int offset, const void* extra)
     return 1;
 }
 
-inline bool clear_reg(reg::v& r, const int type)
-{
-    switch (type)
-    {
-    case TYPE_LIST:
-        r.clear();
-        r.value.list_v = new uvalue::list_t();
-        r.need_free = true;
-        r.type = type;
-        return true;
-    case TYPE_DICT:
-        r.clear();
-        r.value.dict_v = new uvalue::dict_t();
-        r.need_free = true;
-        r.type = type;
-        return true;
-    case TYPE_SIGNED:
-    case TYPE_UNSIGNED:
-        return r.write(0, type, true);
-    case TYPE_DOUBLE:
-        r.clear();
-        r.type = type;
-        r.value.dbl = 0.0;
-        return true;
-    default:
-        return false;
-    }
-}
-
 int vm_CODE_CLEAR(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
-    return (int)clear_reg(r, code.b);
+    return (int)vm_clear(vm, r, code.b);
 }
 
 int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra)
@@ -148,7 +118,7 @@ int vm_CODE_CONV(regvm* vm, code_t code, int offset, const void* extra)
     const auto& src = vm->reg.id(code.b);
     auto& res = vm->reg.id(code.a);
     res.copy(src);
-    if (vm_conv_type(vm, res, code.c) == false)
+    if (vm_conv(vm, res, code.c) == false)
     {
         UNSUPPORT_TYPE("conv", code.c, code, offset);
         return 0;
@@ -166,7 +136,7 @@ int vm_CHG_MINUS(regvm* vm, int a, int b, int c, int offset)
     switch (r.type)
     {
     case TYPE_UNSIGNED:
-        vm_conv_type(vm, r, TYPE_SIGNED);
+        vm_conv(vm, r, TYPE_SIGNED);
         [[fallthrough]];
     case TYPE_SIGNED:
         r.value.sint = 0 - r.value.sint;
@@ -189,11 +159,11 @@ int vm_CHG_RECIPROCAL(regvm* vm, int a, int b, int c, int offset)
         const auto& s = vm->reg.id(b);
         uvalue v;
         v.dbl = 1.0 / (double)s;
-        r.write(v.uint, TYPE_DOUBLE, true);
+        r.write(v.uint, TYPE_DOUBLE);
     }
     else
     {
-        vm_conv_type(vm, r, TYPE_DOUBLE);
+        vm_conv(vm, r, TYPE_DOUBLE);
         r.value.dbl = 1.0 / r.value.dbl;
     }
     return 1;
@@ -209,7 +179,7 @@ int vm_CHG_NOT(regvm* vm, int a, int b, int c, int offset)
     if (a != b)
     {
         auto& r = vm->reg.id(a);
-        r.write(~s.value.uint, TYPE_UNSIGNED, true);
+        r.write(~s.value.uint, TYPE_UNSIGNED);
     }
     else
     {
@@ -240,7 +210,7 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
     else
     {
         auto& r = vm->reg.id(a);
-        vm_conv_type(vm, r, TYPE_STRING);
+        vm_conv(vm, r, TYPE_STRING);
         r.set_from(NULL);
         r.value.str = strdup(s.value.str);
         r.need_free = true;
@@ -250,21 +220,32 @@ int vm_CHG_MALLOC(regvm* vm, int a, int b, int c, int offset)
 
 int vm_CODE_CALL(regvm* vm, code_t code, int offset, const void* extra)
 {
-    //auto& r = vm->reg.id(reg);
-    //if ((vm->call(r, code, reg, ex, offset) == false) || (vm->fatal == true))
-    //{
-    //    return 0;
-    //}
-    //if (vm->exit == true)
-    //{
-    //    return 1;
-    //}
-    return 1;
+    uint32_t id = code.b2;
+    int next = 1;
+    if (unlikely(id > 0x7FFF))
+    {
+        code_t* p = (code_t*)extra;
+        if (unlikely(p->id != CODE_DATA))
+        {
+            VM_ERROR(ERR_RUNTIME, code, offset, "call function : %u, but does NOT find CODE after", id);
+            return 0;
+        }
+        id += (((uint32_t)p->a3) << 8);
+        next += 1;
+    }
+
+    if (unlikely(vm->call(id, code, offset) == false))
+    {
+        VM_ERROR(ERR_RUNTIME, code, offset, "call function : %d ERROR", id);
+        return 0;
+    }
+
+    return next;
 }
 
 int vm_CODE_RET(regvm* vm, code_t code, int offset, const void* extra)
 {
-    return 1;
+    return 0;
 }
 
 
@@ -364,7 +345,7 @@ int vm_CODE_SLEN(regvm* vm, code_t code, int offset, const void* extra)
     auto& r = vm->reg.id(code.a);
     auto& s = vm->reg.id(code.b);
     int len = strlen(s.value.str);
-    r.write(len, TYPE_SIGNED, true);
+    r.write(len, TYPE_SIGNED);
     return 1;
 }
 
@@ -406,7 +387,7 @@ int vm_CODE_LLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
     auto& l = vm->reg.id(code.b);
-    r.write(l.value.list_v->size(), TYPE_SIGNED, true);
+    r.write(l.value.list_v->size(), TYPE_SIGNED);
     return 1;
 }
 
@@ -417,7 +398,7 @@ int vm_CODE_LAT(regvm* vm, code_t code, int offset, const void* extra)
     const int idx = list_idx(vm, l.value.list_v, code.c);
     if (unlikely(idx < 0))
     {
-        r.write(0, TYPE_NULL, true);
+        r.write(0, TYPE_NULL);
     }
     else
     {
@@ -432,10 +413,10 @@ int vm_CODE_LPUSH(regvm* vm, code_t code, int offset, const void* extra)
     switch (code.b)
     {
     case 0:
-        l.value.list_v->push_back(CRTP_CALL(vm_var, code.c));
+        l.value.list_v->push_back(vm_ext_ops.var_create_from_reg(vm, code.c));
         break;
     case 1:
-        l.value.list_v->push_front(CRTP_CALL(vm_var, code.c));
+        l.value.list_v->push_front(vm_ext_ops.var_create_from_reg(vm, code.c));
         break;
     default:
         return 0;
@@ -474,7 +455,7 @@ int vm_CODE_LINSERT(regvm* vm, code_t code, int offset, const void* extra)
     const int idx = list_idx(vm, l.value.list_v, code.b);
     if (likely(idx > 0))
     {
-        l.value.list_v->emplace(l.value.list_v->begin() + idx, CRTP_CALL(vm_var, code.c));
+        l.value.list_v->emplace(l.value.list_v->begin() + idx, vm_ext_ops.var_create_from_reg(vm, code.c));
         return 1;
     }
     else
@@ -516,7 +497,7 @@ int vm_CODE_LSET(regvm* vm, code_t code, int offset, const void* extra)
 }
 
 #define CHECK_DICT(var, arg)                \
-    auto var = vm->reg.id(code.arg);        \
+    auto& var = vm->reg.id(code.arg);       \
     if (var.type != TYPE_STRING)            \
     {                                       \
         return 0;                           \
@@ -526,7 +507,7 @@ int vm_CODE_DLEN(regvm* vm, code_t code, int offset, const void* extra)
 {
     auto& r = vm->reg.id(code.a);
     auto& v = vm->reg.id(code.b);
-    r.write(v.value.dict_v->size(), TYPE_SIGNED, true);
+    r.write(v.value.dict_v->size(), TYPE_SIGNED);
     return 1;
 }
 
@@ -537,7 +518,7 @@ int vm_CODE_DSET(regvm* vm, code_t code, int offset, const void* extra)
     auto it = v.value.dict_v->find(k.value.str);
     if (it == v.value.dict_v->end())
     {
-        v.value.dict_v->emplace(k.value.str, CRTP_CALL(vm_var, code.c));
+        v.value.dict_v->emplace(k.value.str, vm_ext_ops.var_create_from_reg(vm, code.c));
     }
     else
     {
@@ -555,7 +536,7 @@ int vm_CODE_DGET(regvm* vm, code_t code, int offset, const void* extra)
     auto it = v.value.dict_v->find(k.value.str);
     if (unlikely(it == v.value.dict_v->end()))
     {
-        r.write(0, TYPE_NULL, true);
+        r.write(0, TYPE_NULL);
     }
     else
     {
@@ -586,7 +567,7 @@ int vm_CODE_DHAS(regvm* vm, code_t code, int offset, const void* extra)
     auto& r = vm->reg.id(code.a);
     auto& v = vm->reg.id(code.b);
     auto it = v.value.dict_v->find(k.value.str);
-    r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED, true);
+    r.write((it != v.value.dict_v->end()) ? 1 : 0, TYPE_SIGNED);
     return 1;
 }
 
@@ -596,8 +577,8 @@ int vm_CODE_DITEMS(regvm* vm, code_t code, int offset, const void* extra)
     auto& ks = vm->reg.id(code.b);
     auto& vs = vm->reg.id(code.c);
 
-    clear_reg(ks, TYPE_LIST);
-    clear_reg(vs, TYPE_LIST);
+    vm_clear(vm, ks, TYPE_LIST);
+    vm_clear(vm, vs, TYPE_LIST);
 
     if (v.value.dict_v->empty() == true)
     {
@@ -609,7 +590,7 @@ int vm_CODE_DITEMS(regvm* vm, code_t code, int offset, const void* extra)
 
     for (auto& it : *v.value.dict_v)
     {
-        auto k = CRTP_CALL(vm_var, TYPE_STRING, -1);
+        auto k = vm_ext_ops.var_create(vm, TYPE_STRING, (uint64_t)-1);
         *k = it.first.c_str();
         keys->push_back(k);
 

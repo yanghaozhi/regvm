@@ -10,47 +10,50 @@
 
 #include "log.h"
 
+#define VAR     static_cast<ext::var*>(var)
+#define CVAR    static_cast<const ext::var*>(var)
+
 using namespace ext;
 
-var::var(uint8_t t, int64_t i) :
-    type(t),
+var::var(uint8_t t, uint64_t i) :
     id(i)
 {
-    LOGD("create var %p - %d", this, ref);
+    typev = t;
+    LOGD("create var %016llx - %d - %p", (long long)id, ref, this);
     value.uint = 0;
 }
 
 var::~var()
 {
-    LOGD("delete var %p - %d", this, ref);
+    LOGD("delete var %016llx - %d - %p", (long long)id, ref, this);
     if (reg != NULL)
     {
         reg->set_from(NULL);
     }
-    free_uvalue(type, value);
+    free_uvalue(typev, value);
 }
 
-bool var::set_val(const core::regv& reg)
+inline bool var::set_val(const core::regv& r)
 {
-    if (type != reg.type)
+    if (typev != r.type)
     {
         return false;
     }
 
-    switch (type)
+    switch (typev)
     {
 #define AGGREGATE(T, V, CP, ...)                    \
     case T:                                         \
-        if (value.V != reg.value.V)                 \
+        if (value.V != r.value.V)                   \
         {                                           \
             if (value.V != NULL)                    \
             {                                       \
-                core::free_uvalue(type, value);     \
+                core::free_uvalue(typev, value);    \
             }                                       \
-            if (reg.need_free == true)              \
+            if (r.need_free == true)                \
             {                                       \
-                value.V = reg.value.V;              \
-                reg.need_free = false;              \
+                value.V = r.value.V;                \
+                r.need_free = false;                \
             }                                       \
             else                                    \
             {                                       \
@@ -59,19 +62,19 @@ bool var::set_val(const core::regv& reg)
         }                                           \
         break;
 
-        AGGREGATE(TYPE_STRING, str, strdup, reg.value.str);
-        AGGREGATE(TYPE_LIST, list_v, new core::uvalue::list_t, reg.value.list_v->begin(), reg.value.list_v->end());
-        AGGREGATE(TYPE_DICT, dict_v, new core::uvalue::dict_t, reg.value.dict_v->begin(), reg.value.dict_v->end());
+        AGGREGATE(TYPE_STRING, str, strdup, r.value.str);
+        AGGREGATE(TYPE_LIST, list_v, new core::uvalue::list_t, r.value.list_v->begin(), r.value.list_v->end());
+        AGGREGATE(TYPE_DICT, dict_v, new core::uvalue::dict_t, r.value.dict_v->begin(), r.value.dict_v->end());
 
 #undef AGGREGATE
     default:
-        value = reg.value;
+        value = r.value;
         break;
     }
     return true;
 }
 
-bool var::set_reg(const core::regv* new_reg) const
+inline bool var::set_reg(const core::regv* new_reg) const
 {
     if (new_reg == reg) return true;
 
@@ -97,32 +100,12 @@ bool var::set_reg(const core::regv* new_reg) const
     return true;
 }
 
-bool var::release(void) const
-{
-    if (--ref > 0)
-    {
-        LOGD("var %p ref : %d", this, ref);
-        return true;
-    }
-    LOGD("var %p ref : %d", this, ref);
-
-    if (ref == 0)
-    {
-        //delete this;
-        this->~var();
-        free((void*)this);
-    }
-
-    return false;
-}
-
 bool var::store_from(core::regv& r)
 {
     if (reg == &r) return r.store();
 
-    if (type != r.type)
+    if (typev != r.type)
     {
-        LOGE("type mismatch : %d - %d", type, r.type);
         return false;
     }
 
@@ -131,7 +114,7 @@ bool var::store_from(core::regv& r)
         reg->set_from(NULL);
     }
 
-    auto old = r.from;
+    auto old = static_cast<var*>(r.from);
     if (old != NULL)
     {
         //do NOT writeback
@@ -156,14 +139,19 @@ bool var::store_from(core::regv& r)
     return true;
 }
 
-void var::dump(var_cb cb, void* arg, regvm_var_info* info) const
+bool var::reg_chg_from(const core::regv* r, const core::var* cur, const core::var* next)
 {
-    info->ref = ref;
-    info->type = type;
-    info->reg = (reg != NULL) ? reg->idx : -1;
-    info->var_id = id;
-    info->value.sint = value.sint;
-    info->attr = 0;
-    cb(arg, info);
+    if (next != NULL)
+    {
+        static_cast<const var*>(next)->set_reg(r);
+    }
+    if (cur != NULL)
+    {
+        static_cast<const var*>(cur)->set_reg(NULL);
+    }
+    return true;
 }
 
+bool var::set_val(core::var* v, const core::regv& r)          {return static_cast<var*>(v)->set_val(r);};
+//bool var::set_reg(const core::var* v, const core::regv* r)    {return static_cast<const var*>(v)->set_reg(r);};
+bool var::release(const core::var* v)                         {return static_cast<const var*>(v)->release();};

@@ -1,29 +1,37 @@
-int i = 6 + 10 * (87 - 51) - 30;
-
-echo(i);
-
-echo(i, 10 * 20 - 30, -18.484);
-
-int j = i + 10;
-
-echo(i, j);
-
-if (j % 2 == 0)
+int test1(int a, int b)
 {
-    echo(1234);
-}
-else
-{
-    echo(46789);
-}
-echo(j);
+    echo(a, b);
 
-//int k = j / 100;
-//do
-//{
-//    echo (k);
-//    k -= 1;
-//} while (k >= 0);
+    int j = a + 10;
+
+    echo(j);
+
+    if (j % 2 == 0)
+    {
+        echo(1234);
+    }
+    else
+    {
+        echo(46789);
+    }
+    echo(j);
+
+    int k = j / 100;
+    do
+    {
+        echo (k);
+        k -= 1;
+    } while (k >= 0);
+
+    return a + b;
+}
+
+//int i = 6 + 10 * (87 - 51) - 30;
+//
+//echo(i);
+//
+//echo(i, 10 * 20 - 30, -18.484);
+//
 //
 //echo(i);
 //while (i >= 0)
@@ -32,7 +40,29 @@ echo(j);
 //    echo(i);
 //}
 //
-for (int m = 0; m < i; m += 1)
+//for (int m = 0; m < i; m += 1)
+//{
+//    echo(m);
+//}
+
+//int n = test1(10, 20);
+//echo(n);
+
+int test2(int n)
 {
-    echo(m);
+    echo(n);
+	if (n <= 2)
+    {
+		return 1;
+    }
+	else
+    {
+        int a = test2(n - 1);
+        int b = test2(n - 2);
+        echo (a, b, a + b);
+		return a + b;
+    }
 }
+
+int m = test2(5);
+echo(m);

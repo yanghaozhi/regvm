@@ -11,16 +11,19 @@
 class blocks
 {
 public:
-    blocks(insts_t& i, selector& s) : insts(i), regs(s)    {};
-    ~blocks()                       {};
+    blocks(insts_t* i, selector& s) : insts(i), regs(s) {}
+    ~blocks()   {}
 
     struct var
     {
+        var(const selector::reg& r, int a, uint64_t i) : reg(r), attr(a), id(i) {}
+
         selector::reg   reg;
         const int       attr;
-        const uint64_t  id;
+        const uint16_t  id;
     };
 
+    const var* bind_arg(const std::string_view& name, int r, int attr);
     const var* bind_var(const std::string_view& name, const selector::reg& v, int attr);
     const var* new_var(const std::string_view& name, int attr);
     template <typename F> const var* find_var(const std::string_view& name, int& attr, F reload)
@@ -50,18 +53,19 @@ public:
 private:
     struct block
     {
-        block(blocks* b) : cur(b)    {};
+        block(blocks* b) : first(b->var_id), cur(b)     {};
         ~block();
 
+        const int       first;
+        int             last        = -1;
         blocks*         cur;
         std::unordered_map<std::string_view, var>   vars;
     };
 
-    insts_t&            insts;
+    uint16_t            var_id      = 1;
+    insts_t*            insts;
     selector&           regs;
     std::list<block>    stack;
-    static uint32_t     var_id;
-    std::unordered_set<uint32_t>   ids;
 
-    uint32_t new_id(const std::string_view& name);
+    const var* add_2_vars(const std::string_view& name, const selector::reg& v, int attr);
 };

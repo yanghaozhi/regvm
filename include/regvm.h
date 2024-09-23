@@ -11,7 +11,10 @@ extern "C"
 {
 #endif
 
-struct regvm* regvm_init(void);
+typedef int (*regvm_ext_init)(void);
+
+//ext_inits后跟随子模块的初始化函数指针，类型为regvm_ext_init
+struct regvm* regvm_init(int ext_inits, ...);
 
 bool regvm_exit(struct regvm* vm);
 

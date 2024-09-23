@@ -27,34 +27,6 @@ static void data_print_bin(FILE* fp, int v)
 }
 
 
-bool instv<CODE_JCMP>::scan(const char* src)
-{
-    return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
-}
-
-void instv<CODE_JCMP>::print(FILE* fp) const
-{
-    fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
-    data_print(fp, offset);
-}
-
-void instv<CODE_JCMP>::print_bin(FILE* fp) const
-{
-    code_t code;
-    code.id = id;
-    code.a = a;
-    code.b = b;
-    code.c = c;
-    fwrite(&code, sizeof(code_t), 1, fp);
-
-    data_print_bin(fp, offset);
-}
-
-void instv<CODE_JCMP>::print_asm(FILE* fp) const
-{
-    fprintf(fp, "%-8s %d\t%d\t%d\t%d\n", name, a, b, c, offset);
-}
-
 bool instj::scan(const char* src)
 {
     return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
@@ -168,7 +140,7 @@ bool instv<CODE_SET>::scan(const char* s)
         SCAN_V(TYPE_SIGNED, sint, strtoll, 10);
         SCAN_V(TYPE_UNSIGNED, uint, strtoull, 10);
         SCAN_V(TYPE_DOUBLE, dbl, strtod);
-        SCAN_V(TYPE_ADDR, uint, strtoull, 10);
+        SCAN_V(TYPE_ADDR, uint, strtoll, 10);
 #undef SCAN_V
     case TYPE_STRING:
         while ((*p == ' ') || (*p == '\t'))
@@ -177,7 +149,6 @@ bool instv<CODE_SET>::scan(const char* s)
         }
         return change_str(p);
     default:
-        LOGE("Does NOT support type : %d", type);
         return false;
     }
 }
@@ -188,21 +159,26 @@ void instv<CODE_SET>::print(FILE* fp) const
     {
     case TYPE_SIGNED:
         fprintf(fp, "# %lld\n", (long long)ex.sint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%ld\n", name, id, reg, type, ex.sint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_UNSIGNED:
         fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%lu\n", name, id, reg, type, ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_DOUBLE:
         fprintf(fp, "# %.17g\n", ex.dbl);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%f\n", name, id, reg, type, ex.dbl);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
     case TYPE_STRING:
         fprintf(fp, "# %s\n", ex.str);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%s\n", name, id, reg, type, ex.str);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
         break;
+    case TYPE_ADDR:
+        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
+        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+        return;
     default:
+        LOGW("Unknown type : %d", type);
         break;
     }
 
@@ -247,7 +223,7 @@ void instv<CODE_SET>::print_asm(FILE* fp) const
         fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
         return;
     default:
-        assert(0);
+        LOGW("Unknown type : %d", type);
         break;
     }
 }
@@ -341,11 +317,26 @@ template <typename F> inline void cmd_args(const std::vector<int>& args, const i
 void instv<CODE_ECHO>::print(FILE* fp) const
 {
     fprintf(fp, "%-8s %02X\t%d", name, id, (int)args.size());
-    for (auto& it : args)
+    switch (args.size())
     {
-        fprintf(fp, "\t%d", it);
+    case 0:
+        LOGW("Should NOT echo with 0 args !!!");
+        fprintf(fp, "\t%d\t%d\n", 0, 0);
+        break;
+    case 1:
+        fprintf(fp, "\t%d\t%d\n", args[0], 0);
+        break;
+    case 2:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+        break;
+    default:
+        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+        cmd_args(args, 2, [fp](int a, int b, int c)
+            {
+                fprintf(fp, "DATA     \t%d\t%d\t%d\n", a, b, c);
+            });
+        break;
     }
-    fprintf(fp, "\n");
 }
 
 void instv<CODE_ECHO>::print_bin(FILE* fp) const
@@ -357,6 +348,10 @@ void instv<CODE_ECHO>::print_bin(FILE* fp) const
     switch (args.size())
     {
     case 0:
+        LOGW("Should NOT echo with 0 args !!!");
+        code.b = 0;
+        code.c = 0;
+        fwrite(&code, sizeof(code_t), 1, fp);
         break;
     case 2:
         code.c = args[1];
@@ -384,27 +379,53 @@ void instv<CODE_ECHO>::print_bin(FILE* fp) const
 void instv<CODE_ECHO>::print_asm(FILE* fp) const
 {
     fprintf(fp, "%-8s %d", name, (int)args.size());
-    switch (args.size())
+    for (auto& it : args)
     {
-    case 0:
-        fprintf(fp, "\t%d\t%d\n", 0, 0);
-        break;
-    case 1:
-        fprintf(fp, "\t%d\t%d\n", args[0], 0);
-        break;
-    case 2:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
-        break;
-    default:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
-        cmd_args(args, 2, [fp](int a, int b, int c)
-            {
-                fprintf(fp, "DATA     %d\t%d\t%d\n", a, b, c);
-            });
-        break;
+        fprintf(fp, "\t%d", it);
+    }
+    fprintf(fp, "\n");
+    if (args.size() == 0)
+    {
+        LOGW("Should NOT echo with 0 args !!!");
     }
 }
 
+bool instv<CODE_CALL>::scan(const char* src)
+{
+    return sscanf(src, "%d %d", &info, &func) == 2;
+}
 
+void instv<CODE_CALL>::print(FILE* fp) const
+{
+    fprintf(fp, "# func id : %d\n", func);
+    if (func > 0x7FFF)
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, (func & 0xFF) + 0xFF00);
+        data_print(fp, func >> 8);
+    }
+    else
+    {
+        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, func);
+    }
+}
+
+void instv<CODE_CALL>::print_bin(FILE* fp) const
+{
+    code_t code;
+    code.id = CODE_CALL;
+    code.a = info;
+    code.b2 = (func > 0x7FFF) ? (func & 0xFF) + 0xFF00 : func;
+    fwrite(&code, sizeof(code_t), 1, fp);
+
+    if (func > 0x7FFF)
+    {
+        data_print_bin(fp, func >> 8);
+    }
+}
+
+void instv<CODE_CALL>::print_asm(FILE* fp) const
+{
+    fprintf(fp, "%-8s %d\t%d\n", name, info, func);
+}
 
 

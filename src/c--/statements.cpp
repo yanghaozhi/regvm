@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #include <log.h>
+
+#include "func.h"
 #include "parser.h"
 
 extern bool can_literally_optimize(const token& a, int& v);
@@ -13,30 +15,15 @@ template <typename T> var_crtp<T>::var_crtp(parser* p) : parser::op(p)
 
 template <typename T> const char* var_crtp<T>::go(const char* src, const token* toks, int count)
 {
-    DATA_TYPE type = TYPE_NULL;
-    int attr = 0;
-    std::string_view name;
+    func::variable var;
     for (int i = 0; i < count - 1; i ++)
     {
-        switch (toks[i].info.type)
+        if (f->fill_var(toks[i], var) == false)
         {
-        case Int:
-            type = TYPE_SIGNED;
-            break;
-        case Double:
-            type = TYPE_DOUBLE;
-            break;
-        case Register:
-            attr |= REG;
-            break;
-        case Id:
-            name = toks[i].name;
-            break;
-        default:
-            break;
+            return NULL;
         }
     }
-    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, type, name, attr);
+    return static_cast<T*>(this)->go2(src, toks + 2, count - 2, var);
 }
 
 decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
@@ -45,19 +32,19 @@ decl_var_only::decl_var_only(parser* p) : var_crtp<decl_var_only>(p)
     p->add(this, Double, Id, ';', -1);
 }
 
-const char* decl_var_only::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+const char* decl_var_only::go2(const char* src, const token* toks, int count, func::variable& var)
 {
-    if ((attr & REG) == 0)
+    if ((var.attr & REG) == 0)
     {
-        auto v2 = p->scopes.new_var(name, attr);
+        auto v2 = f->scopes.new_var(var.name, var.attr);
         if ((v2 == NULL) || (v2->reg.ptr == NULL))
         {
-            LOGE("Can not new reg var : %s", VIEW(name));
+            LOGE("Can not new reg var : %s", VIEW(var.name));
             return NULL;
         }
-        auto n = p->regs.tmp();
+        auto n = f->regs.tmp();
         INST(SET, (int)n, TYPE_ADDR, v2->id);
-        INST(STORE, type, n, 3);
+        INST(STORE, var.type, n, 3);
     }
     return src;
 }
@@ -70,28 +57,28 @@ decl_var_init::decl_var_init(parser* p) : var_crtp<decl_var_init>(p)
     p->add(this, Register, Double, Id, Assign, -1);
 }
 
-const char* decl_var_init::go2(const char* src, const token* toks, int count, DATA_TYPE type, const std::string_view& name, int attr)
+const char* decl_var_init::go2(const char* src, const token* toks, int count, func::variable& var)
 {
     selector::reg v;
-    src = p->expression(src, v);
+    src = f->expression(src, v);
     if (src == NULL) return NULL;
 
-    auto r = p->scopes.bind_var(name, v, attr);
+    auto r = f->scopes.bind_var(var.name, v, var.attr);
     if (r == NULL)
     {
-        auto r = p->scopes.new_var(name, attr);
+        auto r = f->scopes.new_var(var.name, var.attr);
         if ((r == NULL) || (r->reg.ptr == NULL))
         {
-            LOGE("Can not create var : %s", VIEW(name));
+            LOGE("Can not create var : %s", VIEW(var.name));
             return NULL;
         }
         INST(MOVE, r->reg, v, 0);
         v = r->reg;
     }
 
-    if ((attr & REG) == 0)
+    if ((var.attr & REG) == 0)
     {
-        auto n = p->regs.tmp();
+        auto n = f->regs.tmp();
         INST(SET, n, TYPE_ADDR, r->id);
         INST(STORE, v, n, 2);
     }
@@ -105,8 +92,33 @@ call_func_no_ret::call_func_no_ret(parser* p) : parser::op(p)
 
 const char* call_func_no_ret::go(const char* src, const token* toks, int count)
 {
-    std::vector<selector::reg> rets;
-    return p->call_func(src, toks[0], rets);
+    int ret;
+    return f->call(src, toks[0].name, ret);
+}
+
+ret_func::ret_func(parser* p) : parser::op(p)
+{
+    p->add(this, Return, -1);
+}
+
+const char* ret_func::go(const char* src, const token* toks, int count)
+{
+    switch (f->rets.size())
+    {
+    case 0:
+        break;
+    case 1:
+        {
+            selector::reg v;
+            src = f->expression(src, v);
+            INST(MOVE, f->infos.ret, v, f->rets[0].type);
+        }
+        break;
+    default:
+        break;
+    }
+    INST(RET);
+    return src;
 }
 
 assign_var::assign_var(parser* p) : parser::op(p)
@@ -126,17 +138,22 @@ const char* assign_var::go(const char* src, const token* toks, int count)
     const std::string_view& name = toks[0].name;
     auto reload = [this, name](int attr, uint64_t id)
         {
-            auto n = p->regs.tmp();
+            auto n = f->regs.tmp();
             INST(SET, n, TYPE_ADDR, id);
-            auto vv = p->regs.tmp();
+            auto vv = f->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
         };
     int attr = 0;
-    auto k = p->scopes.find_var(name, attr, reload);
+    auto k = f->scopes.find_var(name, attr, reload);
+    if (unlikely(k == NULL))
+    {
+        COMPILE_ERROR(p, "Can NOT find var : %s", VIEW(name));
+        return NULL;
+    }
 
     selector::reg v;
-    src = p->expression(src, v);
+    src = f->expression(src, v);
     switch (toks[1].info.type)
     {
     case Assign:
@@ -180,13 +197,13 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     int attr = 0;
     auto reload = [this, name](int attr, uint64_t id)
         {
-            auto n = p->regs.tmp();
+            auto n = f->regs.tmp();
             INST(SET, n, TYPE_ADDR, id);
-            auto vv = p->regs.tmp();
+            auto vv = f->regs.tmp();
             INST(LOAD, vv, n, 0);
             return vv;
         };
-    auto k = p->scopes.find_var(name, attr, reload);
+    auto k = f->scopes.find_var(name, attr, reload);
 
     int v = 0;
     bool o = can_literally_optimize(toks[2], v);
@@ -196,7 +213,7 @@ const char* assign_equal::go(const char* src, const token* toks, int count)
     case i:                                                     \
         if (o == false)                                         \
         {                                                       \
-            auto r = p->regs.tmp();                             \
+            auto r = f->regs.tmp();                             \
             switch (toks[2].info.type)                          \
             {                                                   \
             case TYPE_SIGNED:                                   \
@@ -254,40 +271,25 @@ int cmp_op_not(int op)
     }
 }
 
-inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<int>& j, int (*cmp)(int))
+inline const char* cmp_jump_expr(const char* src, int label, func* f, labels<int>& j, int (*cmp)(int))
 {
     selector::reg r;
     int end = 0;
     bool result = false;
-    src = p->expression(src, r, &end, [&j, &result, label, cmp](parser* p, int op, const token& a, const token* b, const selector::reg* r)
+    src = f->expression(src, r, &end, [&j, &result, label, cmp](func* f, int op, const token& a, const token* b, const selector::reg* r)
         {
-            switch (op)
-            {
-            case Eq:
-            case Ne:
-            case Gt:
-            case Ge:
-            case Lt:
-            case Le:
-                result = true;
-                break;
-            default:
-                result = false;
-                return selector::reg();
-            }
-            auto& insts = p->insts;
-            int c = -1;
-            c = cmp(op);
+            auto& insts = f->insts;
+            int c = 0;
             int ll = 0;
             selector::reg ret;
             if (can_literally_optimize(a, ll) == false)
             {
-                ret = p->token_2_reg(a);
+                ret = f->token_2_reg(a);
                 ll = ret;
             }
             else
             {
-                c |= 0x80;
+                c |= 0x02;
             }
             int rr = 0;
             if (r != NULL)
@@ -299,16 +301,33 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
             {
                 if (can_literally_optimize(*b, rr) == false)
                 {
-                    ret = p->token_2_reg(*b);
+                    ret = f->token_2_reg(*b);
                     rr = ret;
                 }
                 else
                 {
-                    c |= 0x40;
+                    c |= 0x01;
                 }
             }
-            INST(JCMP, ll, rr, c, 0);
-            j.jump(label, p->insts.back(), p->insts.size());
+            result = true;
+            switch (cmp(op))
+            {
+#define CMP_TYPE(k, cmp)                        \
+            case k:                             \
+                INST(cmp, ll, rr, c, 0);        \
+                break;
+                CMP_TYPE(0, JEQ);
+                CMP_TYPE(1, JNE);
+                CMP_TYPE(2, JGT);
+                CMP_TYPE(3, JGE);
+                CMP_TYPE(4, JLT);
+                CMP_TYPE(5, JLE);
+#undef CMP_TYPE
+            default:
+                result = false;
+                return selector::reg();
+            }
+            j.jump(label, f->insts->back(), f->insts->size());
             if (ret.ptr == NULL)
             {
                 ret.ptr = (decltype(ret.ptr))(uintptr_t)-1;
@@ -316,11 +335,19 @@ inline const char* cmp_jump_expr(const char* src, int label, parser* p, labels<i
             return ret;
         });
 
-    auto& insts = p->insts;
+    auto& insts = f->insts;
     if (result == false)
     {
-        INST(JCMP, r, 1, (cmp != cmp_op) | 0x40, 0);
-        j.jump(label, p->insts.back(), p->insts.size());
+        //if (test) ...
+        if (cmp == cmp_op)
+        {
+            INST(JNE, r, 0, 0x01, 0);
+        }
+        else
+        {
+            INST(JEQ, r, 0, 0x01, 0);
+        }
+        j.jump(label, f->insts->back(), f->insts->size());
     }
     return src;
 }
@@ -334,28 +361,28 @@ const char* if_else::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    src = cmp_jump_expr(src, 0, p, jump, cmp_op_not);
+    src = cmp_jump_expr(src, 0, f, jump, cmp_op_not);
 
-    src = p->statements(src, NULL);
+    src = f->statements(src, NULL);
 
     token tok;
-    auto o = p->next_token(src, tok);
+    auto o = f->parse->next_token(src, tok);
     if (tok.info.type == Else)
     {
         INST(JUMP, 0);
-        jump.jump(1, insts.back(), insts.size());
+        jump.jump(1, insts->back(), insts->size());
 
-        jump.label(0, insts.size());
+        jump.label(0, insts->size());
 
-        src = p->statements(o, NULL);
+        src = f->statements(o, NULL);
 
-        jump.label(1, insts.size());
+        jump.label(1, insts->size());
     }
     else
     {
-        jump.label(0, insts.size());
+        jump.label(0, insts->size());
     }
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 do_while::do_while(parser* p) : parser::op(p)
@@ -367,25 +394,25 @@ const char* do_while::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
-    src = p->statements(src - 1, jump, 2, 1);
+    src = f->statements(src - 1, jump, 2, 1);
 
-    jump.label(1, insts.size());
+    jump.label(1, insts->size());
 
     token tok;
-    src = p->next_token(src, tok);
+    src = f->parse->next_token(src, tok);
     if (tok.info.type != While)
     {
         LOGE("do {...} MUST end with while !!!");
         return NULL;
     }
 
-    src = cmp_jump_expr(src, 0, p, jump, cmp_op);
+    src = cmp_jump_expr(src, 0, f, jump, cmp_op);
 
-    jump.label(2, insts.size());
+    jump.label(2, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 while_loop::while_loop(parser* p) : parser::op(p)
@@ -397,18 +424,18 @@ const char* while_loop::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
-    src = cmp_jump_expr(src, 2, p, jump, cmp_op_not);
+    src = cmp_jump_expr(src, 2, f, jump, cmp_op_not);
 
-    src = p->statements(src, jump, 2, 0);
+    src = f->statements(src, jump, 2, 0);
 
     INST(JUMP, 0);
-    jump.jump(0, p->insts.back(), p->insts.size());
+    jump.jump(0, f->insts->back(), f->insts->size());
 
-    jump.label(2, insts.size());
+    jump.label(2, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
 }
 
 for_loop::for_loop(parser* p) : parser::op(p)
@@ -420,23 +447,23 @@ const char* for_loop::go(const char* src, const token* toks, int count)
 {
     labels<int> jump;
 
-    src = p->statement(src);
+    src = f->statement(src);
 
-    jump.label(0, insts.size());
+    jump.label(0, insts->size());
 
     insts_t expr3;
     switch (*(src - 1))
     {
     case ';':
         {
-            src = cmp_jump_expr(src, 5, p, jump, cmp_op_not);
+            src = cmp_jump_expr(src, 5, f, jump, cmp_op_not);
 
-            expr3.swap(p->insts);
-            src = p->statement(src);
-            expr3.swap(p->insts);
+            expr3.swap(*f->insts);
+            src = f->statement(src);
+            expr3.swap(*f->insts);
 
             token tok;
-            src = p->next_token(src, tok);
+            src = f->parse->next_token(src, tok);
             if (tok.info.type != ')')
             {
                 LOGE("for loop condition must end with ) !!!");
@@ -451,19 +478,79 @@ const char* for_loop::go(const char* src, const token* toks, int count)
         return NULL;
     }
 
-    src = p->statements(src, jump, 5, 0);
+    src = f->statements(src, jump, 5, 0);
 
     for (auto& it : expr3)
     {
-        insts.emplace_back(it);
+        insts->emplace_back(it);
     }
 
     INST(JUMP, 0);
-    jump.jump(0, p->insts.back(), p->insts.size());
+    jump.jump(0, f->insts->back(), f->insts->size());
 
-    jump.label(5, insts.size());
+    jump.label(5, insts->size());
 
-    return (jump.finish(p->insts) == true) ? src : NULL;
+    return (jump.finish(*f->insts) == true) ? src : NULL;
+}
+
+decl_func::decl_func(parser* p) : var_crtp<decl_func>(p)
+{
+    p->add(this, Int, Id, '(', -1);
+    p->add(this, Double, Id, '(', -1);
+    p->add(this, Register, Int, Id, '(', -1);
+    p->add(this, Register, Double, Id, '(', -1);
+}
+
+const char* decl_func::go2(const char* src, const token* toks, int count, func::variable& var)
+{
+    func* cur = NULL;
+    auto it = p->funcs.find(var.name);
+    if (it != p->funcs.end())
+    {
+        if (it->second.insts->size() > 0)
+        {
+            LOGW("function %d:%s is already exists !!!", it->second.id, VIEW(it->first));
+            return NULL;
+        }
+        cur = &it->second;
+        src = strchr(src, ')') + 1;
+    }
+    else
+    {
+        cur = &p->funcs.try_emplace(var.name, p, var.name).first->second;
+
+        cur->rets.emplace_back(var);
+
+        src = f->comma(src, [this, var, cur](const char* src, int* end)
+            {
+                func::variable arg;
+                token tok;
+                while ((src != NULL) && (*src != '\0'))
+                {
+                    src = p->next_token(src, tok);
+                    switch (tok.info.type)
+                    {
+                    case ',':
+                    case ';':
+                    case ')':
+                        *end = tok.info.type;
+                        cur->args.emplace_back(arg);
+                        return src;
+                    default:
+                        if (f->fill_var(tok, arg) == false)
+                        {
+                            src = NULL;
+                            return src;
+                        }
+                        break;
+                    }
+                }
+                return src;
+            });
+    }
+
+    src = cur->go(src);
+    return src;
 }
 
 

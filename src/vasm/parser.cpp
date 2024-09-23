@@ -161,7 +161,6 @@ IDS::IDS()
     SET_KEY(SHL);
     SET_KEY(SHR);
     SET_KEY(JUMP);
-    SET_KEY(JCMP);
     SET_KEY(JEQ);
     SET_KEY(JNE);
     SET_KEY(JGT);
@@ -174,7 +173,6 @@ IDS::IDS()
     SET_KEY(CLEAR);
     SET_KEY(STORE);
     SET_KEY(BLOCK);
-    SET_KEY(CONV);
     SET_KEY(CALL);
     SET_KEY(RET);
     SET_KEY(ECHO);

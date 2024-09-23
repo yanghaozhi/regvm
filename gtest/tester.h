@@ -40,11 +40,10 @@ template <typename T> int check_size(void* ptr)
         CHECK_FROM_##FROM << "at TRAP " << K2;                  \
     }
 
-#define CHECK_VAR(K1, K2, ID, CALL, SCOPE, REG, ...)            \
+#define CHECK_VAR(K1, K2, NAME, CALL, REG, ...)                 \
     if ((K1 == K2)                                              \
-        && (ID == info->var_id)                                 \
-        && (CALL == info->call_id)                              \
-        && (SCOPE == info->scope_id))                           \
+        && (NAME == info->var_id)                               \
+        && (CALL == info->call_id))                             \
     {                                                           \
         match += 1;                                             \
         CHECK_UV(K2, __VA_ARGS__);                              \

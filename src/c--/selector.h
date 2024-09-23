@@ -18,11 +18,14 @@ class selector
 public:
     selector();
 
+    static const int        SIZE    = 32;
+
     enum STATUS
     {
         FREED,
         BINDED,
         LOCKED,
+        FIXED,
     };
 
     struct data
@@ -45,6 +48,10 @@ public:
         operator int (void) const   { return ptr->id; }
     };
 
+    bool set_fixed(int reserved);
+
+    const reg fixed(int id);
+
     bool bind(const std::string_view& name, const reg& v);
     const reg bind(const std::string_view& name);
 
@@ -57,26 +64,17 @@ public:
     bool active(const reg& r);
     bool valid(const reg& r);
 
-    //reg get(const std::string_view& name, std::function<reg (void)>&& reload);
 
-    ////get a reg to store var
-    //reg var(const std::string_view& name);
-    ////get a reg and lock it
-    //reg lock(void);
-
-    //reg tmp(void);
-
-    //bool bind(const std::string_view& name, const reg& reg);
-
-    ////cleanup all binded/locked reg to frees
-    //void cleanup(bool var_only);
+    int unused(void) const;
 
 private:
-    data                    datas[256];
+    data                    datas[SIZE];
 
-    lru<uint8_t, 256>       frees;
-    lru<uint8_t, 64>        binds;
-    lru<uint8_t, 64>        locks;
+    int                     reserved    = -1;
+
+    lru<uint8_t, SIZE>      frees;
+    lru<uint8_t, SIZE/2>    binds;
+    lru<uint8_t, SIZE/4>    locks;
 };
 
 

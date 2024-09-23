@@ -13,3 +13,7 @@ cov:
 
 clean:
 	@ for i in $(SUBDIRS) ; do make clean -C $$i ; done
+
+bear: 
+	@ for i in $(SUBDIRS) ; do make -C $$i ; done
+

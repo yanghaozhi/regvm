@@ -1,6 +1,7 @@
 #!/bin/bash
 
-FILE=pi
+FILE=${1:-pi}
+LOG=./t.log
 
 cd ../src/
 
@@ -9,26 +10,4 @@ make release
 
 cd -
 
-declare -A scripts=(["lua"]="lua" ["python3"]="py" ["qjs"]="js" ["duk"]="js" ["node"]="js")
-for k in "${!scripts[@]}"
-do
-    which $k > /dev/null
-    if [ $? -eq 0 ]
-    then
-        echo
-        echo
-        echo testing $k ${FILE}.${scripts[$k]} ...
-        time $k ${FILE}.${scripts[$k]}
-    fi
-done
-
-
-echo
-echo
-echo test vasm ...
-time ../out/vasm ./pi.vasm -r
-
-echo
-echo
-echo test vcc ...
-time ../out/vcc ./pi.c-- -r
+./test.sh "$@"

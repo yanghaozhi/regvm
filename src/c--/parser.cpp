@@ -12,12 +12,12 @@
 #include <log.h>
 #include <code.h>
 
+#include "func.h"
 #include "statements.h"
 
 
 
-
-parser::parser() : regs(), scopes(insts, regs)
+parser::parser()
 {
     keywords.emplace("if", If);
     keywords.emplace("else", Else);
@@ -29,6 +29,9 @@ parser::parser() : regs(), scopes(insts, regs)
     keywords.emplace("while", While);
     keywords.emplace("break", Break);
     keywords.emplace("continue", Continue);
+    keywords.emplace("return", Return);
+
+    cmds.emplace("echo", cmd_echo);
 }
 
 
@@ -36,12 +39,9 @@ parser::~parser()
 {
 }
 
-bool parser::go(const char* src, insts_t& out)
+bool parser::go(const char* f, const char* src, insts_t& out)
 {
-    LOGD("%s", src);
-
-    last_line = src;
-    lineno = 0;
+    file = f;
 
     decl_var_only       dvo(this);
     decl_var_init       dvi(this);
@@ -52,101 +52,43 @@ bool parser::go(const char* src, insts_t& out)
     do_while            dw(this);
     while_loop          wl(this);
     for_loop            fl(this);
+    decl_func           df(this);
+    ret_func            rf(this);
 
-    scopes.enter();
-    while ((src != NULL) && (*src != '\0'))
-    {
-        src = statement(src);
-    }
-    scopes.leave();
+    find_line_ending(src);
 
-    out.swap(insts);
-    return (src != NULL) ? true : false;
-}
+    func entry(this, ".crt.entry");
 
-const char* parser::statements(const char* src, std::function<void (const token&)> cb)
-{
-    token tok;
-    const char* p = next_token(src, tok);
-    switch (tok.info.type)
-    {
-    case '{':
-        scopes.enter();
-        //INST(BLOCK, 0, 0, 0);
-        while ((p != NULL) && (tok.info.type != '}'))
-        {
-            p = statement(p, cb, tok);
-        }
-        //INST(BLOCK, 0, 1, 0);
-        scopes.leave();
-        return p;
-    case 0:
-    case ';':
-        return p;
-    default:
-        return statement(src, cb, tok);
-    }
-}
-
-const char* parser::statement(const char* src, std::function<void (const token&)> cb, token& tok)
-{
-    const char* p = src;
-    src = next_token(src, tok);
-    switch (tok.info.type)
-    {
-    case 0:
-    case ';':
-        return src;
-    case '{':
-        return statements(src, cb);
-    case '}':
-        return src;
-    case Break:
-    case Continue:
-        if (cb)
-        {
-            cb(tok);
-            return src;
-        }
-        else
-        {
-            LOGE("Do NOT allow use break/continue outside loops !!!");
-            return NULL;
-        }
-    default:
-        src = p;
-        break;
-    }
-
-    token toks[depth];
-
-    src = find_statement(src, parser_list, toks, 0, depth);
+    src = entry.go(src);
     if (src == NULL)
     {
-        LOGE("%d : no valid parser op !!!", lineno);
-        return NULL;
+        return false;
     }
-    return src;
+    out.swap(*entry.insts);
+    return true;
 }
 
-const char* parser::statement(const char* src)
+const char* parser::find_statement(const char* src, func* f)
 {
-    token tok;
-    return statement(src, NULL, tok);
+    token toks[depth];
+
+    return find_statement(src, f, parser_list, toks, 0, depth);
 }
 
-const char* parser::find_statement(const char* src, trie_tree& cur, token* toks, int idx, int max)
+const char* parser::find_statement(const char* src, func* f, trie_tree& cur, token* toks, int idx, int max)
 {
     if ((src != NULL) && (*src != '\0'))
     {
         if (cur.next.empty() == true)
         {
+            cur.func->f = f;
+            cur.func->insts = f->insts;
             return cur.func->go(src, toks, idx);
         }
 
         if (idx >= max)
         {
-            LOGE("%d : too deep to find next token %d !!!", lineno, idx);
+            //LOGE("%d : too deep to find next token %d !!!", lineno, idx);
             return NULL;
         }
 
@@ -160,13 +102,21 @@ const char* parser::find_statement(const char* src, trie_tree& cur, token* toks,
         auto it = cur.next.find(tok.info.type);
         if (it == cur.next.end())
         {
-            LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
-            return (cur.func != NULL) ? cur.func->go(src, toks, idx) : NULL;
+            if (cur.func == NULL)
+            {
+                //LOGW("%d : no parser op want token %d - %c : %s !!!", lineno, tok.info.type, (char)tok.info.orig, std::string(tok.name).c_str());
+                return NULL;
+            }
+            cur.func->f = f;
+            cur.func->insts = f->insts;
+            return cur.func->go(src, toks, idx);
         }
 
-        const char* r = find_statement(src, it->second, toks, idx + 1, max);
+        const char* r = find_statement(src, f, it->second, toks, idx + 1, max);
         if ((r == NULL) && (cur.func != NULL))
         {
+            cur.func->f = f;
+            cur.func->insts = f->insts;
             r = cur.func->go(src, toks, idx);
         }
         return r;
@@ -206,488 +156,6 @@ bool parser::add(op* func, ...)
     }
 
     return true;
-}
-
-inline int calc_op(int op)
-{
-    switch (op)
-    {
-#define CALC(k, op)         \
-    case k:                 \
-        return op;
-        CALC(Add, 0);
-        CALC(Sub, 1);
-        CALC(Mul, 2);
-        CALC(Div, 3);
-        CALC(Mod, 4);
-        CALC(Shl, 5);
-        CALC(Shr, 6);
-#undef CALC
-    default:
-        return -10000;
-    }
-}
-
-int cmp_op(int op)
-{
-    switch (op)
-    {
-#define CALC(k, op)         \
-    case k:                 \
-        return op;
-        CALC(Eq, 0);
-        CALC(Ne, 1);
-        CALC(Gt, 2);
-        CALC(Ge, 3);
-        CALC(Lt, 4);
-        CALC(Le, 5);
-#undef CALC
-    default:
-        return -10000;
-    }
-}
-
-inline int operator_level(int op)
-{
-    //ref : https://en.cppreference.com/w/cpp/language/operator_precedence
-    switch (op)
-    {
-    case Add:
-    case Sub:
-        return 6;
-    case Mul:
-    case Div:
-    case Mod:
-        return 5;
-    case Shl:
-    case Shr:
-        return 7;
-    case Gt:
-    case Ge:
-    case Lt:
-    case Le:
-        return 9;
-    case Eq:
-        return 10;
-    //case Xor:
-    //    return 12;
-    //case Or:
-    //    return 13;
-    default:
-        return -1;
-    }
-}
-
-selector::reg parser::token_2_reg(const token& tok)
-{
-    if (regs.active(tok.reg) == true)
-    {
-        return tok.reg;
-    }
-
-    switch (tok.info.type)
-    {
-    case Num:
-        {
-            auto reg = regs.tmp();
-            switch (tok.info.data_type)
-            {
-            case TYPE_SIGNED:
-                INST(SET, reg, tok.info.value.sint);
-                break;
-            case TYPE_UNSIGNED:
-                INST(SET, reg, tok.info.value.uint);
-                break;
-            case TYPE_DOUBLE:
-                INST(SET, reg, tok.info.value.dbl);
-                break;
-            default:
-                return selector::reg();
-            }
-            return reg;
-        }
-        break;
-    case Id:
-        {
-            std::string_view name = tok.name;
-            int attr = 0;
-            auto v = scopes.find_var(tok.name, attr, [this, name](int attr, uint64_t id)
-                {
-                    auto n = regs.tmp();
-                    INST(SET, n, TYPE_ADDR, id);
-                    auto v = scopes.new_var(name, 0);
-                    INST(LOAD, v->reg, n, 0);
-                    return v->reg;
-                });
-            return v->reg;
-        }
-        break;
-    default:
-        LOGE("%d : invalid expression %d - %s !!!", lineno, tok.info.type, std::string(tok.name).c_str());
-        break;
-    }
-    return selector::reg();
-}
-
-bool can_literally_optimize(const token& a, int& v)
-{
-    if (a.info.type != Num)
-    {
-        return false;
-    }
-
-    switch (a.info.data_type)
-    {
-    case TYPE_SIGNED:
-        v = a.info.value.sint;
-        if ((v < -127) || (v > 127)) return false;
-        break;
-    case TYPE_UNSIGNED:
-        v = a.info.value.uint;
-        if (v > 127) return false;
-        break;
-    default:
-        return false;
-    }
-    return true;
-}
-
-inline bool literally_calc(parser* p, int op, const token& a, const selector::reg& b)
-{
-    switch (b.ptr->status)
-    {
-    case selector::BINDED:
-    case selector::LOCKED:
-        return false;
-    default:
-        break;
-    }
-
-    int v = 0;
-    if (can_literally_optimize(a, v) == false)
-    {
-        return false;
-    }
-
-    auto& insts = p->insts;
-    switch (op)
-    {
-    case Add:
-    case Mul:
-        INST(CALC, b, v, calc_op(op));
-        return true;
-    default:
-        return false;
-    }
-}
-
-inline bool literally_cmp(parser* p, int op, const token& a, const selector::reg& b)
-{
-    return false;
-}
-
-inline selector::reg calc_a_b(parser* p, int op, const token& a, const selector::reg& b)
-{
-    auto& insts = p->insts;
-
-    if ((300 <= op) && (op < 320))
-    {
-        if (literally_calc(p, op, a, b) == true)
-        {
-            return b;
-        }
-    }
-
-    selector::reg r = p->regs.tmp();
-
-    auto c = p->token_2_reg(a);
-    switch (op)
-    {
-    case Add:
-        INST(ADD, r, c, b);
-        break;
-    case Sub:
-        INST(SUB, r, c, b);
-        break;
-    case Mul:
-        INST(MUL, r, c, b);
-        break;
-    case Div:
-        INST(DIV, r, c, b);
-        break;
-    case Mod:
-        INST(MOD, r, c, b);
-        break;
-    case Eq:
-    case Ne:
-    case Gt:
-    case Ge:
-    case Lt:
-    case Le:
-        INST(SUB, r, c, b);
-        INST(CMP, r, r, cmp_op(op));
-        break;
-    default:
-        LOGE("%d : UNKNOWN operator of expression %d - %c !!!", p->lineno, op, (char)op);
-        return selector::reg();
-    }
-    return r;
-}
-
-inline selector::reg calc_a_b(parser* p, int op, const token& a, const token& b)
-{
-    int v = 0;
-    if (can_literally_optimize(b, v) == true)
-    {
-        auto& insts = p->insts;
-        auto v1 = p->token_2_reg(a);
-        switch (op)
-        {
-        case Add:
-        case Sub:
-        case Mul:
-        case Div:
-        case Mod:
-            switch (v1.ptr->status)
-            {
-            case selector::BINDED:
-            case selector::LOCKED:
-                break;
-            default:
-                INST(CALC, v1, v, calc_op(op));
-                return v1;
-            }
-            break;
-        default:
-            break;
-        };
-    }
-    auto v2 = p->token_2_reg(b);
-    if (can_literally_optimize(a, v) == true)
-    {
-        if (literally_calc(p, op, a, v2) == true)
-        {
-            return v2;
-        }
-    }
-    return calc_a_b(p, op, a, v2);
-}
-
-template <typename T, typename O> selector::reg pop_and_calc(parser* p, T& toks, O& ops, const parser::calc_t& calc)
-{
-    if (toks.size() == 0)
-    {
-        LOGE("toks is empty");
-        return selector::reg();
-    }
-    if (ops.size() == 0)
-    {
-        auto r = p->token_2_reg(toks.back());
-        toks.pop_back();
-        return r;
-    }
-    if (ops.size() != toks.size() - 1)
-    {
-        LOGE("size of ops(%zd) or size of toks(%zd) invalid !!!", ops.size(), toks.size());
-        return selector::reg();
-    }
-
-    const auto& v2 = toks.back();
-    selector::reg b;
-    int level = -1;
-    if (v2.info.type == Num)
-    {
-        int op = ops.back();
-        const auto& v1 = toks[toks.size() - 2];
-        if ((calc != NULL) && (ops.size() == 1))
-        {
-            auto r = calc(p, op, v1, &v2, NULL);
-            if (r.ptr != NULL)
-            {
-                toks.clear();
-                ops.clear();
-                return r;
-            }
-        }
-        b = calc_a_b(p, op, v1, v2);
-        level = operator_level(op);
-        toks.pop_back();
-        ops.pop_back();
-    }
-    else
-    {
-        b = p->token_2_reg(v2);
-    }
-    toks.pop_back();
-
-    while ((ops.size() > 0) && (level <= operator_level(ops.back())))
-    {
-        int op = ops.back();
-        auto& a = toks.back();
-
-        if ((calc != NULL) && (ops.size() == 1))
-        {
-            auto r = calc(p, op, a, NULL, &b);
-            if (r.ptr != NULL)
-            {
-                toks.clear();
-                ops.clear();
-                return r;
-            }
-        }
-        b = calc_a_b(p, op, a, b);
-
-        toks.pop_back();
-        ops.pop_back();
-    }
-    return b;
-}
-
-const char* parser::call_func(const char* src, const token& name, std::vector<selector::reg>& rets)
-{
-    if (name.info.type != Id)
-    {
-        LOGE("%d : invalid function name %d - %s !!!", lineno, name.info.type, std::string(name.name).c_str());
-        return NULL;
-    }
-    //TODO : need to check func name valid !!!
-    if (name.name == "echo")
-    {
-        std::vector<selector::reg> args;
-        src = comma(src, args);
-        if (src == NULL)
-        {
-            LOGE("invalid of comma expression !!!");
-            return NULL;
-        }
-
-        std::vector<int> a;
-        for (auto& it : args)
-        {
-            a.emplace_back((int)it);
-        }
-        INST(ECHO, a);
-    }
-    return src;
-}
-
-const char* parser::expression(const char* src, selector::reg& reg)
-{
-    int end = 0;
-    return expression(src, reg, &end, NULL);
-}
-
-const char* parser::expression(const char* src, selector::reg& reg, int* end, const calc_t& calc)
-{
-    std::deque<token>   toks;
-    std::deque<int>     ops;
-
-    while ((src != NULL) && (*src != '\0'))
-    {
-        if (toks.size() == ops.size())
-        {
-            auto& v = toks.emplace_back();
-            src = next_token(src, v);
-            switch (v.info.type)
-            {
-            case '(':
-                src = expression(src, v.reg, end, calc);
-                break;
-            case Num:
-            case Id:
-                break;
-            case ';':
-                toks.pop_back();
-                reg = pop_and_calc(this, toks, ops, calc);
-                if (end != NULL)
-                {
-                    *end = ';';
-                }
-                return src;
-            default:
-                LOGE("%d : invalid token of expression %d - %c - %s !!!", lineno, v.info.type, v.info.orig, std::string(v.name).c_str());
-                return NULL;
-            }
-        }
-
-        token op;
-        src = next_token(src, op);
-        switch (op.info.type)
-        {
-        case ':':
-        case ';':
-        case ',':
-        case ')':
-            reg = pop_and_calc(this, toks, ops, calc);
-            if (end != NULL)
-            {
-                *end = op.info.type;
-            }
-            return src;
-        case '(':   //函数调用
-            {
-                std::vector<selector::reg> rets;
-                src = call_func(src, toks.back(), rets);
-                if (rets.size() >= 1)
-                {
-                    toks.back().reg = rets[0];
-                }
-            }
-            break;
-        default:
-            {
-                if (ops.size() > 0)
-                {
-                    int cur = operator_level(op.info.type);
-                    int prev = operator_level(ops.back());
-                    if (cur > prev)
-                    {
-                        auto rr = pop_and_calc(this, toks, ops, calc);
-                        auto& vv = toks.emplace_back();
-                        vv.reg = rr;
-                    }
-                }
-                ops.emplace_back(op.info.type);
-            }
-            break;
-        }
-    }
-    if (end != NULL)
-    {
-        *end = 0;
-    }
-    return src;
-}
-
-const char* parser::comma(const char* src, std::vector<selector::reg>& rets)
-{
-    while ((src != NULL) && (*src != '\0'))
-    {
-        selector::reg reg; 
-        int end = -1;
-        src = expression(src, reg, &end, NULL);
-        if (reg.ptr == NULL)
-        {
-            LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
-            return NULL;
-        }
-        rets.emplace_back(reg);
-
-        switch (end)
-        {
-        case ',':
-            break;
-        case ';':
-            LOGW("will comma expression end with ; ?");
-            [[fallthrough]];
-        case ')':
-            return src;
-        default:
-            LOGE("%d : comma expression should NOT end with %d - %c\n", lineno, end, (char)end);
-            return NULL;
-        }
-    }
-    return src;
 }
 
 inline uint64_t whole_token(const char* pos, const char** end)
@@ -736,9 +204,7 @@ const char* parser::next_token(const char* src, token& tok)
             next = strchr(next, '\n');
             continue;
         case '\n':
-            LOGD("%s", std::string(last_line, src - last_line).c_str());
-            last_line = src;
-            lineno += 1;
+            find_line_ending(next);
             break;
         case '\'':  //字符
             tok.info.type = Num;
@@ -853,5 +319,52 @@ const char* parser::next_token(const char* src, token& tok)
         }
     }
     return next;
+}
+
+void parser::find_line_ending(const char* src)
+{
+    if ((line_end != NULL) && (src <= line_end)) return;
+
+    lineno += 1;
+    line_end = strchr(src, '\n');
+    if (line_end != NULL)
+    {
+        line = std::string_view(src, line_end - src);
+    }
+    else
+    {
+        line = std::string_view(src);
+        line_end = src + strlen(src);
+    }
+    LOGD("%d : %s", lineno, VIEW(line));
+}
+
+void parser::show_error(const char* fmt, ...)
+{
+    fprintf(stderr, "\e[1;35m %s : %d ", file.c_str(), lineno);
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n\t%s \e[0m\n", VIEW(line));
+}
+
+const char* parser::cmd_echo(const char* src, func* f, const std::string_view& name, int& ret)
+{
+    insts_t* insts = f->insts;
+    std::vector<int> args;
+    src = f->comma(src, [&args, f](const char* src, int* end)
+        {
+            selector::reg reg; 
+            src = f->expression(src, reg, end, NULL);
+            if (reg.ptr == NULL)
+            {
+                LOGE("invalid expression result : %d:%p : %s !!!", reg.ver, reg.ptr, src);
+            }
+            args.emplace_back((int)reg);
+            return src;
+        });
+    INST(ECHO, args);
+    return src;
 }
 

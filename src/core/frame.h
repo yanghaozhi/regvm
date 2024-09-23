@@ -9,12 +9,8 @@
 #include "func.h"
 //#include "scope.h"
 
-#define UNSUPPORT_TYPE(op, t, c, o, ...) VM_ERROR(ERR_TYPE_MISMATCH, c, o, "UNSUPPORT %s value type : %d", op, t); 
-
 namespace core
 {
-
-typedef int (*vm_sub_op_t)(regvm* vm, int a, int b, int c, int offset);
 
 class frame
 {
@@ -34,6 +30,8 @@ public:
     regvm_src_location* cur     = NULL;
 
     const int64_t       id;
+
+    //core::reg::page<core::reg::SIZE>    sub_func;
 
     enum REASON
     {
@@ -66,6 +64,7 @@ private:
     }                   caller;
     bool                valid   = true;
     enum REASON         reason;
+    int                 flow;
 
     inline int64_t gen_id(void) const;
 //    scope&              globals;

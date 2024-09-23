@@ -52,7 +52,7 @@ void debugger::var_info(const regvm_var_info* info)
     case -1:
         break;
     default:
-        printf(" %d\t%d\t%d\t%s\t%d(%s)\t%d\t%d\t%p\t", info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->scope_id, info->raw);
+        printf(" %d\t%d\t%d\t%s\t%d(%s)\t%d\t%p\t", info->type, info->reg, info->ref, info->var_name, info->func_id, info->func_name, info->call_id, info->raw);
         regvm_debug_uvalue_print(info->type, info->value);
         printf("\n");
         break;

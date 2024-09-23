@@ -11,7 +11,10 @@
 #include "blocks.h"
 #include "labels.h"
 #include "common.h"
+#include "func.h"
 #include "inst.h"
+
+#define COMPILE_ERROR(p, fmt, ...)  p->show_error(" | %s:%d | " fmt, __FILE__, __LINE__, ##__VA_ARGS__);
 
 class parser
 {
@@ -22,61 +25,33 @@ public:
     class op
     {
     public:
-        insts_t&            insts;
-        parser*             p;
+        insts_t*        insts       = NULL;
+        func*           f           = NULL;
+        parser*         p           = NULL;
 
-        op(parser* pp) : insts(pp->insts), p(pp)     {};
+        op(parser* pp) : p(pp)      {};
         virtual const char* go(const char* src, const token* toks, int count)    = 0;
     };
 
-    int                     lineno      = 0;
-    insts_t                 insts;
-    selector                regs;
-    blocks                  scopes;
 
-    bool go(const char* src, insts_t& insts);
+    bool go(const char* file, const char* src, insts_t& insts);
 
     bool add(op* func, ...);
 
     const char* next_token(const char* src, token& tok);
 
-    template <typename T> const char* statements(const char* src, labels<T>& jump, const T& break_label, const T& continue_label)
-    {
-        auto cb = [this, &jump, &break_label, &continue_label](auto& tok)
-        {
-            switch (tok.info.type)
-            {
-            case Break:
-                INST(JUMP, 0);
-                jump.jump(break_label, insts.back(), insts.size());
-                break;
-            case Continue:
-                INST(JUMP, 0);
-                jump.jump(continue_label, insts.back(), insts.size());
-                break;
-            default:
-                break;
-            }
-        };
-        return statements(src, cb);
-    }
+    const char* find_statement(const char* src, func* f);
 
-    const char* statements(const char* src, std::function<void (const token&)> cb);
-    const char* statement(const char* src);
+    void show_error(const char* fmt, ...);
 
-    typedef std::function<selector::reg (parser*, int, const token&, const token*, const selector::reg*)> calc_t;
-    const char* expression(const char* src, selector::reg& reg, int* end, const calc_t& calc);
-    const char* expression(const char* src, selector::reg& reg);
+    int32_t                         func_id     = 0;
+    std::unordered_map<std::string_view, func>  funcs;
 
-    const char* call_func(const char* src, const token& name, std::vector<selector::reg>& rets);
-
-    const char* comma(const char* src, std::vector<selector::reg>& rets);
-
-    selector::reg token_2_reg(const token& tok);
+    typedef const char* (*cmd_t)(const char* src, func* f, const std::string_view& name, int& ret);
+    std::unordered_map<std::string_view, cmd_t> cmds;
 
 private:
-    int                             depth       = 0;
-    const char*                     last_line   = NULL;
+    friend class func;
 
     struct trie_tree
     {
@@ -84,10 +59,19 @@ private:
         std::map<int, trie_tree>    next;
     };
 
-    trie_tree                                   parser_list;
+    int                             lineno      = 0;
+    const char*                     line_end    = NULL;
+    std::string_view                line;
+    std::string                     file;
+    int                             depth       = 0;
+    trie_tree                       parser_list;
     std::unordered_map<std::string_view, int>   keywords;   //  name : TOKEN_T
     
-    const char* find_statement(const char* src, trie_tree& cur, token* toks, int idx, int max);
+    const char* find_statement(const char* src, func* f, trie_tree& cur, token* toks, int idx, int max);
     const char* statement(const char* src, std::function<void (const token&)> cb, token& tok);
+
+    void find_line_ending(const char* src);
+
+    static const char* cmd_echo(const char* src, func* f, const std::string_view& name, int& ret);
 };
 

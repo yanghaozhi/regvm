@@ -157,32 +157,26 @@ enum DATA_TYPE
 //      op & 0x0F == 4：if (a <  b) jump dest
 //      op & 0x0F == 5：if (a <= b) jump dest
 //+---------+---------------+-------------------+-------------------+-------------------+
-//| JEQ      | CODE_JEQ     | a                 | b                 | dest              |
+//| JEQ      | CODE_JEQ     | a                 | b                 | type              |
 //  if ($a == $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
+//  其后跟随一条CODE_DATA，其内容为跳转的目的dest
+//  如果 type & 0x02 != 0，则 a 为即时数（否则为寄存器id）
+//  如果 type & 0x01 != 0，则 b 为即时数（否则为寄存器id）
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JNE     | CODE_JNE      | a                 | b                 | dest              |
 //  if ($a != $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JGT     | CODE_JGT      | a                 | b                 | dest              |
 //  if ($a > $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JGE     | CODE_JGE      | a                 | b                 | dest              |
 //  if ($a >= $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JLT     | CODE_JLT      | a                 | b                 | dest              |
 //  if ($a < $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| JLE     | CODE_JLE      | a                 | b                 | dest              |
 //  if ($a <= $b) jump dest
-//  如果dest == 0，则其后跟随一条CODE_DATA，其内容为真实的跳转偏移
-//+---------+---------------+-------------------+-------------------+-------------------+
-//| CONV    | CODE_CONV     | result            | src               | type              |
-//  把$src的类型转换为type后存入$result中
 //+---------+---------------+-------------------+-------------------+-------------------+
 //| TYPE    | CODE_TYPE     | result            | ex                |                   |
 //  把$ex的类型的值存入$result中（类型为TYPE_SIGNED）
@@ -289,8 +283,8 @@ enum CODE_ID
     CODE_AND,
     CODE_OR,
     CODE_XOR,
+    CODE_SHIFT,
     CODE_JUMP,
-    CODE_JCMP,
     CODE_JEQ,
     CODE_JNE,
     CODE_JGT,
@@ -305,7 +299,6 @@ enum CODE_ID
     CODE_CLEAR,
     CODE_STORE,
     CODE_BLOCK,
-    CODE_CONV,
     CODE_CALL,
     CODE_RET,
 

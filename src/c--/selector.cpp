@@ -7,16 +7,38 @@
 
 selector::selector()
 {
-    for (int i = 0; i < 256; i++)
+    for (unsigned int i = 0; i < sizeof(datas) / sizeof(datas[0]); i++)
     {
         datas[i].id = i;
         datas[i].status = 0;
         datas[i].var = "";
         //datas[i].ref = 0;
         datas[i].ver = 1;
-
-        frees.add(i);
     }
+}
+
+bool selector::set_fixed(int r)
+{
+    reserved = r;
+    for (int i = 0; i < reserved; i++)
+    {
+        datas[i].status = FIXED;
+        datas[i].ver += 1;
+    }
+    for (size_t i = reserved; i < sizeof(datas) / sizeof(datas[0]); i++)
+    {
+        frees.add(i);
+        datas[i].ver += 1;
+    }
+    return true;
+}
+
+
+const selector::reg selector::fixed(int id)
+{
+    if (id >= reserved) return reg();
+    data& r = datas[id];
+    return reg(&r);
 }
 
 bool selector::bind(const std::string_view& name, const selector::reg& v)
@@ -28,13 +50,18 @@ bool selector::bind(const std::string_view& name, const selector::reg& v)
     }
 
     data& r = datas[v.ptr->id];
-    if (r.status != FREED)
+    switch (r.status)
     {
+    case FREED:
+        r.status = BINDED;
+        [[fallthrough]];
+    case FIXED:
+        break;
+    default:
         LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
         return false;
     }
 
-    r.status = BINDED;
     r.var = name;
     int d = binds.add(v);
     if (d < 0)
@@ -81,13 +108,18 @@ bool selector::lock(const selector::reg& v)
     }
 
     data& r = datas[v.ptr->id];
-    if (r.status != FREED)
+    switch (r.status)
     {
+    case FREED:
+        r.status = LOCKED;
+        [[fallthrough]];
+    case FIXED:
+        break;
+    default:
         LOGW("reg %d:%d - %d is NOT freed", r.id, r.ver, r.status);
         return false;
     }
 
-    r.status = LOCKED;
     r.var = "";
     int d = locks.add(v);
     if (d < 0)
@@ -166,6 +198,8 @@ bool selector::active(const reg& r)
         return binds.active(r.ptr->id) != -1;
     case LOCKED:
         return locks.active(r.ptr->id) != -1;
+    case FIXED:
+        return true;
     default:
         return false;
     }
@@ -174,4 +208,16 @@ bool selector::active(const reg& r)
 bool selector::valid(const reg& r)
 {
     return ((r.ptr != NULL) && (r.ptr->ver == r.ver)) ? true : false;
+}
+
+int selector::unused(void) const
+{
+    for (int i = SIZE - 1; i >= 0; i--)
+    {
+        if (datas[i].ver != 2)
+        {
+            return SIZE - i - 1;
+        }
+    }
+    return SIZE;
 }
