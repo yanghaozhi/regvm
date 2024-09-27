@@ -77,6 +77,47 @@ bool regvm_exit(struct regvm* vm)
 
 }
 
+
+constexpr static std::string_view get_enum_name(const char* str, char start, char end, int offset)
+{
+    const char* s = std::char_traits<char>::find(str, std::char_traits<char>::length(str), start) + offset;
+    const char* e = std::char_traits<char>::find(s, std::char_traits<char>::length(s), end);
+    return std::string_view(s, e - s);
+}
+
+template <enum CODE_ID> struct enum_name
+{
+    constexpr static std::string_view go()
+    {
+#if defined(__GNUC__) && !defined(__clang__)
+        return get_enum_name(__PRETTY_FUNCTION__, '=', ';', 2);
+#else
+        return get_enum_name(__PRETTY_FUNCTION__, '<', '>', 1);
+#endif
+    }
+};
+
+template <enum CODE_ID arg, enum CODE_ID ... others> void reg_codes(const char** code_names)
+{
+#ifdef DEBUG
+    code_names[arg] = enum_name<arg>::go().c_str();
+#endif
+
+    if (arg >= CODE_TRAP)
+    {
+        if (vm_code_ops[arg - CODE_TRAP] == NULL)
+        {
+            //vm_code_ops[arg - CODE_TRAP] = 
+        }
+    }
+
+    if constexpr (sizeof ... (others) > 0)
+    {
+        reg_codes<others ...>();
+    }
+
+}
+
 regvm::regvm() : reg()
 {
 #ifdef DEBUG
