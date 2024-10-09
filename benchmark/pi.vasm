@@ -20,8 +20,8 @@ CHG     6   6   1
 # $7 = $5(i) % $3
 MOD     7   5   3
 # if ($7 != $4) jump 3
-JCMP    7   4   1   4
-# JNE     7   4   0   4
+#JCMP    7   4   1   4
+JNE     7   4   0   4
 # $1(pi) += $6
 ADD     1   1   6
 JUMP    2
@@ -30,8 +30,8 @@ SUB     1   1   6
 # $5(i) += 1
 CALC    5   1   0
 # if ($5(i) < $0(n)) jump -9
-JCMP    5   0   4   -10
-# JLT     5   0   0   -10
+#JCMP    5   0   4   -10
+JLT     5   0   0   -10
 
 # $1(pi) *= 4
 CALC    1   4   2

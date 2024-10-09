@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILE=pi
+FILE=${1:-pi}
 
 declare -A scripts=(["lua"]="lua" ["python3"]="py" ["quickjs"]="js" ["node"]="js")
 for k in "${!scripts[@]}"
@@ -23,5 +23,5 @@ time ../out/vasm ./pi.vasm -r
 
 echo
 echo
-echo test vim ...
-time vim -c "redir! > /dev/stdout" -c "so ./pi.vim" -c "q"
+echo test c-- ...
+time ../out/vcc ./pi.c-- -r
