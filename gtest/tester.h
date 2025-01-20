@@ -19,6 +19,7 @@ template <typename T> int check_size(void* ptr)
 #define CHECK_TYPE_UNSIGNED(val)    EXPECT_EQ(val, info->value.uint)
 #define CHECK_TYPE_DOUBLE(val)      EXPECT_DOUBLE_EQ(val, info->value.dbl)
 #define CHECK_TYPE_STRING(val)      EXPECT_STREQ(val, info->value.str)
+#define CHECK_TYPE_ADDR(val)        EXPECT_EQ(val, info->value.uint)
 #define CHECK_TYPE_LIST(val)        EXPECT_EQ(val, check_size<core::uvalue::list_t>(info->value.ptr))
 #define CHECK_TYPE_DICT(val)        EXPECT_EQ(val, check_size<core::uvalue::dict_t>(info->value.ptr))
 
@@ -39,11 +40,10 @@ template <typename T> int check_size(void* ptr)
         CHECK_FROM_##FROM << "at TRAP " << K2;                  \
     }
 
-#define CHECK_VAR(K1, K2, NAME, CALL, SCOPE, REG, ...)          \
+#define CHECK_VAR(K1, K2, NAME, CALL, REG, ...)                 \
     if ((K1 == K2)                                              \
-        && (strcmp(NAME, info->var_name) == 0)                  \
-        && (CALL == info->call_id)                              \
-        && (SCOPE == info->scope_id))                           \
+        && (NAME == info->var_id)                               \
+        && (CALL == info->call_id))                             \
     {                                                           \
         match += 1;                                             \
         CHECK_UV(K2, __VA_ARGS__);                              \
@@ -76,6 +76,7 @@ private:
     };
     static void check_reg(void* arg, const regvm_reg_info* info);
     static void check_var(void* arg, const regvm_var_info* info);
+    static int64_t debug_trap(regvm* vm, void*, code_t code, int offset, void* extra);
 };
 
 template <typename R, typename V> class tester : public test_base

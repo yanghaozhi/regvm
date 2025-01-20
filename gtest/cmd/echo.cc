@@ -4,17 +4,17 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.123
-SETC    4   4   abc
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.123
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    4   1
-CMD     0   0   3   2   3   4
-CMD     0   0   2   2   3   4
-CMD     0   0   1   2   3   4
-CMD     0   0   0   2   3   4
-EXIT    0   0
+TRAP    1   4   0
+#ECHO    3   2   3   4
+ECHO    2   2   3
+ECHO    1   2   3
+ECHO    0   2   3
+EXIT    0   0   0
 )";
 
 TEST(cmd, echo)

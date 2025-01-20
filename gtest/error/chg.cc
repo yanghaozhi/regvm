@@ -4,11 +4,11 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    0   1   456
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.12
-SETC    4   4   abc
+SET     0   1   456
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.12
+SET     4   4   abc
 # watch ：1/2/3/4
 TRAP    5   0
 

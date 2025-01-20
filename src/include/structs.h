@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include <map>
 #include <deque>
@@ -10,15 +11,17 @@
 
 #include <code.h>
 
+#include "ext.h"
 #include "mlib.h"
 
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 namespace core
 {
 
-struct var;
-template <typename T> struct regv;
-template <typename T> struct var_crtp;
+class var;
+struct regv;
 
 union uvalue
 {
@@ -38,69 +41,46 @@ union uvalue
     //uint64_t conv(int type, uint64_t v) const;
 };
 
-extern void free_uvalue(int type, uvalue v);
+void free_uvalue(int type, uvalue v);
 
-struct var
+class var
 {
 protected:
     friend class error;
 
     mutable int16_t ref         = 1;
+    uint8_t         typev       = TYPE_NULL;
 
 public:
     uvalue          value;
+    mutable regv*   reg         = NULL;
 
-    template <typename T> var_crtp<typename T::var_t>* crtp()
+    const char* operator = (const char* v)
     {
-        return static_cast<var_crtp<typename T::var_t>*>(this);
+        value.str = strdup(v);
+        return v;
     }
 
-    const char* operator = (const char* v);
+    inline int type(void) const                 {return typev;};
 
     inline void acquire(void)                   {++ref;};
+    inline bool release(void) const             {return vm_ext_ops.var_release(this);};
+
+    inline bool set_val(const regv& r)          {return vm_ext_ops.var_set_val(this, r);};
+    //inline bool set_reg(const regv* r) const    {return vm_ext_ops.var_set_reg(this, r);};
 };
 
-
-template <typename T> class var_crtp : public var
-{
-public:
-    mutable regv<T>*    reg     = NULL;
-
-#define NOTHING
-#ifdef REGVM_EXT
-#define CRTP_FUNC(name, ext, ret, argc, ...)                                        \
-    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) ext         \
-    {                                                                               \
-        return static_cast<ext T*>(this)->name(MLIB_CALL_LIST(argc, __VA_ARGS__));  \
-    }
-#else
-#define CRTP_FUNC(name, ext, ret, argc, ...)                                        \
-    inline ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__)) ext         \
-    {                                                                               \
-        assert(0);                                                                  \
-    }
-#endif
-
-    CRTP_FUNC(set_val,  NOTHING, bool, 1, const regv<T>&);
-    CRTP_FUNC(set_reg,  const, bool, 1, const regv<T>*);
-    CRTP_FUNC(release,  NOTHING, bool, 0);
-
-#undef CRTP_FUNC
-#undef NOTHING
-
-};
-
-template <typename T> struct regv
+struct regv
 {
     uvalue                  value;
-    mutable var_crtp<T>*    from;
+    mutable var*            from;
     uint8_t                 type;
-    int8_t                  idx;
+    //uint8_t                 idx;
     mutable bool            need_free;
 
     inline bool clear()
     {
-        store();
+        //store();
 
         if (need_free == true)
         {
@@ -115,10 +95,10 @@ template <typename T> struct regv
 
     inline bool store() const
     {
-        core::var_crtp<T>* v = from;
+        core::var* v = from;
         if (v == NULL)
         {
-            return false;
+            return true;
         }
 
         if (v->reg != this)
@@ -130,7 +110,7 @@ template <typename T> struct regv
         return v->set_val(*this);
     }
 
-    inline bool load(const var_crtp<T>* v)
+    inline bool load(const var* v)
     {
         if (v->reg == this)
         {
@@ -146,7 +126,7 @@ template <typename T> struct regv
             v->reg->clear();
         }
 
-        type = static_cast<const T*>(v)->type;
+        type = v->type();
         value = v->value;
         set_from(v);
         need_free = false;
@@ -154,20 +134,47 @@ template <typename T> struct regv
         return true;
     }
 
-    inline bool set_from(const var_crtp<T>* v) const
+    inline bool set_from(const var* v) const
     {
-        if (from != NULL)
-        {
-            from->set_reg(NULL);
-        }
-        if (v != NULL)
-        {
-            v->set_reg(this);
-        }
+        //if (v != NULL)
+        //{
+        //    v->set_reg(this);
+        //}
+        //if (from != NULL)
+        //{
+        //    from->set_reg(NULL);
+        //}
+        vm_ext_ops.reg_chg_from(this, from, v);
         from = const_cast<decltype(from)>(v);
         return true;
     }
 };
+
+inline void free_uvalue(int type, uvalue v)
+{
+    switch (type)
+    {
+    case TYPE_STRING:
+        free(v.ptr);
+        break;
+    case TYPE_LIST:
+        for (auto& it : *v.list_v)
+        {
+            it->release();
+        }
+        delete v.list_v;
+        break;
+    case TYPE_DICT:
+        for (auto& it : *v.dict_v)
+        {
+            it.second->release();
+        }
+        delete v.dict_v;
+        break;
+    default:
+        break;
+    }
+}
 
 };
 

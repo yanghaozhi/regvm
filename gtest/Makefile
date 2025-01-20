@@ -6,7 +6,7 @@ NAME=gtester
 OUT=$(ROOT)/out
 EXT=mem
 
-DEPS= $(OUT)/libvasm.a $(OUT)/lib$(EXT).a $(OUT)/libvasm.a $(OUT)/libcore.a /usr/lib/x86_64-linux-gnu/libgtest.a -lpthread
+DEPS= $(OUT)/libvasm.a $(OUT)/lib$(EXT).a $(OUT)/libvasm.a $(OUT)/libcore.a $(OUT)/libcommon.a /usr/lib/x86_64-linux-gnu/libgtest.a -lpthread
 
 all: $(NAME)
 
@@ -38,7 +38,7 @@ $(OBJS) : %.o : %.cc
 
 $(NAME):$(OBJS) $(DEPS) 
 	mkdir -p $(OUT)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lfmt -lgcov
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $(OUT)/$(NAME) $(DEPS) -lgcov
 	ln -sf $(OUT)/$(NAME) $(NAME)
 
 

@@ -9,44 +9,49 @@
 
 #include "reg.h"
 
+
 namespace core
 {
 
-union extend_args
+struct func
 {
-    uint16_t        v;
-    struct
-    {
-        uint16_t    a1 : 4;
-        uint16_t    a2 : 4;
-        uint16_t    a3 : 4;
-        uint16_t    a4 : 4;
-    };
-};
-
-typedef int (*vm_sub_op_t)(regvm* vm, reg::v& r, reg::v& v, const extend_args& args);
-
-class func
-{
-public:
+    const bool                  need_free;
     const int32_t               id;
 
-    const code_t*               codes;      //code page(file) begins
-    const int64_t               count;      //code page count
-
-    const int64_t               entry;      //function entry position
-    const int64_t               size;       //function size
+    const int32_t               count;      //code page count
+    const code_t*               codes;      //code page begins
 
     regvm_src_location          src;
 
-    func(const code_t* codes, int64_t count, int64_t entry, int64_t size, int32_t id, const regvm_src_location* src);
+    func(const code_t* p, int32_t c, int32_t i, const regvm_src_location* l, int mode) :
+        need_free((bool)mode), id(i), count(c), codes(p)
+    {
+        if (mode == VM_CODE_COPY)
+        {
+            void* n = malloc(sizeof(code_t) * count);
+            memcpy(n, p, sizeof(code_t) * count);
+            codes = (const code_t*)n;
+        }
 
-    bool run(struct regvm* vm, int64_t start = -1);
+        if (l == NULL)
+        {
+            src.line = 0;
+            src.file = NULL;
+            src.func = NULL;
+        }
+        else
+        {
+            src = *l;
+        }
+    }
 
-    static bool step(struct regvm* vm, const code_t* code, int offset, int max, int* next);
-    //bool run(struct regvm* vm, const code_t* start, int count);
-    //bool run(struct regvm* vm, uint64_t id, code_t code, int offset);
-
+    ~func()
+    {
+        if (need_free == true)
+        {
+            free((void*)codes);
+        }
+    }
 };
 
 }

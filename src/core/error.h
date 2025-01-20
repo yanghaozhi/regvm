@@ -38,7 +38,7 @@ public:
 
     char                reason[1024];
 
-    void set(regvm* vm, int errcode, const code_t code, int offset, const char* fmt, ...);
+    void set(regvm* vm, int errcode, code_t code, int offset, const char* fmt, ...);
 
     //void print_stack();
 
@@ -72,14 +72,14 @@ public:
     template <typename T> static void reg_info(const reg& reg, T cb, regvm_reg_info* info)
     {
         //cb(reg.values[i].value.num, reg.values[i].from, reg.values[i].type);
-        for (int i = 0; i < reg::size; i++)
+        for (int i = 0; i < reg::SIZE; i++)
         {
             info->id = i;
-            info->ref = (reg.values[i].from != NULL) ? reg.values[i].from->ref : -1;
-            info->type = reg.values[i].type;
-            info->value.sint = reg.values[i].value.sint;
-            info->from = reg.values[i].from;
-            info->attr = reg.values[i].need_free;
+            info->ref = (reg.pages[0]->values[i].from != NULL) ? reg.pages[0]->values[i].from->ref : -1;
+            info->type = reg.pages[0]->values[i].type;
+            info->value.sint = reg.pages[0]->values[i].value.sint;
+            info->from = reg.pages[0]->values[i].from;
+            info->attr = reg.pages[0]->values[i].need_free;
             cb(info);
         }
     }

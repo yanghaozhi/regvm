@@ -3,65 +3,63 @@
 #include <stdint.h>
 
 #include <map>
-#include <list>
+#include <vector>
+#include <unordered_map>
 
 #include <debug.h>
 #include <ext.h>
 
-#include "scope.h"
+#include <vm.h>
 
+extern int mem_init(void);
 
 namespace ext
 {
 
 class var;
 
-struct regvm_mem : public regvm_crtp<regvm_mem>
+struct regvm_mem : public regvm::ext
 {
 public:
     typedef var     var_t;
 
     regvm_mem();
+    virtual ~regvm_mem();
 
     bool store();
 
-    var* add(const char* name, const int type, bool global);
+    var* add(uint64_t id, const int type);
 
-    var* get(const char* name, bool global) const;
+    var* get(uint64_t id) const;
 
-    void dump(regvm* vm, var_cb cb, void* arg, regvm_var_info* info) const;
+    bool del(uint64_t id);
+    bool del(uint64_t first, uint64_t last);
 
-#define CRTP_FUNC(name, ret, argc, ...)                                             \
-    ret name(MLIB_MULTI_0_EXT(MLIB_DECL_GEN, argc, __VA_ARGS__));
+    static bool init(regvm* vm, int idx, void* arg);
+    static bool exit(regvm* vm, int idx, void* arg);
 
-    CRTP_FUNC(vm_init,  bool, 0);
-    CRTP_FUNC(vm_exit,  bool, 0);
-    CRTP_FUNC(vm_var,   core::var*, 1, int);
-    CRTP_FUNC(vm_var,   core::var*, 2, int, const char*);
+    static core::var* var_create_from_reg(regvm* vm, int id);
+    static core::var* var_create(regvm* vm, int type, uint64_t id);
 
-    CRTP_FUNC(vm_new,   bool, 3, const code_t, int, int64_t);
-    CRTP_FUNC(vm_store, bool, 3, const code_t, int, int64_t);
-    CRTP_FUNC(vm_load,  bool, 3, const code_t, int, int64_t);
-    CRTP_FUNC(vm_block, bool, 3, const code_t, int, int64_t);
-    CRTP_FUNC(vm_call,  bool, 3, const code_t, int, int64_t);
+    bool vm_call(code_t code, int offset, int64_t id);
 
-#undef CRTP_FUNC
+    static int vm_CODE_LOAD(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_STORE(regvm* vm, code_t code, int offset, const void* extra);
+    static int vm_CODE_BLOCK(regvm* vm, code_t code, int offset, const void* extra);
 
 private:
-    struct context
+    uint64_t                    cur_call    = 0;
+    std::map<uint64_t, var_t*>  vars;
+    std::vector<int64_t>        calls;
+
+    inline uint64_t var_id(const core::regv& r) const
     {
-        context(int64_t frame);
-        ~context();
+        return cur_call + r.value.uint;
+    }
 
-        void enter_block();
-        void leave_block();
+    template <typename F> inline void scan_local_vars(uint64_t id, F&& func);
 
-        const int64_t       frame;
-        std::list<scope>    scopes;
-    };
-
-    scope                   globals;
-    std::list<context>      frames;
+    friend bool ::regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 };
 
 }

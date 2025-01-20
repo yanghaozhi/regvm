@@ -5,6 +5,7 @@
 
 #include "code.h"
 
+#include <regvm.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -12,13 +13,6 @@ extern "C"
 #endif
 
 struct regvm;
-
-struct regvm_src_location
-{
-    int                 line;
-    const char*         file;
-    const char*         func;
-};
 
 struct regvm_error
 {
@@ -36,6 +30,7 @@ enum ERR_CODE
     ERR_INVALID_REG,
     ERR_INVALID_VAR,
     ERR_INVALID_CODE,
+    ERR_INVALID_FUNC,
     ERR_TYPE_MISMATCH,
     ERR_INST_TRUNC,
     ERR_STRING_RELOCATE,

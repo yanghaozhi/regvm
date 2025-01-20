@@ -11,9 +11,12 @@
 #include "frame.h"
 
 //#include "structs.h"
+#include "ext.h"
 #include "mlib.h"
 
 #include <map>
+#include <deque>
+
 
 
 struct regvm
@@ -22,19 +25,32 @@ struct regvm
     bool            fatal       = false;
     int64_t         exit_code   = 0;
     core::frame*    call_stack  = NULL;
+    const char*     str_tab     = NULL;
+
     core::reg       reg;
-    //scope           globals;
     core::error     err;
     core::ivt       idt;
 
-    std::map<int32_t, core::func>   funcs;
-    std::map<int64_t, const char*>  strs;
+    std::map<int32_t, core::func>       funcs;
+    std::deque<core::reg::page_t>       pages;
+
 
     regvm();
     virtual ~regvm();
 
     bool run(const code_t* start, int count);
-    bool call(int64_t id, const code_t code, int offset);
-    bool call(core::reg::v& reg, const code_t code, int offset);
+    bool call(int32_t id, code_t code, int offset);
+
+#ifdef DEBUG
+    const char* code_names[256];
+#define CODE_NAME(x)    vm->code_names[x]
+#else
+#define CODE_NAME(x)    ""
+#endif
+
+    struct ext
+    {
+    };
+    ext*            exts[0];
 };
 

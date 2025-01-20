@@ -31,7 +31,7 @@ static int64_t irq_TRAP(struct regvm* vm, void* arg, code_t code, int offset, vo
 //发生内部错误时发起
 static int64_t irq_ERROR(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
 {
-    uint32_t c = *(uint16_t*)&code;
+    uint32_t c = *(uint32_t*)&code;
     printf("\e[31m%X @ %d - %p \e[0m\n", c, offset, extra);
 
     if (extra != NULL)
@@ -70,7 +70,7 @@ static int64_t irq_STR_RELOCATE(struct regvm* vm, void* arg, code_t code, int of
 
     //发起函数调用
     //需要在此中断中提供新函数的具体信息
-//static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, code_t code, int offset, void* extra)
+//static int64_t irq_FUNCTION_CALL(struct regvm* vm, void* arg, int c, int r, int e, int offset, void* extra)
 //{
 //    return 0;
 //}

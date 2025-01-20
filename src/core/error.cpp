@@ -16,14 +16,13 @@ error::error(void)
     reason[0] = '\0';
 }
 
-void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char* fmt, ...)
+void error::set(regvm* vm, int errcode, code_t code, int offset, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(reason, sizeof(reason), fmt, ap);
     va_end(ap);
 
-    code = errcode;
     reason[sizeof(reason) - 1] = '\0';
     if (vm->call_stack->running != NULL)
     {
@@ -42,6 +41,7 @@ void error::set(regvm* vm, int errcode, const code_t cur, int offset, const char
 #ifdef DEBUG
     err.self = &vm->err.self;
 #endif
-    vm->idt.call(vm, IRQ_ERROR, cur, offset, &err);
+    vm->fatal = true;
+    vm->idt.call(vm, IRQ_ERROR, code, offset, &err);
 }
 

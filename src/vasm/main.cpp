@@ -1,60 +1,24 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "log.h"
 #include "mem_run.h"
 #include "bin_file.h"
+#include "inst.h"
 
 using namespace vasm;
 
-struct OP
-{
-    virtual ~OP()   {}
-    virtual bool go(const char* name)   = 0;
-};
-
-
-template <typename T> struct TOP : public OP
-{
-    TOP(const char* opt = NULL) : op(opt)  {}
-
-    T   op;
-
-    virtual bool go(const char* name)
-    {
-        if (op.open(name) == false)
-        {
-            return false;
-        }
-
-        typename T::pass1 s1(op);
-        if (s1.scan() == false)
-        {
-            return false;
-        }
-
-        typename T::pass2 s2(op);
-        if (s2.scan() == false)
-        {
-            return false;
-        }
-
-        if (op.finish() == false)
-        {
-            return false;
-        }
-
-        return true;
-    }
-};
 
 const char* HELP = R"(tester for regvm
 USAGE tester [file] [-r] [-v] [-c out]
 options:
     -f {file}       input file
     -r              run code file
-    -s              run code file line by line
+    -s              show run code
     -b              run binrary code file
     -c {out}        compile to binary code
     -v              verbose mode
@@ -70,34 +34,36 @@ int main(int argc, char** argv)
 
     const char* file = argv[1];
 
-    OP* op = NULL;
+    parser* obj = NULL;
+    void (inst::*op)(FILE*) const = &inst::print;
+    FILE* fp = stdout;
+    char* buf = NULL;
+    size_t size = 0;
+
     const char* opts = "c:rsbhv";
     int opt = 0;
-    logging::set_level(logging::INFO);
     while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
     {
         switch (opt)
         {
         case 'r':
-            {
-                auto p = new TOP<mem_2_run>();
-                p->op.set_dbg(new vasm::debugger());
-                op = p;
-            }
+            obj = new mem_run();
+            op = &inst::print_bin;
+            fp = open_memstream(&buf, &size);
             break;
         case 's':
-            //o = new step();
+            obj = new mem_run();
+            op = &inst::print_asm;
             break;
         case 'c':
-            op = new TOP<bin_file>(optarg);
+            //op = new TOP<bin_file>(optarg);
             //o = new compile_2_file(optarg);
             break;
         case 'b':
-            op = new TOP<bin_file>(file);
+            //op = new TOP<bin_file>(file);
             //o = new bin();
             break;
         case 'v':
-            logging::set_level(0);
             break;
         case 'h':
             printf("%s\n", HELP);
@@ -105,11 +71,70 @@ int main(int argc, char** argv)
         }
     }
 
-    if (op == NULL) return 0;
+    if (obj == NULL)
+    {
+        LOGW("Does NOT find input object !!!");
+        return 0;
+    }
 
-    op->go(file);
 
-    delete op;
+    int fd = open(file, O_RDONLY);
+    struct stat st;
+    fstat(fd, &st);
+    auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+    if (obj->go(d) == false)
+    {
+        LOGE("parse file : %s ERROR !!!", file);
+        return 1;
+    }
+
+    munmap((void*)d, st.st_size);
+    close(fd);
+
+    if (obj->finish(fp, op) == false)
+    {
+        LOGE("finish ERROR : %p", fp);
+        return 1;
+    }
+
+    delete obj;
+
+    if (fp != stdout)
+    {
+        fclose(fp);
+
+        LOGI("total %d bytes to run", (int)size);
+
+        if LOG_ENBALE_D
+        {
+            const int line = 16;
+            int j = 0;
+            const unsigned char* p = (const unsigned char*)buf;
+            for (int i = 0; i < (int)size; i++)
+            {
+                if (j++ >= line)
+                {
+                    printf("\n");
+                    j = 1;
+                }
+                printf("%02X ", p[i]);
+            }
+            printf("\n\n");
+        }
+
+        extern int mem_init(void);
+        auto vm = regvm_init(1, mem_init);
+
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, (code_t*)buf, size >> 2, &exit);
+
+        regvm_exit(vm);
+
+        LOGI("run : %d\n", r);
+
+        free(buf);
+    }
 
     return 0;
 }

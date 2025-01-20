@@ -17,11 +17,11 @@ class frame
     friend class error;
 
 public:
-    frame(frame& cur, func* func, const code_t code, int offset);
-    frame(regvm* vm, func* func, const code_t code, int offset);
+    frame(frame& cur, func* func, code_t code, int offset);
+    frame(regvm* vm, func* func, code_t code, int offset);
     ~frame();
 
-    const uint32_t      depth;
+    const uint16_t      depth;
 
     frame*              up      = NULL;
     frame*              down    = NULL;
@@ -31,7 +31,19 @@ public:
 
     const int64_t       id;
 
-    bool run(int64_t entry = -1);
+    //core::reg::page<core::reg::SIZE>    sub_func;
+
+    enum REASON
+    {
+        ERROR   = 0,
+        RET,
+        EXIT,
+        END,
+    };
+
+    int run(void);
+
+    static bool one_step(struct regvm* vm, const code_t code, int max, int* next, const void* extra);
 
     //const code_t*       start   = NULL;     //first code pos
     //const code_t*       entry   = NULL;     //entry of current frame
@@ -45,13 +57,20 @@ public:
 
 private:
     regvm*              vm;
-    const code_t        code;
-    const int           offset;
+    struct 
+    {
+        code_t          code;
+        int             offset;
+    }                   caller;
     bool                valid   = true;
+    enum REASON         reason;
+    int                 flow;
 
-    int64_t gen_id(void);
+    inline int64_t gen_id(void) const;
 //    scope&              globals;
 //    std::list<scope>    scopes;
+
+    inline int step(struct regvm* vm, code_t inst, int offset, int max, const void* extra);
 };
 
 

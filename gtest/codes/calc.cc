@@ -4,39 +4,39 @@
 
 static char txt[] = R"(
 # $1 = 123
-SETS    0   1   456
-SETS    1   1   123
-SETS    2   2   321
-SETD    3   3   321.12
-SETC    4   4   abc
+SET     0   1   456
+SET     1   1   123
+SET     2   2   321
+SET     3   3   321.12
+SET     4   4   abc
 # watch ：1/2/3/4
-TRAP    5   0
+TRAP    0   5   0
 
-INC     0   5
-DEC     3   3
-ADD     2   1
+CALC    0   5   0
+CALC    3   3   1
+ADD     2   2   1
 # $0 == 456 + 5 == 461, $3 == 321.12 - 3 == 318.12, $2 == 321 + 123 == 444
-TRAP    3   1
+TRAP    1   3   0
 
-SUB     1   3
-SUB     2   0
-# $1 == 123 - 321.12 == -195, $2 == 444 - 461 == -17
-TRAP    4   2
+SUB     1   1   3
+SUB     2   2   0
+# $1 == 123 - 318.12 == -195.12, $2 == 444 - 461 == -17
+TRAP    2   4   0
 
-DIV     3   1
-MUL     1   2
-# $3 == 318.12 / -195 == -1.63, $1 == -195 * -17 == -27
-TRAP    2   3
+DIV     8   3   1
+MUL     9   1   0
+# $8 == 318.12 / -195.12, $9 == -195.12 * 461
+TRAP    3   5   0
 
-TYPE    5   3
+TYPE    5   3   0
 # $5 == $0.type
-TRAP    1   4
+TRAP    4   1   0
 
-SHR     1   5
-SHL     0   5
-TRAP    2   5
+CALC    5   2   5
+CALC    0   2   6
+TRAP    5   2   0
 
-EXIT    0   0
+EXIT    0   0   0
 )";
 
 TEST(code, calc)
@@ -55,17 +55,20 @@ TEST(code, calc)
             CHECK_REG(key, 1, 2, N, TYPE_UNSIGNED, 444,     -1, 0);
                                                    
             CHECK_REG(key, 2, 0, N, TYPE_SIGNED,   461,     -1, 0);
-            CHECK_REG(key, 2, 1, N, TYPE_SIGNED,   -195,    -1, 0);
-            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,     -1, 0);
+            CHECK_REG(key, 2, 1, N, TYPE_DOUBLE,   -195.12, -1, 0);
+            CHECK_REG(key, 2, 2, N, TYPE_UNSIGNED, (uint64_t)-17,       -1, 0);
             CHECK_REG(key, 2, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
 
-            CHECK_REG(key, 3, 3, N, TYPE_DOUBLE,   318.12 / -195, -1, 0);
-            CHECK_REG(key, 3, 1, N, TYPE_SIGNED,   -195 * -17,     -1, 0);
+            CHECK_REG(key, 3, 0, N, TYPE_SIGNED,   461,     -1, 0);
+            CHECK_REG(key, 3, 1, N, TYPE_DOUBLE,   -195.12, -1, 0);
+            CHECK_REG(key, 3, 3, N, TYPE_DOUBLE,   318.12,  -1, 0);
+            CHECK_REG(key, 3, 8, N, TYPE_DOUBLE,   318.12 / -195.12,    -1, 0);
+            CHECK_REG(key, 3, 9, N, TYPE_DOUBLE,   -195.12 * 461,       -1, 0);
 
-            CHECK_REG(key, 4, 5, N, TYPE_UNSIGNED, TYPE_DOUBLE,   -1, 0);
+            CHECK_REG(key, 4, 5, N, TYPE_SIGNED,   TYPE_DOUBLE,         -1, 0);
 
-            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   3688, -1, 0);
-            CHECK_REG(key, 5, 1, N, TYPE_SIGNED,   414,     -1, 0);
+            CHECK_REG(key, 5, 0, N, TYPE_SIGNED,   115,     -1, 0);
+            CHECK_REG(key, 5, 5, N, TYPE_SIGNED,   12,      -1, 0);
 
             return match;
         },

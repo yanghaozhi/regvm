@@ -7,12 +7,14 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <unordered_map>
 
 #include <code.h>
 
 #include "log.h"
+#include "labels.h"
 
 
 namespace vasm
@@ -23,43 +25,26 @@ class parser
 public:
     std::string     file;
 
+    parser();
     virtual ~parser();
 
-    virtual bool open(char* data, int64_t size);
-    virtual bool open(const char* name);
+    virtual bool go(const char* src);
 
-    virtual bool finish();
+    virtual int64_t size(void) const;
+
+    virtual bool finish(FILE* fp, void (inst::*op)(FILE*) const);
+
+    int             lineno  = 1;
 
 protected:
-    struct pass
-    {
-        parser&     src;
-        int64_t     cur_line        = 0;
+    std::deque<inst*>                           insts;
+    labels<std::string_view>                    label;
 
-        pass(parser& s) : src(s)    {}
-        virtual ~pass()             {}
-
-        bool scan(void);
-
-        virtual void before()       {};
-        virtual void after()        {};
-
-        virtual void comment(const char* line)
-        {
-            printf("\e[35m %s\e[0m", line);
-        }
-        virtual bool setc(code_t& code, intptr_t* next, const char* str)   = 0;
-        virtual bool line(const code_t* code, int max_bytes, const char* orig)  = 0;
-    };
-
-    std::unordered_map<std::string, int>        ids;
+    virtual bool comment(const char* line, int size);
+    virtual bool line(const char* str, inst* code);
 
 private:
-    int         fd      = -1;
-    char*       data    = NULL;
-    int64_t     size    = -1;
-
-    const char* next_line(char** end) const;
+    const char* next_token(const char* str) const;
 };
 
 }

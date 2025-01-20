@@ -2,42 +2,59 @@
 
 #include <stdint.h>
 #include <code.h>
+#include <debug.h>
 
 #define VAR_IMPL    ext::var
 
 #include "../include/structs.h"
 
 
+#include "log.h"
 
 namespace ext
 {
 
 
-class var : public core::var_crtp<var>
+class var : public core::var
 {
 private:
-    friend class scope;
-
-    var(uint8_t type, const char* name, const int len);
-    ~var();
+    friend bool ::regvm_debug_var_callback(struct regvm* vm, var_cb cb, void* arg);
 
 public:
-    const uint16_t      type;
-    const uint16_t      name_len;
-    const uint32_t      hash;
+    var(uint8_t type, uint64_t id = (uint64_t)-1);
+    virtual ~var();
 
-    char                name[0];
+    const uint64_t      id;
 
-    static var* create(uint8_t type, const char* name);
-    static uint32_t calc_hash(const char* name, const int len);
+    int                 reload  = -1;
 
-    bool set_val(const core::regv<var>& reg);
-    bool set_reg(const core::regv<var>* reg) const;
-    bool release(void) const;
+    inline bool set_val(const core::regv& reg);
+    inline bool set_reg(const core::regv* reg) const;
+    inline bool release(void) const
+    {
+        LOGD("release var %016llx - %d - %p", (long long)id, ref, this);
+        if (--ref > 0)
+        {
+            LOGD("var %p ref : %d", this, ref);
+            return true;
+        }
 
-    bool store_from(core::regv<var>& v);
+        if (ref == 0)
+        {
+            //delete this;
+            delete this;
+            //this->~var();
+            //free((void*)this);
+        }
 
-    bool cmp(uint32_t key, const char* name, int len);
+        return false;
+    }
+
+    static bool set_val(core::var* v, const core::regv& r);
+    static bool release(const core::var* v);
+    static bool reg_chg_from(const core::regv* r, const core::var* cur, const core::var* next);
+
+    bool store_from(core::regv& v);
 };
 
 }
