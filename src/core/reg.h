@@ -22,7 +22,7 @@ class reg
 {
 public:
     friend class error;
-    friend class ::regvm;
+    friend struct ::regvm;
 
     static const int            SIZE    = 32;
     template <int SIZE> struct  page;

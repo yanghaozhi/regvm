@@ -98,7 +98,7 @@ int frame::run(void)
         {
             if (unlikely(reason == END))
             {
-                reason = ERROR;
+                reason = ERR;
                 VM_ERROR(ERR_RUNTIME, *cur, offset, "run code ERROR at %lld : %s - %d - %d - %d", offset, CODE_NAME(cur->id), cur->a, cur->b, cur->c);
             }
             return reason;
@@ -113,7 +113,7 @@ int frame::run(void)
     {
         VM_ERROR(ERR_RUNTIME, code_t{0}, offset, "run to UNEXPECT POSISTION : %d - %lld", rest, offset);
         vm->fatal = true;
-        return ERROR;
+        return ERR;
     }
 
     auto& r = vm->reg.id(0);
@@ -134,7 +134,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
 
     const int code = inst.id;
 
-    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, inst.a, inst.b, inst.c);
+    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, (int)inst.a, (int)inst.b, (int)inst.c);
 
     switch (code)
     {

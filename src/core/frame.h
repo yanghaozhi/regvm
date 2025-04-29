@@ -35,7 +35,7 @@ public:
 
     enum REASON
     {
-        ERROR   = 0,
+        ERR   = 0,
         RET,
         EXIT,
         END,

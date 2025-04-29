@@ -22,7 +22,7 @@ extern "C"
 namespace core
 {
     class var;
-    class regv;
+    struct regv;
 };
 
 struct regvm_ext_op

@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 
+#include "os.h"
 #include "code.h"
 
 struct regvm;
