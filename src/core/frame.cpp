@@ -80,7 +80,7 @@ int64_t frame::gen_id(void) const
 {
     int64_t c = running->id;
     c <<= 32;
-    c += (depth << 16);
+    c += ((uint32_t)depth << 16);
     return c;
 }
 

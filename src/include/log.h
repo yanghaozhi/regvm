@@ -46,7 +46,13 @@ inline const char* only_file_name(const char* f)
 #ifndef _DEBUG
 #define LOG_COLOR(level, color, fmt, ...) if LOG_IS_ENBALE(level) printf(FMT_WITH_COLOR("[%s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
 #else   //PRINT_TO_CONSOLE
-#define LOG_COLOR(level, color, fmt, ...) OutputDebugStringA(std::format("[{}] [{}:{}] " fmt " \n", #level, only_file_name(__FILE__), __LINE__, ##__VA_ARGS__).c_str());
+#define LOG_COLOR(level, color, fmt, ...)																		\
+	if LOG_IS_ENBALE(level)                                                                                     \
+	{                                                                                                           \
+		char buf[4096];                                                                                         \
+		snprintf(buf, sizeof(buf), "[%s] [%s:%d] " fmt " \n", #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);  \
+		OutputDebugStringA(buf);                                                                                \
+	}
 #endif  //PRINT_TO_CONSOLE
 #else   //COLOR
 #define LOG_COLOR(level, color, fmt, ...) if LOG_IS_ENBALE(level) printf(FMT_WITH_COLOR("[%s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
