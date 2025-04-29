@@ -1,16 +1,16 @@
 #pragma once
 
+#include <os.h>
 #include <string.h>
 
 template <typename T, int MAX> class lru
 {
 public:
-    lru() : max(MAX)
+    lru()
     {
         memset(datas, 0xFF, sizeof(datas));
     }
 
-    const int   max;
     int         size = 0;
 
     int get()     {return used(0);}

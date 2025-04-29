@@ -255,8 +255,7 @@ bool regvm::call(int32_t id, code_t code, int offset)
     reg.pages[1] = &pages[idx + 1];
 
     const int info = (uint8_t)code.a2;
-    //LOGT("call info %d - (%d : %d : %d), pages : %p - %p", info, info & 0x0F, info >> 3, core::reg::SIZE - (info >> 3), reg.pages[0], reg.pages[1]);
-    OutputDebugStringA(std::format("[{}] [{}:{}] call info %d" " \n", "TTT", only_file_name("D:\\opt\\regvm\\src\\core\\vm.cpp"), 259, info).c_str());;
+    LOGT("call info %d - (%d : %d : %d), pages : %p - %p", info, info & 0x0F, info >> 3, core::reg::SIZE - (info >> 3), reg.pages[0], reg.pages[1]);
 
     bool r = sub.run();
 

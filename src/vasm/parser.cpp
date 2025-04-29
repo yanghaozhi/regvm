@@ -1,8 +1,8 @@
 #include "parser.h"
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
+//#include <fcntl.h>
+//#include <unistd.h>
+//#include <sys/stat.h>
 //#include <sys/mman.h>
 
 #include <code.h>

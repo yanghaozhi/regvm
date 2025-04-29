@@ -3,8 +3,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 //#include <sys/mman.h>
-#include <unistd.h>
-#include <fcntl.h>
+//#include <unistd.h>
+//#include <fcntl.h>
 
 #include <regvm.h>
 #include <debug.h>
