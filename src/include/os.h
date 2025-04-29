@@ -2,16 +2,16 @@
 
 #include <string.h>
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 
-#define likely(x) (x)
-#define unlikely(x) (x)
+#include <string.h>
+#include <intrin.h>
 
-#define strdup _strdup
+//#define memrchr _memrchr
 
-#endif // defined(_MSC_VER) && !defined(__clang__)
+#endif 
 
-#define memrchr _memrchr
+
 
 #if defined(__GNUC__) || defined(__clang__)
 

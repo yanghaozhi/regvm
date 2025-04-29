@@ -89,11 +89,12 @@ template <enum CODE_ID> struct enum_name
 {
     constexpr static std::string_view go()
     {
-#if defined(__GNUC__) && !defined(__clang__)
+//#if defined(__GNUC__) && !defined(__clang__)
+//        return get_enum_name(__PRETTY_FUNCTION__, '=', ';', 2);
+//#else
+//        return get_enum_name(__PRETTY_FUNCTION__, '<', '>', 1);
+//#endif
         return get_enum_name(__PRETTY_FUNCTION__, '=', ';', 2);
-#else
-        return get_enum_name(__FUNCSIG__, '<', '>', 1);
-#endif
     }
 };
 

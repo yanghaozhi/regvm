@@ -80,7 +80,7 @@ int64_t frame::gen_id(void) const
 {
     int64_t c = running->id;
     c <<= 32;
-    c += ((uint32_t)depth << 16);
+    c += (depth << 16);
     return c;
 }
 
@@ -134,7 +134,7 @@ inline int frame::step(struct regvm* vm, code_t inst, int offset, int max, const
 
     const int code = inst.id;
 
-    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, (int)inst.a, (int)inst.b, (int)inst.c);
+    LOGT("%4d : code %8s - 0x%02X - %d - %d - %d", offset, CODE_NAME(code), code, inst.a, inst.b, inst.c);
 
     switch (code)
     {
