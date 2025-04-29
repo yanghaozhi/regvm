@@ -145,7 +145,7 @@ template <int SIZE> inline void reg::page<SIZE>::cleanup(const int begin, const 
 template <int SIZE> inline int reg::page<SIZE>::id(const v& r)
 {
     auto i = &r - values;
-    return ((0 <= i) && (i < SIZE)) ? i : -1;
+    return ((0 <= i) && (i < SIZE)) ? (int)i : -1;
 }
 
 }
