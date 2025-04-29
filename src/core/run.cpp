@@ -145,7 +145,7 @@ int vm_CHG_MINUS(regvm* vm, int a, int b, int c, int offset)
         r.value.dbl = 0 - r.value.dbl;
         break;
     default:
-        UNSUPPORT_TYPE("chg", r.type, code_t(b), offset);
+        UNSUPPORT_TYPE("chg", r.type, code_t{(uint32_t)b}, offset);
         return 0;
     }
     return 1;
