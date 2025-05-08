@@ -43,9 +43,9 @@ inline const char* only_file_name(const char* f)
 #include <winsock2.h>
 #include <Windows.h>
 #include <format>
-#ifndef _DEBUG
-#define LOG_COLOR(level, color, fmt, ...) if LOG_IS_ENBALE(level) printf(FMT_WITH_COLOR("[%s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
-#else   //PRINT_TO_CONSOLE
+//#ifndef _DEBUG
+//#define LOG_COLOR(level, color, fmt, ...) if LOG_IS_ENBALE(level) printf(FMT_WITH_COLOR("[%s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
+//#else   //PRINT_TO_CONSOLE
 #define LOG_COLOR(level, color, fmt, ...)																		\
 	if LOG_IS_ENBALE(level)                                                                                     \
 	{                                                                                                           \
@@ -53,10 +53,10 @@ inline const char* only_file_name(const char* f)
 		snprintf(buf, sizeof(buf), "[%s] [%s:%d] " fmt " \n", #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);  \
 		OutputDebugStringA(buf);                                                                                \
 	}
-#endif  //PRINT_TO_CONSOLE
-#else   //COLOR
+//#endif  //PRINT_TO_CONSOLE
+#else   //_MSC_VER
 #define LOG_COLOR(level, color, fmt, ...) if LOG_IS_ENBALE(level) printf(FMT_WITH_COLOR("[%s] [%s:%d]") fmt " \n", ARG_WITH_COLOR(color), #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
-#endif  //COLOR
+#endif  //_MSC_VER
 
 #define LOG_NORMAL  0
 #define LOG_RED     31

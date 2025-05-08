@@ -26,14 +26,14 @@ template <typename F> bool map_file(const char* file, F func)
 	);
 	if (fd == INVALID_HANDLE_VALUE)
 	{
-        LOGE("Failed to open file : %s ERROR : %s !!!", file, GetLastError());
+        LOGE("Failed to open file : %s ERROR : %d !!!", file, GetLastError());
 		return false;
 	}
 
 	LARGE_INTEGER fileSize;
 	if (!GetFileSizeEx(fd, &fileSize))
 	{
-        LOGE("Failed to get file size : %s ERROR : %s !!!", file, GetLastError());
+        LOGE("Failed to get file size : %s ERROR : %d !!!", file, GetLastError());
 		return false;
 	}
 
@@ -47,7 +47,7 @@ template <typename F> bool map_file(const char* file, F func)
 	);
 	if (map == NULL)
 	{
-        LOGE("Failed to create file mapping object ERROR : %s !!!", GetLastError());
+        LOGE("Failed to create file mapping object ERROR : %d !!!", GetLastError());
 		return false;
 	}
 
@@ -61,7 +61,7 @@ template <typename F> bool map_file(const char* file, F func)
 	);
 	if (data == NULL)
 	{
-        LOGE("Failed to map view of file ERROR : %s !!!", GetLastError());
+        LOGE("Failed to map view of file ERROR : %d !!!", GetLastError());
 		return false;
 	}
 
