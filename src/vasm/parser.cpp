@@ -40,11 +40,11 @@ int64_t parser::size(void) const
     return s * 4;
 }
 
-bool parser::finish(FILE* fp, void (inst::*op)(FILE*) const)
+bool parser::finish(std::ostream& out, void (inst::*op)(std::ostream&) const)
 {
     for (auto& it : insts)
     {
-        (it->*op)(fp);
+        (it->*op)(out);
     }
     return true;
 }

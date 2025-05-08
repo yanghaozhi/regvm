@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+//#include <unistd.h>
+//#include <sys/mman.h>
+//#include <sys/stat.h>
 
 #include <map>
 #include <list>
@@ -83,67 +83,69 @@ bool op_run(const std::string_view& name, const func* f, insts_t* insts)
     auto op = &inst::print_bin;
     char* codes = NULL;
     size_t bytes = 0;
-    FILE* fp = open_memstream(&codes, &bytes);
 
-    if (insts == NULL)
-    {
-        f->print(op, fp);
-    }
-    else
-    {
-        for (auto& it : *insts)
-        {
-            (it->*op)(fp);
-        }
-    }
+	//TODO : later
+    //FILE* fp = open_memstream(&codes, &bytes);
 
-    fclose(fp);
+    //if (insts == NULL)
+    //{
+    //    f->print(op, fp);
+    //}
+    //else
+    //{
+    //    for (auto& it : *insts)
+    //    {
+    //        (it->*op)(fp);
+    //    }
+    //}
 
-    if LOG_ENBALE_D
-    {
-        LOGI("func : %s ...", VIEW(name));
-        const int line = 16;
-        int j = 0;
-        const unsigned char* p = (const unsigned char*)codes;
-        for (int i = 0; i < (int)bytes; i++)
-        {
-            if (j++ >= line)
-            {
-                printf("\n");
-                j = 1;
-            }
-            printf("%02X ", p[i]);
-        }
-        printf("\n\n");
-    }
+    //fclose(fp);
+
+    //if LOG_ENBALE_D
+    //{
+    //    LOGI("func : %s ...", VIEW(name));
+    //    const int line = 16;
+    //    int j = 0;
+    //    const unsigned char* p = (const unsigned char*)codes;
+    //    for (int i = 0; i < (int)bytes; i++)
+    //    {
+    //        if (j++ >= line)
+    //        {
+    //            printf("\n");
+    //            j = 1;
+    //        }
+    //        printf("%02X ", p[i]);
+    //    }
+    //    printf("\n\n");
+    //}
 
 
-    extern int mem_init(void);
-    static auto vm = regvm_init(1, mem_init);
-    if (insts != NULL)
-    {
+    //extern int mem_init(void);
+    //static auto vm = regvm_init(1, mem_init);
+    //if (insts != NULL)
+    //{
 
-        int64_t exit = 0;
-        bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
-        if ((r == true) && (f != NULL))
-        {
-            //TODO
-            //run the main function ?
-            //such as :
-            //r = regvm_func_exec(vm, f->id, &exit);
-        }
+    //    int64_t exit = 0;
+    //    bool r = regvm_exec(vm, (code_t*)codes, bytes >> 2, &exit);
+    //    if ((r == true) && (f != NULL))
+    //    {
+    //        //TODO
+    //        //run the main function ?
+    //        //such as :
+    //        //r = regvm_func_exec(vm, f->id, &exit);
+    //    }
 
-        regvm_exit(vm);
-        vm = NULL;
+    //    regvm_exit(vm);
+    //    vm = NULL;
 
-        LOGI("run : %d\n", r);
-    }
-    else
-    {
-        regvm_func(vm, f->id, (code_t*)codes, bytes >> 2, NULL, VM_CODE_COPY);
-    }
+    //    LOGI("run : %d\n", r);
+    //}
+    //else
+    //{
+    //    regvm_func(vm, f->id, (code_t*)codes, bytes >> 2, NULL, VM_CODE_COPY);
+    //}
 
-    free(codes);
+    //free(codes);
 
     return true;
 }
@@ -192,65 +194,66 @@ bool op_asm(const std::string_view& name, const func* f, insts_t* insts)
 
 int main(int argc, char** argv)
 {
+	//TODO : later
     insts_t insts;
 
-    const char* src = t1;
-    int fd = -1;
-    struct stat st;
-    if (argc > 1)
-    {
-        fd = ::open(argv[1], O_RDONLY);
-        fstat(fd, &st);
-        src = (const char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    }
+    //const char* src = t1;
+    //int fd = -1;
+    //struct stat st;
+    //if (argc > 1)
+    //{
+    //    fd = ::open(argv[1], O_RDONLY);
+    //    fstat(fd, &st);
+    //    src = (const char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    //}
 
-    parser par;
-    auto r = par.go(argv[1], src, insts);
-    LOGD("parse : %d", r);
-    if (r == false)
-    {
-        return 1;
-    }
+    //parser par;
+    //auto r = par.go(argv[1], src, insts);
+    //LOGD("parse : %d", r);
+    //if (r == false)
+    //{
+    //    return 1;
+    //}
 
 
-    const char* opts = "rps";
-    int opt = 0;
-    bool (*op)(const std::string_view&, const func*, insts_t*) = NULL;
-    while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
-    {
-        switch (opt)
-        {
-        case 'r':
-            op = op_run;
-            break;
-        case 'p':
-            op = op_print;
-            break;
-        case 's':
-            op = op_asm;
-            break;
-        default:
-            break;
-        }
-    }
+    //const char* opts = "rps";
+    //int opt = 0;
+    //bool (*op)(const std::string_view&, const func*, insts_t*) = NULL;
+    //while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
+    //{
+    //    switch (opt)
+    //    {
+    //    case 'r':
+    //        op = op_run;
+    //        break;
+    //    case 'p':
+    //        op = op_print;
+    //        break;
+    //    case 's':
+    //        op = op_asm;
+    //        break;
+    //    default:
+    //        break;
+    //    }
+    //}
 
-    for (auto& it : par.funcs)
-    {
-        op(it.first, &it.second, NULL);
-    }
-    auto it = par.funcs.find("main");
-    op(".crt.entry", (it == par.funcs.end()) ? NULL : &it->second, &insts);
+    //for (auto& it : par.funcs)
+    //{
+    //    op(it.first, &it.second, NULL);
+    //}
+    //auto it = par.funcs.find("main");
+    //op(".crt.entry", (it == par.funcs.end()) ? NULL : &it->second, &insts);
 
-    for (auto& it : insts)
-    {
-        delete it;
-    }
+    //for (auto& it : insts)
+    //{
+    //    delete it;
+    //}
 
-    if (fd >= 0)
-    {
-        munmap((void*)src, st.st_size);
-        close(fd);
-    }
+    //if (fd >= 0)
+    //{
+    //    munmap((void*)src, st.st_size);
+    //    close(fd);
+    //}
 
     return 0;
 }

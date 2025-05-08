@@ -1,22 +1,17 @@
 #pragma once
 
-#include <string.h>
 
 #if defined(_MSC_VER)
 
-#include <string.h>
-#include <intrin.h>
-
-//#define memrchr _memrchr
+#include "win32.h"
 
 #endif 
 
 
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__)
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
+#include "nix.h"
 
 #endif
 

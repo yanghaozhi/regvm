@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
+#include <os.h>
+//#include <getopt.h>
 //#include <unistd.h>
 //#include <sys/stat.h>
 //#include <sys/mman.h>
@@ -32,50 +35,50 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    //const char* file = argv[1];
+    const char* file = argv[1];
 
-    //parser* obj = NULL;
-    //void (inst::*op)(FILE*) const = &inst::print;
-    //FILE* fp = stdout;
-    //char* buf = NULL;
-    //size_t size = 0;
+    parser* obj = NULL;
+    void (inst::*op)(std::ostream&) const = &inst::print;
+    std::ostream* pout = &std::cout;
+    char* buf = NULL;
+    size_t size = 0;
 
-    //const char* opts = "c:rsbhv";
-    //int opt = 0;
-    //while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
-    //{
-    //    switch (opt)
-    //    {
-    //    case 'r':
-    //        obj = new mem_run();
-    //        op = &inst::print_bin;
-    //        fp = open_memstream(&buf, &size);
-    //        break;
-    //    case 's':
-    //        obj = new mem_run();
-    //        op = &inst::print_asm;
-    //        break;
-    //    case 'c':
-    //        //op = new TOP<bin_file>(optarg);
-    //        //o = new compile_2_file(optarg);
-    //        break;
-    //    case 'b':
-    //        //op = new TOP<bin_file>(file);
-    //        //o = new bin();
-    //        break;
-    //    case 'v':
-    //        break;
-    //    case 'h':
-    //        printf("%s\n", HELP);
-    //        return 0;
-    //    }
-    //}
+    const char* opts = "c:rsbhv";
+    int opt = 0;
+    while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
+    {
+        //switch (opt)
+        //{
+        //case 'r':
+        //    obj = new mem_run();
+        //    op = &inst::print_bin;
+        //    fp = open_memstream(&buf, &size);
+        //    break;
+        //case 's':
+        //    obj = new mem_run();
+        //    op = &inst::print_asm;
+        //    break;
+        //case 'c':
+        //    //op = new TOP<bin_file>(optarg);
+        //    //o = new compile_2_file(optarg);
+        //    break;
+        //case 'b':
+        //    //op = new TOP<bin_file>(file);
+        //    //o = new bin();
+        //    break;
+        //case 'v':
+        //    break;
+        //case 'h':
+        //    printf("%s\n", HELP);
+        //    return 0;
+        //}
+    }
 
-    //if (obj == NULL)
-    //{
-    //    LOGW("Does NOT find input object !!!");
-    //    return 0;
-    //}
+    if (obj == NULL)
+    {
+        LOGW("Does NOT find input object !!!");
+        return 0;
+    }
 
 
     //int fd = open(file, O_RDONLY);
@@ -92,49 +95,49 @@ int main(int argc, char** argv)
     //munmap((void*)d, st.st_size);
     //close(fd);
 
-    //if (obj->finish(fp, op) == false)
-    //{
-    //    LOGE("finish ERROR : %p", fp);
-    //    return 1;
-    //}
+    if (obj->finish(*pout, op) == false)
+    {
+        LOGE("finish ERROR : ");
+        return 1;
+    }
 
-    //delete obj;
+    delete obj;
 
-    //if (fp != stdout)
-    //{
-    //    fclose(fp);
+    if (pout != &std::cout)
+    {
+        //fclose(fp);
 
-    //    LOGI("total %d bytes to run", (int)size);
+        LOGI("total %d bytes to run", (int)size);
 
-    //    if LOG_ENBALE_D
-    //    {
-    //        const int line = 16;
-    //        int j = 0;
-    //        const unsigned char* p = (const unsigned char*)buf;
-    //        for (int i = 0; i < (int)size; i++)
-    //        {
-    //            if (j++ >= line)
-    //            {
-    //                printf("\n");
-    //                j = 1;
-    //            }
-    //            printf("%02X ", p[i]);
-    //        }
-    //        printf("\n\n");
-    //    }
+        if LOG_ENBALE_D
+        {
+            const int line = 16;
+            int j = 0;
+            const unsigned char* p = (const unsigned char*)buf;
+            for (int i = 0; i < (int)size; i++)
+            {
+                if (j++ >= line)
+                {
+                    printf("\n");
+                    j = 1;
+                }
+                printf("%02X ", p[i]);
+            }
+            printf("\n\n");
+        }
 
-    //    extern int mem_init(void);
-    //    auto vm = regvm_init(1, mem_init);
+        extern int mem_init(void);
+        auto vm = regvm_init(1, mem_init);
 
-    //    int64_t exit = 0;
-    //    bool r = regvm_exec(vm, (code_t*)buf, size >> 2, &exit);
+        int64_t exit = 0;
+        bool r = regvm_exec(vm, (code_t*)buf, size >> 2, &exit);
 
-    //    regvm_exit(vm);
+        regvm_exit(vm);
 
-    //    LOGI("run : %d\n", r);
+        LOGI("run : %d\n", r);
 
-    //    free(buf);
-    //}
+        free(buf);
+    }
 
     return 0;
 }

@@ -43,14 +43,14 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>ClangCL</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>ClangCL</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>false</VcpkgEnabled>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -137,15 +140,19 @@
     <ClInclude Include="..\..\include\regvm.h" />
     <ClInclude Include="..\..\src\include\ext.h" />
     <ClInclude Include="..\..\src\include\ext_type.h" />
+    <ClInclude Include="..\..\src\include\getopt.h" />
     <ClInclude Include="..\..\src\include\inst.h" />
     <ClInclude Include="..\..\src\include\labels.h" />
     <ClInclude Include="..\..\src\include\log.h" />
     <ClInclude Include="..\..\src\include\mlib.h" />
     <ClInclude Include="..\..\src\include\os.h" />
     <ClInclude Include="..\..\src\include\structs.h" />
+    <ClInclude Include="..\..\src\include\win32.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\common\getopt.c" />
     <ClCompile Include="..\..\src\common\inst.cpp" />
+    <ClCompile Include="..\..\src\common\win32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

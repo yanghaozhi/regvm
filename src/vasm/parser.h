@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
 #include <string_view>
 #include <unordered_set>
 #include <unordered_map>
@@ -32,7 +33,7 @@ public:
 
     virtual int64_t size(void) const;
 
-    virtual bool finish(FILE* fp, void (inst::*op)(FILE*) const);
+    virtual bool finish(std::ostream& out, void (inst::* op)(std::ostream&) const);
 
     int             lineno  = 1;
 

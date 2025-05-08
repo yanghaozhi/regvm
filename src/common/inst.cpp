@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#include <format>
 #include <iostream>
 
 #include <string>
@@ -13,9 +14,16 @@
 #include <log.h>
 
 
+
 static void data_print(FILE* fp, int v)
 {
     fprintf(fp, "DATA    \t0x%06X\n", v);
+}
+
+static void data_print(std::ostream& out, int v)
+{
+    //fprintf(fp, "DATA    \t0x%06X\n", v);
+    PRINTF(out, "DATA    \t0x{:06X}\n", v);
 }
 
 static void data_print_bin(FILE* fp, int v)
@@ -26,32 +34,43 @@ static void data_print_bin(FILE* fp, int v)
     fwrite(&code, sizeof(code_t), 1, fp);
 }
 
+static void data_print_bin(std::ostream& out, int v)
+{
+    code_t code;
+    code.id = CODE_DATA;
+    code.a3 = v;
+    WRITEC(out, code);
+}
+
 
 bool instj::scan(const char* src)
 {
     return sscanf(src, "%d %d %d %d", &a, &b, &c, &offset) == 4;
 }
 
-void instj::print(FILE* fp) const
+void instj::print(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
-    data_print(fp, offset);
+    PRINTF(out, "{:<8} {:02X}\t{}\t{}\t{}\n", name, id, a, b, c);
+    //fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
+    data_print(out, offset);
 }
 
-void instj::print_bin(FILE* fp) const
+void instj::print_bin(std::ostream& out) const
 {
     code_t code;
     code.id = id;
     code.a = a;
     code.b = b;
     code.c = c;
-    fwrite(&code, sizeof(code_t), 1, fp);
-    data_print_bin(fp, offset);
+    //fwrite(&code, sizeof(code_t), 1, fp);
+    WRITEC(out, code);
+    data_print_bin(out, offset);
 }
 
-void instj::print_asm(FILE* fp) const
+void instj::print_asm(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %d\t%d\t%d\t%d\n", name, a, b, c, offset);
+    //fprintf(fp, "%-8s %d\t%d\t%d\t%d\n", name, a, b, c, offset);
+    PRINTF(out, "{:<8} {}\t{}\t{}\t{}\n", name, a, b, c, offset);
 }
 
 
@@ -60,22 +79,24 @@ bool instv<CODE_JUMP>::scan(const char* src)
     return sscanf(src, "%d", &offset);
 }
 
-void instv<CODE_JUMP>::print(FILE* fp) const
+void instv<CODE_JUMP>::print(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %02X\t%d\n", name, id, offset);
+    //fprintf(fp, "%-8s %02X\t%d\n", name, id, offset);
+    PRINTF(out, "{:<8} {:02X}\t{}\n", name, id, offset);
 }
 
-void instv<CODE_JUMP>::print_bin(FILE* fp) const
+void instv<CODE_JUMP>::print_bin(std::ostream& out) const
 {
     code_t code;
     code.id = CODE_JUMP;
     code.a3 = offset;
-    fwrite(&code, sizeof(code_t), 1, fp);
+    WRITEC(out, code);
 }
 
-void instv<CODE_JUMP>::print_asm(FILE* fp) const
+void instv<CODE_JUMP>::print_asm(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %d\n", name, offset);
+    //fprintf(fp, "%-8s %d\n", name, offset);
+    PRINTF(out, "{:<8} {}\n", name, offset);
 }
 
 
@@ -153,29 +174,24 @@ bool instv<CODE_SET>::scan(const char* s)
     }
 }
 
-void instv<CODE_SET>::print(FILE* fp) const
+void instv<CODE_SET>::print(std::ostream& out) const
 {
     switch (type)
     {
     case TYPE_SIGNED:
-        fprintf(fp, "# %lld\n", (long long)ex.sint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+		PRINTF(out, "# {}\n{:<8} {:02X}\t{}\t{}\t{}\n", ex.sint, name, id, reg, type, c);
         break;
     case TYPE_UNSIGNED:
-        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+		PRINTF(out, "# {}\n{:<8} {:02X}\t{}\t{}\t{}\n", ex.uint, name, id, reg, type, c);
         break;
     case TYPE_DOUBLE:
-        fprintf(fp, "# %.17g\n", ex.dbl);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+		PRINTF(out, "# {:.17g}\n{:<8} {:02X}\t{}\t{}\t{}\n", ex.dbl, name, id, reg, type, c);
         break;
     case TYPE_STRING:
-        fprintf(fp, "# %s\n", ex.str);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+		PRINTF(out, "# {}\n{:<8} {:02X}\t{}\t{}\t{}\n", ex.str, name, id, reg, type, c);
         break;
     case TYPE_ADDR:
-        fprintf(fp, "# %llu\n", (unsigned long long)ex.uint);
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, reg, type, c);
+		PRINTF(out, "# {}\n{:<8} {:02X}\t{}\t{}\t{}\n", ex.uint, name, id, reg, type, c);
         return;
     default:
         LOGW("Unknown type : %d", type);
@@ -184,43 +200,43 @@ void instv<CODE_SET>::print(FILE* fp) const
 
     for (auto& it : datas)
     {
-        data_print(fp, it);
+        data_print(out, it);
     }
 }
 
-void instv<CODE_SET>::print_bin(FILE* fp) const
+void instv<CODE_SET>::print_bin(std::ostream& out) const
 {
     code_t code;
     code.id = CODE_SET;
     code.a = reg;
     code.b = type;
     code.c = c;
-    fwrite(&code, sizeof(code_t), 1, fp);
+    WRITEC(out, code);
 
     for (auto& it : datas)
     {
-        data_print_bin(fp, it);
+        data_print_bin(out, it);
     }
 }
 
-void instv<CODE_SET>::print_asm(FILE* fp) const
+void instv<CODE_SET>::print_asm(std::ostream& out) const
 {
     switch (type)
     {
     case TYPE_SIGNED:
-        fprintf(fp, "%-8s %d\t%d\t%ld\n", name, reg, type, ex.sint);
+		PRINTF(out, "{:<8} {}\t{}\t{}\n", name, reg, type, ex.sint);
         return;
     case TYPE_UNSIGNED:
-        fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
+		PRINTF(out, "{:<8} {}\t{}\t{}\n", name, reg, type, ex.uint);
         return;
     case TYPE_DOUBLE:
-        fprintf(fp, "%-8s %d\t%d\t%f\n", name, reg, type, ex.dbl);
+		PRINTF(out, "{:<8} {}\t{}\t{}\n", name, reg, type, ex.dbl);
         return;
     case TYPE_STRING:
-        fprintf(fp, "%-8s %d\t%d\t%s\n", name, reg, type, ex.str);
+		PRINTF(out, "{:<8} {}\t{}\t{}\n", name, reg, type, ex.str);
         return;
     case TYPE_ADDR:
-        fprintf(fp, "%-8s %d\t%d\t%lu\n", name, reg, type, ex.uint);
+		PRINTF(out, "{:<8} {}\t{}\t{}\n", name, reg, type, ex.uint);
         return;
     default:
         LOGW("Unknown type : %d", type);
@@ -314,32 +330,32 @@ template <typename F> inline void cmd_args(const std::vector<int>& args, const i
     }
 }
 
-void instv<CODE_ECHO>::print(FILE* fp) const
+void instv<CODE_ECHO>::print(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %02X\t%d", name, id, (int)args.size());
+	PRINTF(out, "{:<8} {:02X}\t{}", name, id, args.size());
     switch (args.size())
     {
     case 0:
         LOGW("Should NOT echo with 0 args !!!");
-        fprintf(fp, "\t%d\t%d\n", 0, 0);
+		PRINTF(out, "\t{}\t{}\n", 0, 0);
         break;
     case 1:
-        fprintf(fp, "\t%d\t%d\n", args[0], 0);
+		PRINTF(out, "\t{}\t{}\n", args[0], 0);
         break;
     case 2:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
+		PRINTF(out, "\t{}\t{}\n", args[0], args[1]);
         break;
     default:
-        fprintf(fp, "\t%d\t%d\n", args[0], args[1]);
-        cmd_args(args, 2, [fp](int a, int b, int c)
+		PRINTF(out, "\t{}\t{}\n", args[0], args[1]);
+        cmd_args(args, 2, [&out](int a, int b, int c)
             {
-                fprintf(fp, "DATA     \t%d\t%d\t%d\n", a, b, c);
+				PRINTF(out, "DATA     \t{}\t{}\t{}\n", a, b, c);
             });
         break;
     }
 }
 
-void instv<CODE_ECHO>::print_bin(FILE* fp) const
+void instv<CODE_ECHO>::print_bin(std::ostream& out) const
 {
     code_t code = {0};
     code.id = CODE_ECHO;
@@ -351,39 +367,39 @@ void instv<CODE_ECHO>::print_bin(FILE* fp) const
         LOGW("Should NOT echo with 0 args !!!");
         code.b = 0;
         code.c = 0;
-        fwrite(&code, sizeof(code_t), 1, fp);
+        WRITEC(out, code);
         break;
     case 2:
         code.c = args[1];
         [[fallthrough]];
     case 1:
         code.b = args[0];
-        fwrite(&code, sizeof(code_t), 1, fp);
+        WRITEC(out, code);
         break;
     default:
         code.b = args[0];
         code.c = args[1];
-        fwrite(&code, sizeof(code_t), 1, fp);
-        cmd_args(args, 2, [fp, &code](int a, int b, int c)
+        WRITEC(out, code);
+        cmd_args(args, 2, [&out, &code](int a, int b, int c)
             {
                 code.id = CODE_DATA;
                 code.a = a;
                 code.b = b;
                 code.c = c;
-                fwrite(&code, sizeof(code_t), 1, fp);
+				WRITEC(out, code);
             });
         break;
     }
 }
 
-void instv<CODE_ECHO>::print_asm(FILE* fp) const
+void instv<CODE_ECHO>::print_asm(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %d", name, (int)args.size());
+	PRINTF(out, "{:<8} {}", name, args.size());
     for (auto& it : args)
     {
-        fprintf(fp, "\t%d", it);
+		PRINTF(out, "\t{}", it);
     }
-    fprintf(fp, "\n");
+	PRINTF(out, "\n");
     if (args.size() == 0)
     {
         LOGW("Should NOT echo with 0 args !!!");
@@ -395,37 +411,37 @@ bool instv<CODE_CALL>::scan(const char* src)
     return sscanf(src, "%d %d", &info, &func) == 2;
 }
 
-void instv<CODE_CALL>::print(FILE* fp) const
+void instv<CODE_CALL>::print(std::ostream& out) const
 {
-    fprintf(fp, "# func id : %d\n", func);
+	PRINTF(out, "# func id : {}\n", func);
     if (func > 0x7FFF)
     {
-        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, (func & 0xFF) + 0xFF00);
-        data_print(fp, func >> 8);
+		PRINTF(out, "{:<8} {:02X}\t{}\t{}\n", name, id, info, (func & 0xFF) + 0xFF00);
+        data_print(out, func >> 8);
     }
     else
     {
-        fprintf(fp, "%-8s %02X\t%d\t%d\n", name, id, info, func);
+		PRINTF(out, "{:<8} {:02X}\t{}\t{}\n", name, id, info, func);
     }
 }
 
-void instv<CODE_CALL>::print_bin(FILE* fp) const
+void instv<CODE_CALL>::print_bin(std::ostream& out) const
 {
     code_t code;
     code.id = CODE_CALL;
     code.a = info;
     code.b2 = (func > 0x7FFF) ? (func & 0xFF) + 0xFF00 : func;
-    fwrite(&code, sizeof(code_t), 1, fp);
+    WRITEC(out, code);
 
     if (func > 0x7FFF)
     {
-        data_print_bin(fp, func >> 8);
+        data_print_bin(out, func >> 8);
     }
 }
 
-void instv<CODE_CALL>::print_asm(FILE* fp) const
+void instv<CODE_CALL>::print_asm(std::ostream& out) const
 {
-    fprintf(fp, "%-8s %d\t%d\n", name, info, func);
+	PRINTF(out, "{:<8} {}\t{}\t{}\n", name, id, info, func);
 }
 
 

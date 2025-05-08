@@ -4,28 +4,37 @@
 
 #include <vector>
 #include <string>
+#include <format>
+#include <iostream>
 #include <string_view>
 #include <unordered_map>
 
 #include "structs.h"
 
 
+#define PRINTF(o, fmt, ...)     std::format_to(std::ostream_iterator<char>(o), fmt, ##__VA_ARGS__);
+//#define PRINTF(o, fmt, ...)   fprintf(o, fmt, __VA_ARGS__);
+
+#define WRITEC(o, c)   o.write((const char*)&c, sizeof(code_t));
+//#define WRITEC(o, code)   fwrite(&code, sizeof(code_t), 1, o);
+
+
 struct inst;
-typedef std::deque<inst*>               insts_t;
+typedef std::deque<inst*>                   insts_t;
 typedef void (inst::*inst_print_t)(FILE*) const;
 struct inst
 {
     inst(int id, const char* name);
-    virtual ~inst()                     {}
+    virtual ~inst()                         {}
 
     int                 id;
     const char*         name;
 
     virtual bool scan(const char* src)      = 0;
     virtual int count(void) const           {return 1;};
-    virtual void print(FILE* fp) const      = 0;
-    virtual void print_bin(FILE* fp) const  = 0;
-    virtual void print_asm(FILE* fp) const  = 0;
+    virtual void print(std::ostream& out) const      = 0;
+    virtual void print_bin(std::ostream& out) const  = 0;
+    virtual void print_asm(std::ostream& out) const  = 0;
 };
 
 struct instex
@@ -46,22 +55,22 @@ template <int N> struct instv : public inst
     {
         return sscanf(src, "%d %d %d", &a, &b, &c) == 3;
     }
-    virtual void print(FILE* fp) const
+    virtual void print(std::ostream& out) const
     {
-        fprintf(fp, "%-8s %02X\t%d\t%d\t%d\n", name, id, a, b, c);
+		PRINTF(out, "{:<8} {:02X}\t{}\t{}\t{}\n", name, id, a, b, c);
     }
-    virtual void print_bin(FILE* fp) const
+    virtual void print_bin(std::ostream& out) const
     {
         code_t code;
         code.id = id;
         code.a = a;
         code.b = b;
         code.c = c;
-        fwrite(&code, sizeof(code_t), 1, fp);
+        WRITEC(out, c);
     }
-    virtual void print_asm(FILE* fp) const
+    virtual void print_asm(std::ostream& out) const
     {
-        fprintf(fp, "%-8s %d\t%d\t%d\n", name, a, b, c);
+		PRINTF(out, "{:<8} {}\t{}\t{}\t{}\n", name, id, a, b, c);
     }
 };
 
@@ -88,9 +97,9 @@ template <> struct instv<CODE_SET> : public inst, public instex
 
     virtual int count(void) const     {return 1 + datas.size();};
     virtual bool scan(const char* src);
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
+    virtual void print(std::ostream& out) const;
+    virtual void print_bin(std::ostream& out) const;
+    virtual void print_asm(std::ostream& out) const;
     bool change_str(const char* n);
 };
 template struct instv<CODE_SET>;
@@ -108,9 +117,9 @@ template <> struct instv<CODE_JUMP> : public inst
 
     virtual bool scan(const char* src);
     virtual int count(void) const       { return 1; };
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
+    virtual void print(std::ostream& out) const;
+    virtual void print_bin(std::ostream& out) const;
+    virtual void print_asm(std::ostream& out) const;
 };
 template struct instv<CODE_JUMP>;
 
@@ -127,9 +136,9 @@ struct instj : public instv<CODE_JUMP>
 
     virtual bool scan(const char* src);
     virtual int count(void) const       { return 2; };
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
+    virtual void print(std::ostream& out) const;
+    virtual void print_bin(std::ostream& out) const;
+    virtual void print_asm(std::ostream& out) const;
 };
 
 #define JUMP_CMP(x)                                     \
@@ -156,9 +165,9 @@ template <> struct instv<CODE_ECHO> : public inst
 
     virtual int count(void) const;
     virtual bool scan(const char* src);
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
+    virtual void print(std::ostream& out) const;
+    virtual void print_bin(std::ostream& out) const;
+    virtual void print_asm(std::ostream& out) const;
     bool change_str(const char* n);
 };
 template struct instv<CODE_ECHO>;
@@ -169,15 +178,15 @@ template <> struct instv<CODE_RET> : public inst
 
     virtual int count(void) const           {return 1;};
     virtual bool scan(const char* src)      {return true;};
-    virtual void print(FILE* fp) const      {fprintf(fp, "%-8s\n", name);};
-    virtual void print_bin(FILE* fp) const
+    virtual void print(std::ostream& out) const     {PRINTF(out, "{:<8}\n", name);};
+    virtual void print_bin(std::ostream& out) const
     {
         code_t code;
         code.id = CODE_RET;
         code.a3 = 0;
-        fwrite(&code, sizeof(code_t), 1, fp);
+        WRITEC(out, code);
     };
-    virtual void print_asm(FILE* fp) const  {fprintf(fp, "%-8s\n", name);};
+    virtual void print_asm(std::ostream& out) const  {PRINTF(out, "{:<8}\n", name);};
 };
 template struct instv<CODE_RET>;
 
@@ -191,8 +200,8 @@ template <> struct instv<CODE_CALL> : public inst
 
     virtual int count(void) const   {return (func > 0x7FFF) ? 2 : 1;};
     virtual bool scan(const char* src);
-    virtual void print(FILE* fp) const;
-    virtual void print_bin(FILE* fp) const;
-    virtual void print_asm(FILE* fp) const;
+    virtual void print(std::ostream& out) const;
+    virtual void print_bin(std::ostream& out) const;
+    virtual void print_asm(std::ostream& out) const;
 };
 template struct instv<CODE_CALL>;
