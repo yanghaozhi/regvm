@@ -3,10 +3,7 @@
 #include <stdlib.h>
 
 #include <os.h>
-//#include <getopt.h>
-//#include <unistd.h>
-//#include <sys/stat.h>
-//#include <sys/mman.h>
+#include <sstream>
 
 #include "log.h"
 #include "mem_run.h"
@@ -40,38 +37,39 @@ int main(int argc, char** argv)
     parser* obj = NULL;
     void (inst::*op)(std::ostream&) const = &inst::print;
     std::ostream* pout = &std::cout;
-    char* buf = NULL;
-    size_t size = 0;
+    std::stringstream bin(std::ios::in | std::ios::out | std::ios::binary);
+    bool run = false;
 
     const char* opts = "c:rsbhv";
     int opt = 0;
     while ((opt = getopt(argc - 1, argv + 1, opts)) != -1)
     {
-        //switch (opt)
-        //{
-        //case 'r':
-        //    obj = new mem_run();
-        //    op = &inst::print_bin;
-        //    fp = open_memstream(&buf, &size);
-        //    break;
-        //case 's':
-        //    obj = new mem_run();
-        //    op = &inst::print_asm;
-        //    break;
-        //case 'c':
-        //    //op = new TOP<bin_file>(optarg);
-        //    //o = new compile_2_file(optarg);
-        //    break;
-        //case 'b':
-        //    //op = new TOP<bin_file>(file);
-        //    //o = new bin();
-        //    break;
-        //case 'v':
-        //    break;
-        //case 'h':
-        //    printf("%s\n", HELP);
-        //    return 0;
-        //}
+        switch (opt)
+        {
+        case 'r':
+            obj = new mem_run();
+            op = &inst::print_bin;
+            pout = &bin;
+            run = true;
+            break;
+        case 's':
+            obj = new mem_run();
+            op = &inst::print_asm;
+            break;
+        case 'c':
+            //op = new TOP<bin_file>(optarg);
+            //o = new compile_2_file(optarg);
+            break;
+        case 'b':
+            //op = new TOP<bin_file>(file);
+            //o = new bin();
+            break;
+        case 'v':
+            break;
+        case 'h':
+            printf("%s\n", HELP);
+            return 0;
+        }
     }
 
     if (obj == NULL)
@@ -81,19 +79,11 @@ int main(int argc, char** argv)
     }
 
 
-    //int fd = open(file, O_RDONLY);
-    //struct stat st;
-    //fstat(fd, &st);
-    //auto d = (char*)mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-    //if (obj->go(d) == false)
-    //{
-    //    LOGE("parse file : %s ERROR !!!", file);
-    //    return 1;
-    //}
-
-    //munmap((void*)d, st.st_size);
-    //close(fd);
+    if (map_file(file, [obj](const char* d){return obj->go(d);}) == false)
+    {
+        LOGE("parse file : %s ERROR !!!", file);
+        return 1;
+    }
 
     if (obj->finish(*pout, op) == false)
     {
@@ -103,9 +93,11 @@ int main(int argc, char** argv)
 
     delete obj;
 
-    if (pout != &std::cout)
+    if (run == true)
     {
-        //fclose(fp);
+        const std::string code = bin.str();
+		const char* buf = code.c_str();
+		const size_t size = code.size();
 
         LOGI("total %d bytes to run", (int)size);
 
@@ -135,8 +127,6 @@ int main(int argc, char** argv)
         regvm_exit(vm);
 
         LOGI("run : %d\n", r);
-
-        free(buf);
     }
 
     return 0;
