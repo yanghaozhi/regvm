@@ -15,7 +15,7 @@
 #define PRINTF(o, fmt, ...)     std::format_to(std::ostream_iterator<char>(o), fmt, ##__VA_ARGS__);
 //#define PRINTF(o, fmt, ...)   fprintf(o, fmt, __VA_ARGS__);
 
-#define WRITEC(o, c)   o.write((const char*)&c, sizeof(code_t));
+#define WRITEC(o, c)            o.write((const char*)&c, sizeof(code_t));
 //#define WRITEC(o, code)   fwrite(&code, sizeof(code_t), 1, o);
 
 
@@ -66,7 +66,7 @@ template <int N> struct instv : public inst
         code.a = a;
         code.b = b;
         code.c = c;
-        WRITEC(out, c);
+        WRITEC(out, code);
     }
     virtual void print_asm(std::ostream& out) const
     {

@@ -54,6 +54,7 @@ struct regvm* regvm_init(int ext_inits, ...)
     for (auto& it : exts)
     {
         it.init(vm, i++, it.arg);
+		LOGT("create extension : %d - %p", i - 1, vm->exts[i - 1]);
     }
 
     return vm;
@@ -66,6 +67,7 @@ bool regvm_exit(struct regvm* vm)
     int i = 0;
     for (auto& it : exts)
     {
+		LOGT("delete extension : %d - %p", i, vm->exts[i]);
         it.exit(vm, i++, it.arg);
     }
 
