@@ -31,12 +31,12 @@ tt:
 INC=-I./ -I$(ROOT)/include -I$(ROOT)/src/include -I$(ROOT)/src/$(EXT)
 OPTS=-fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EXT=$(EXT)
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
-CXXFLAGS=-std=c++17 $(OPTS) $(INC)
+CXXFLAGS=-std=c++20 $(OPTS) $(INC)
 
-CC=gcc
-CXX=g++
-#CC=clang
-#CXX=clang++
+#CC=gcc
+#CXX=g++
+CC=clang
+CXX=clang++
 
 clean:
 	rm -f $(OUT)/$(NAME) $(OBJS) $(patsubst %.o, %.d, $(OBJS))

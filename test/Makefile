@@ -17,12 +17,12 @@ tt:
 
 OPTS=-O0 -g -fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -I../include -DDEBUG
 CFLAGS=-std=gnu11 $(OPTS)
-CXXFLAGS=-std=c++17 $(OPTS)
+CXXFLAGS=-std=c++20 $(OPTS)
 
-CC=gcc
-CXX=g++
-#CC=clang
-#CXX=clang++
+#CC=gcc
+#CXX=g++
+CC=clang
+CXX=clang++
 
 
 clean:

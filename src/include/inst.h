@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <format>
+#include <iterator>
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
@@ -102,7 +103,7 @@ template <> struct instv<CODE_SET> : public inst, public instex
     virtual void print_asm(std::ostream& out) const;
     bool change_str(const char* n);
 };
-template struct instv<CODE_SET>;
+//template struct instv<CODE_SET>;
 
 
 template <> struct instv<CODE_JUMP> : public inst
@@ -121,7 +122,7 @@ template <> struct instv<CODE_JUMP> : public inst
     virtual void print_bin(std::ostream& out) const;
     virtual void print_asm(std::ostream& out) const;
 };
-template struct instv<CODE_JUMP>;
+//template struct instv<CODE_JUMP>;
 
 
 struct instj : public instv<CODE_JUMP>
@@ -170,7 +171,7 @@ template <> struct instv<CODE_ECHO> : public inst
     virtual void print_asm(std::ostream& out) const;
     bool change_str(const char* n);
 };
-template struct instv<CODE_ECHO>;
+//template struct instv<CODE_ECHO>;
 
 template <> struct instv<CODE_RET> : public inst
 {
@@ -188,7 +189,7 @@ template <> struct instv<CODE_RET> : public inst
     };
     virtual void print_asm(std::ostream& out) const  {PRINTF(out, "{:<8}\n", name);};
 };
-template struct instv<CODE_RET>;
+//template struct instv<CODE_RET>;
 
 template <> struct instv<CODE_CALL> : public inst
 {
@@ -204,4 +205,4 @@ template <> struct instv<CODE_CALL> : public inst
     virtual void print_bin(std::ostream& out) const;
     virtual void print_asm(std::ostream& out) const;
 };
-template struct instv<CODE_CALL>;
+//template struct instv<CODE_CALL>;

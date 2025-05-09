@@ -15,10 +15,10 @@
 
 
 
-static void data_print(FILE* fp, int v)
-{
-    fprintf(fp, "DATA    \t0x%06X\n", v);
-}
+//static void data_print(FILE* fp, int v)
+//{
+//    fprintf(fp, "DATA    \t0x%06X\n", v);
+//}
 
 static void data_print(std::ostream& out, int v)
 {
@@ -26,13 +26,13 @@ static void data_print(std::ostream& out, int v)
     PRINTF(out, "DATA    \t0x{:06X}\n", v);
 }
 
-static void data_print_bin(FILE* fp, int v)
-{
-    code_t code;
-    code.id = CODE_DATA;
-    code.a3 = v;
-    fwrite(&code, sizeof(code_t), 1, fp);
-}
+//static void data_print_bin(FILE* fp, int v)
+//{
+//    code_t code;
+//    code.id = CODE_DATA;
+//    code.a3 = v;
+//    fwrite(&code, sizeof(code_t), 1, fp);
+//}
 
 static void data_print_bin(std::ostream& out, int v)
 {

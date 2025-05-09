@@ -80,12 +80,13 @@ bool regvm_exit(struct regvm* vm)
 }
 
 
-constexpr static std::string_view get_enum_name(const char* str, char start, char end, int offset)
-{
-    const char* s = std::char_traits<char>::find(str, std::char_traits<char>::length(str), start) + offset;
-    const char* e = std::char_traits<char>::find(s, std::char_traits<char>::length(s), end);
-    return std::string_view(s, e - s);
-}
+#ifdef DEBUG
+//constexpr static inline std::string_view get_enum_name(const char* str, char start, char end, int offset)
+//{
+//    const char* s = std::char_traits<char>::find(str, std::char_traits<char>::length(str), start) + offset;
+//    const char* e = std::char_traits<char>::find(s, std::char_traits<char>::length(s), end);
+//    return std::string_view(s, e - s);
+//}
 
 template <enum CODE_ID> struct enum_name
 {
@@ -99,6 +100,7 @@ template <enum CODE_ID> struct enum_name
         return get_enum_name(__PRETTY_FUNCTION__, '=', ';', 2);
     }
 };
+#endif
 
 template <enum CODE_ID arg, enum CODE_ID ... others> void reg_codes(const char** code_names)
 {

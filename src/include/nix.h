@@ -1,9 +1,11 @@
 #pragma once
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#include <log.h>
 
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
