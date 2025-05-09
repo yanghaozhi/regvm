@@ -89,6 +89,8 @@ bool parser::go(const char* src)
             return false;
         }
 
+        LOGT("%d : code - %s", lineno, std::string(k).c_str());
+
         if (line(next_token(e), it->second(it->first.data())) == false)
         {
             LOGE("%d : parse line ERROR !!!", lineno);

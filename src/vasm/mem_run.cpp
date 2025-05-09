@@ -1,5 +1,7 @@
 #include "mem_run.h"
 
+#include <sstream>
+
 #include <regvm.h>
 #include <debug.h>
 #include <irq.h>
@@ -26,6 +28,21 @@ bool mem_run::comment(const char* line, int size)
 bool mem_run::line(const char* str, inst* code)
 {
     auto r = parser::line(str, code);
+
+    if LOG_ENBALE_T
+    {
+        std::stringstream out;
+        code->print_bin(out);
+        const std::string_view s = out.view();
+
+        std::string buf;
+		for (auto& ss : s)
+		{
+            buf += std::format("{:02X} ", ss);
+		}
+        LOGT("\t%s", buf.c_str());
+    }
+
     if (code->id != CODE_SET)
     {
         return r;

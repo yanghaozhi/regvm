@@ -49,9 +49,9 @@ inline const char* only_file_name(const char* f)
 #define LOG_COLOR(level, color, fmt, ...)																		\
 	if LOG_IS_ENBALE(level)                                                                                     \
 	{                                                                                                           \
-		char buf[4096];                                                                                         \
-		snprintf(buf, sizeof(buf), "[%s] [%s:%d] " fmt " \n", #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);  \
-		OutputDebugStringA(buf);                                                                                \
+		char conbuf[4096];                                                                                      \
+		snprintf(conbuf, sizeof(conbuf), "[%s] [%s:%d] " fmt " \n", #level, __FILE_NAME__, __LINE__, ##__VA_ARGS__);  \
+		OutputDebugStringA(conbuf);                                                                             \
 	}
 //#endif  //PRINT_TO_CONSOLE
 #else   //_MSC_VER
