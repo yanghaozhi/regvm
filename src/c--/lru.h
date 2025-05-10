@@ -52,7 +52,11 @@ public:
     {
         if constexpr (sizeof(T) == 1)
         {
+#ifdef __GLIBC__
             T* p = (T*)memrchr(datas, v, size);
+#else
+            T* p = (T*)memchr(datas, v, size);
+#endif
             return (p != NULL) ? used(p - datas) : -1;
         }
         else
