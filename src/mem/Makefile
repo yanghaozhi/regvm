@@ -36,10 +36,10 @@ CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++20 $(OPTS) $(INC)
 GCOV=-fprofile-arcs -ftest-coverage
 
-#CC=gcc
-#CXX=g++
-CC=clang
-CXX=clang++
+CC=gcc
+CXX=g++
+#CC=clang
+#CXX=clang++
 
 
 clean:

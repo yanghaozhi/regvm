@@ -35,10 +35,10 @@ OPTS=-fPIC -Wall -Wextra -Werror -Wno-unused-parameter -Wno-narrowing -DREGVM_EX
 CFLAGS=-std=gnu11 $(OPTS) $(INC)
 CXXFLAGS=-std=c++20 $(OPTS) $(INC)
 
-#CC=gcc
-#CXX=g++
-CC=clang
-CXX=clang++
+CC=gcc
+CXX=g++
+#CC=clang
+#CXX=clang++
 
 
 

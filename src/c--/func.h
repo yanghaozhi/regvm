@@ -110,7 +110,7 @@ public:
 
     selector::reg token_2_reg(const token& tok);
 
-    void print(inst_print_t op, FILE* fp) const;
+    void print(inst_print_t op, std::ostream& out) const;
 
 private:
     insts_t                 instss;

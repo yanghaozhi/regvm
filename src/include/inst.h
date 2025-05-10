@@ -22,7 +22,7 @@
 
 struct inst;
 typedef std::deque<inst*>                   insts_t;
-typedef void (inst::*inst_print_t)(FILE*) const;
+typedef void (inst::*inst_print_t)(std::ostream&) const;
 struct inst
 {
     inst(int id, const char* name);

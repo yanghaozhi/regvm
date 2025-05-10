@@ -80,11 +80,11 @@ const char* func::go(const char* src)
     return src;
 }
 
-void func::print(inst_print_t op, FILE* fp) const
+void func::print(inst_print_t op, std::ostream& out) const
 {
     for (auto& it : instss)
     {
-        (it->*op)(fp);
+        (it->*op)(out);
     }
 }
 
