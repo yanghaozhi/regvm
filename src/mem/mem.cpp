@@ -43,7 +43,7 @@ bool regvm_mem::init(regvm* vm, int idx, void* arg)
 
 bool regvm_mem::exit(regvm* vm, int idx, void* arg)
 {
-    delete static_cast<regvm_mem*>(vm->exts[idx]);
+    delete VM;
     vm->exts[idx] = NULL;
     return true;
 }
