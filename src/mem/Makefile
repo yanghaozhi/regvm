@@ -11,16 +11,17 @@ OUT=$(ROOT)/out
 DEPS= 
 
 all: EXTRA := -O0 -g -DLOG_LEVEL=10 -DDEBUG
-
 all: $(NAME)
 
 release: EXTRA := -O3 -g
-
 release: $(NAME)
 
 cov: EXTRA := -O0 -g -fprofile-arcs -ftest-coverage
-
 cov:$(NAME)
+
+#lto: EXTRA := -O3 -g -flto -flto-report -fopt-info-ipa-optall -fdump-ipa-all 
+lto: EXTRA := -O3 -g -flto 
+lto: $(NAME)
 
 tt:
 	@echo $(CURDIR)

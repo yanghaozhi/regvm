@@ -11,6 +11,9 @@ release:
 cov: 
 	@ for i in $(SUBDIRS) ; do make cov -j4 -C $$i ; done
 
+lto: 
+	@ for i in $(SUBDIRS) ; do make lto -j4 -C $$i ; done
+
 clean:
 	@ for i in $(SUBDIRS) ; do make clean -C $$i ; done
 
